@@ -1,0 +1,16 @@
+# Clineignore for XAMPP PHP project
+
+# Composer dependencies
+/vendor/
+
+# Logs
+*.log
+/logs/
+
+# Temporary files
+*.tmp
+~*
+
+# Large assets (adjust as needed)
+/assets/*.zip
+/assets/*.rar
