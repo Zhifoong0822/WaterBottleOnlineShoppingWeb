@@ -2,21 +2,20 @@
 
 class Product {
     // 1. Change this to match whatever variable name you use inside your functions
-    private $conn;
+    private $conn = null;
     private $table_name = "products";
 
     // 2. The constructor must accept the $db variable passed from index.php
     public function __construct($db) {
-        // This links the external database connection to this class property
-        $this->conn = $db; 
+        if ($db === null) {
+            throw new Exception("Database connection cannot be null.");
+        }
+        $this->conn = $db;
     }
 
     public function readAll() {
-        // 3. Select your columns from the database
-        // (Make sure these column names exactly match your MySQL database table structure!)
-        $query = "SELECT product_id, name, description, price, stock, image_url FROM " . $this->table_name;
+        $query = "SELECT * FROM " . $this->table_name;
 
-        // 4. Use $this->conn instead of any other variable name
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
