@@ -1,88 +1,42 @@
 <?php
-session_start();
+// 1. Load configuration utilities, session variables, and global $_db
+require '_base.php'; 
 
-// ==========================================
-// 1. DATABASE CONNECTION (Procedural PDO)
-// ==========================================
-$host = "localhost";
-$db_name = "waterbottle_shop";
-$username = "root";
-$password = "";
-$conn = null;
+// 2. Supply dynamic metadata tracking to _head.php template
+$_title = "Products";
 
-try {
-    $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name, $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $conn->exec("set names utf8");
-} catch (PDOException $exception) {
-    die("Database connection failed: " . $exception->getMessage());
-}
-
-// ==========================================
-// 2. INLINE PROCEDURAL FUNCTION
-// ==========================================
-function readAllProducts($conn) {
-    $query = "SELECT * FROM products";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-    return $stmt;
-}
-
-$page_title = "Products";
+// 3. Inject standard layout structure, styling mappings, and navigation structures
+include '_head.php'; 
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?></title>
-    
-    <link rel="stylesheet" href="/src/css/style.css">
-    
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-</head>
-<body>
-    <header>
-        <h1>Water Bottle Shop</h1>
-        <nav>
-            <ul>
-                <li><a href="products.php">Products</a></li>
-                <li><a href="cart_view.php">View Cart</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <?php
-        // ==========================================
-        // 3. FLOW CONTROL: FETCHING VIA FUNCTION
-        // ==========================================
-        $stmt = readAllProducts($conn);
-        $num = $stmt->rowCount();
 
-        // 🟢 Clean single quotes with your preferred grid layout intact
-        echo "<div class='product-grid'>";
-        if($num > 0) {
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                extract($row);
-                echo "<div class='product-card'>";
-                    echo "<img src='" . $image_url . "' alt='" . $name . "'>";
-                    echo "<h3>{$name}</h3>";
-                    echo "<p>{$description}</p>";
-                    echo "<p>Price: RM" . number_format($price, 2) . "</p>";
-                    echo "<p>Stock: {$stock}</p>";
-                    echo "<button class='add-to-cart' data-product_id='{$product_id}'>Add to Cart</button>";
-                echo "</div>";
-            }
-        } else {
-            echo "<div class='col-md-12'>No products found.</div>";
-        }
+<?php
+// 4. Local inline logic flow retrieving products from active data layers
+$stmt = $_db->prepare("SELECT * FROM products");
+$stmt->execute();
+$products = $stmt->fetchAll(); // Grabs all records using class FETCH_OBJ pattern
+
+echo "<div class='product-grid'>";
+if (count($products) > 0) {
+    foreach ($products as $row) {
+        echo "<div class='product-card'>";
+            // Using OOP standard property mapping matching your practical set templates
+            echo "<img src='" . encode($row->image_url) . "' alt='" . encode($row->name) . "'>";
+            echo "<h3>" . encode($row->name) . "</h3>";
+            echo "<p>" . encode($row->description) . "</p>";
+            echo "<p>Price: RM" . number_format($row->price, 2) . "</p>";
+            echo "<p>Stock: " . encode($row->stock) . "</p>";
+            echo "<button class='add-to-cart' data-product_id='{$row->product_id}'>Add to Cart</button>";
         echo "</div>";
-        ?>
-    </main>
-    <footer>
-        <p>&copy; <?php echo date("Y"); ?> Water Bottle Shop</p>
-    </footer>
+    }
+} else {
+    echo "<div class='col-md-12'>No products found.</div>";
+}
+echo "</div>";
+?>
 
-    <script src="../js/script.js"></script>
-</body>
-</html>
+<script src="../js/script.js"></script>
+
+<?php
+// 6. Append structural trailing closures and footer elements
+include '_foot.php'; 
+?>
