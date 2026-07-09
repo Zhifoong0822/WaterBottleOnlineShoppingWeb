@@ -1,7 +1,9 @@
 <?php
 session_start();
 
-// Database connection
+// ==========================================
+// 1. DATABASE CONNECTION (Procedural PDO)
+// ==========================================
 $host = "localhost";
 $db_name = "waterbottle_shop";
 $username = "root";
@@ -10,14 +12,16 @@ $conn = null;
 
 try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name, $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->exec("set names utf8");
 } catch (PDOException $exception) {
-    error_log("Connection error: " . $exception->getMessage());
-    die("Database connection failed.");
+    die("Database connection failed: " . $exception->getMessage());
 }
 
-// Product functions
-function getAllProducts($conn) {
+// ==========================================
+// 2. INLINE PROCEDURAL FUNCTION
+// ==========================================
+function readAllProducts($conn) {
     $query = "SELECT * FROM products";
     $stmt = $conn->prepare($query);
     $stmt->execute();
@@ -32,7 +36,9 @@ $page_title = "Products";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
-    <link rel="stylesheet" href="../css/style.css">
+    
+    <link rel="stylesheet" href="/src/css/style.css">
+    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
@@ -40,16 +46,20 @@ $page_title = "Products";
         <h1>Water Bottle Shop</h1>
         <nav>
             <ul>
-                <li><a href="../../index.php">Products</a></li>
-                <li><a href="./cart_view.php">View Cart</a></li>
+                <li><a href="products.php">Products</a></li>
+                <li><a href="cart_view.php">View Cart</a></li>
             </ul>
         </nav>
     </header>
     <main>
         <?php
-        $stmt = getAllProducts($conn);
+        // ==========================================
+        // 3. FLOW CONTROL: FETCHING VIA FUNCTION
+        // ==========================================
+        $stmt = readAllProducts($conn);
         $num = $stmt->rowCount();
 
+        // 🟢 Clean single quotes with your preferred grid layout intact
         echo "<div class='product-grid'>";
         if($num > 0) {
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

@@ -2,7 +2,7 @@
 session_start();
 
 // ==========================================
-// 1. DATABASE CONFIGURATION & CONNECTION (Structured)
+// 1. DATABASE CONNECTION (Procedural PDO)
 // ==========================================
 $host = "localhost";
 $db_name = "waterbottle_shop";
@@ -15,34 +15,46 @@ try {
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->exec("set names utf8");
 } catch (PDOException $exception) {
-    die("Database connection failed.");
+    die("Database connection failed: " . $exception->getMessage());
 }
 
 // ==========================================
-// 2. DEFINE USER ID & FETCH CART (Procedural Control Flow)
+// 2. LOCAL INLINE FUNCTIONS (Passing $conn)
 // ==========================================
-$user_id = 1; // Dummy user ID for demonstration
+
+function getCartByUserId($conn, $user_id) {
+    $query = "SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$user_id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC); // Return the row array directly
+}
+
+function getCartItemsByCartId($conn, $cart_id) {
+    // Structural SQL JOIN to pull product metrics down smoothly
+    $query = "SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.name, p.price, p.image_url 
+              FROM cart_items ci
+              JOIN products p ON ci.product_id = p.product_id
+              WHERE ci.cart_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$cart_id]);
+    return $stmt;
+}
+
+// ==========================================
+// 3. CORE PROCESSING LOGICFLOW
+// ==========================================
+$user_id = 1; 
 $cart_id = null;
 $cart_items = [];
 $total_amount = 0;
 
-// Step 1: Query the carts table directly to check if a cart exists for this user
-$query_cart = "SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1";
-$stmt_cart = $conn->prepare($query_cart);
-$stmt_cart->execute([$user_id]);
-$cart_row = $stmt_cart->fetch(PDO::FETCH_ASSOC);
+// Execute inline queries
+$cart_data = getCartByUserId($conn, $user_id);
 
-if ($cart_row) {
-    $cart_id = $cart_row['cart_id'];
+if ($cart_data) {
+    $cart_id = $cart_data["cart_id"];
 
-    // Step 2: Query cart_items joined with products table using product_id column
-    $query_items = "SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.name, p.price, p.image_url 
-                    FROM cart_items ci
-                    JOIN products p ON ci.product_id = p.product_id
-                    WHERE ci.cart_id = ?";
-    
-    $stmt_items = $conn->prepare($query_items);
-    $stmt_items->execute([$cart_id]);
+    $stmt_items = getCartItemsByCartId($conn, $cart_id);
     $cart_items_num = $stmt_items->rowCount();
 
     if ($cart_items_num > 0) {
@@ -61,7 +73,9 @@ $page_title = "Shopping Cart";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
-    <link rel="stylesheet" href="../css/style.css">
+    
+    <link rel="stylesheet" href="/src/css/style.css">
+    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>

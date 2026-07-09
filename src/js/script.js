@@ -59,7 +59,7 @@ $(document).ready(function() {
     // 3. UPDATE QUANTITY VIA DIRECT INPUT CHANGE
     $(document).on("change", ".item-quantity", function() {
         var cart_item_id = $(this).data("cart_item_id");
-        var product_id = $(this).closest(".quantity-controls").find(".update-quantity").data("product_id"); 
+        var product_id = $(this).data("product_id");        
         var new_quantity = parseInt($(this).val());
 
         if (new_quantity > 0) {

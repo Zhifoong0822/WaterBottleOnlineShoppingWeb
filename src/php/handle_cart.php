@@ -1,14 +1,13 @@
 <?php
 session_start();
-header('Content-Type: application/json');
+header("Content-Type: application/json");
 
-// Enable error reporting for testing
-ini_set('display_errors', 1);
+ini_set("display_errors", 1);
 error_reporting(E_ALL);
 
-// ==========================================
-// 1. DATABASE CONFIGURATION & CONNECTION
-// ==========================================
+// =========================================================================
+// 1. INLINE DATABASE CONNECTION (Replaces DbConnection.php)
+// =========================================================================
 $host = "localhost";
 $db_name = "waterbottle_shop";
 $username = "root";
@@ -17,50 +16,40 @@ $conn = null;
 
 try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name, $username, $password);
-    // Set error mode to exception so we can catch SQL structural errors
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $conn->exec("set names utf8");
 } catch (PDOException $exception) {
-    echo json_encode(array("message" => "Database connection failed: " . $exception->getMessage()));
+    echo json_encode(array("message" => "Database connection failed."));
     exit();
 }
 
-// ==========================================
-// 2. DEFINE DUMMY USER ID (Fulfilling Foreign Key)
-// ==========================================
-$user_id = 1; 
-
-// ==========================================
-// 3. FLOW CONTROL: GET OR CREATE THE USER'S CART
-// ==========================================
+$user_id = 1;
 $cart_id = null;
 
-try {
-    $query_cart = "SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1";
-    $stmt_cart = $conn->prepare($query_cart);
-    $stmt_cart->execute([$user_id]);
-    $cart_row = $stmt_cart->fetch(PDO::FETCH_ASSOC);
+// =========================================================================
+// 2. INLINE PROCEDURAL CONTROL: GET OR CREATE USER CART (Replaces Cart.php)
+// =========================================================================
+$query_cart = "SELECT cart_id FROM carts WHERE user_id = :user_id LIMIT 1";
+$stmt_cart = $conn->prepare($query_cart);
+$stmt_cart->execute([':user_id' => $user_id]);
+$cart = $stmt_cart->fetch(PDO::FETCH_ASSOC);
 
-    if ($cart_row) {
-        $cart_id = $cart_row['cart_id'];
+if ($cart) {
+    $cart_id = $cart['cart_id'];
+} else {
+    $query_insert_cart = "INSERT INTO carts SET user_id = :user_id";
+    $stmt_insert_cart = $conn->prepare($query_insert_cart);
+    if ($stmt_insert_cart->execute([':user_id' => $user_id])) {
+        $cart_id = $conn->lastInsertId();
     } else {
-        $insert_cart = "INSERT INTO carts (user_id) VALUES (?)";
-        $stmt_insert = $conn->prepare($insert_cart);
-        if ($stmt_insert->execute([$user_id])) {
-            $cart_id = $conn->lastInsertId();
-        } else {
-            echo json_encode(array("message" => "SQL Error: Unable to create row in carts table."));
-            exit();
-        }
+        echo json_encode(array("message" => "Unable to create cart."));
+        exit();
     }
-} catch (PDOException $e) {
-    echo json_encode(array("message" => "Cart Table Exception: " . $e->getMessage()));
-    exit();
 }
 
-// ==========================================
-// 4. ACTION ROUTER & PROCESSOR
-// ==========================================
+// =========================================================================
+// 3. ACTIONS ROUTER VIA RAW INLINE PDO (Replaces CartItem.php queries)
+// =========================================================================
 if (isset($_POST["action"])) {
     switch ($_POST["action"]) {
         
@@ -68,54 +57,49 @@ if (isset($_POST["action"])) {
             $product_id = isset($_POST["product_id"]) ? intval($_POST["product_id"]) : 0;
             $quantity = isset($_POST["quantity"]) ? intval($_POST["quantity"]) : 1;
 
-            // Strict Validation Check
             if ($product_id <= 0) {
-                echo json_encode(array("message" => "Error: Received product_id is 0 or invalid. Check your HTML data-product_id attribute."));
+                echo json_encode(array("message" => "Error: Received product_id is invalid."));
                 exit();
             }
 
-            try {
-                // Check if the item already exists in this cart
-                $query_check = "SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ? LIMIT 1";
-                $stmt_check = $conn->prepare($query_check);
-                $stmt_check->execute([$cart_id, $product_id]);
-                $item = $stmt_check->fetch(PDO::FETCH_ASSOC);
+            // Check if cart item already exists
+            $query_check_item = "SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = :cart_id AND product_id = :product_id LIMIT 1";
+            $stmt_check = $conn->prepare($query_check_item);
+            $stmt_check->execute([':cart_id' => $cart_id, ':product_id' => $product_id]);
+            $item = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
-                if ($item) {
-                    $new_quantity = $item['quantity'] + $quantity;
-                    $query_update = "UPDATE cart_items SET quantity = ? WHERE cart_item_id = ?";
-                    $stmt_update = $conn->prepare($query_update);
-                    
-                    if ($stmt_update->execute([$new_quantity, $item['cart_item_id']])) {
-                        echo json_encode(array("message" => "Product quantity updated in cart."));
-                    } else {
-                        echo json_encode(array("message" => "Failed to execute UPDATE statement on database."));
-                    }
+            if ($item) {
+                // UPDATE quantity inline
+                $new_quantity = $item['quantity'] + $quantity;
+                $query_update = "UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
+                $stmt_update = $conn->prepare($query_update);
+                
+                if ($stmt_update->execute([':quantity' => $new_quantity, ':cart_item_id' => $item['cart_item_id']])) {
+                    echo json_encode(array("message" => "Product quantity updated in cart."));
                 } else {
-                    $query_add = "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)";
-                    $stmt_add = $conn->prepare($query_add);
-                    
-                    if ($stmt_add->execute([$cart_id, $product_id, $quantity])) {
-                        echo json_encode(array("message" => "Product added to cart."));
-                    } else {
-                        echo json_encode(array("message" => "Failed to execute INSERT statement on database."));
-                    }
+                    echo json_encode(array("message" => "Unable to update cart item quantity."));
                 }
-            } catch (PDOException $e) {
-                // This catches foreign key failures, structural mismatch, or unknown constraints
-                echo json_encode(array("message" => "Database Transaction Exception: " . $e->getMessage()));
+            } else {
+                // INSERT new item inline
+                $query_add = "INSERT INTO cart_items SET cart_id = :cart_id, product_id = :product_id, quantity = :quantity";
+                $stmt_add = $conn->prepare($query_add);
+                
+                if ($stmt_add->execute([':cart_id' => $cart_id, ':product_id' => $product_id, ':quantity' => $quantity])) {
+                    echo json_encode(array("message" => "Product added to cart."));
+                } else {
+                    echo json_encode(array("message" => "Unable to add product to cart."));
+                }
             }
             break;
 
         case "update_quantity":
-            // (Keeping validation identical to your structured workflow)
             $cart_item_id = intval($_POST["cart_item_id"]);
             $quantity = intval($_POST["quantity"]);
 
-            $query_qty = "UPDATE cart_items SET quantity = ? WHERE cart_item_id = ? AND cart_id = ?";
+            $query_qty = "UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
             $stmt_qty = $conn->prepare($query_qty);
             
-            if ($stmt_qty->execute([$quantity, $cart_item_id, $cart_id])) {
+            if ($stmt_qty->execute([':quantity' => $quantity, ':cart_item_id' => $cart_item_id])) {
                 echo json_encode(array("message" => "Cart item quantity updated."));
             } else {
                 echo json_encode(array("message" => "Unable to update cart item quantity."));
@@ -125,10 +109,10 @@ if (isset($_POST["action"])) {
         case "remove_from_cart":
             $cart_item_id = intval($_POST["cart_item_id"]);
 
-            $query_del = "DELETE FROM cart_items WHERE cart_item_id = ? AND cart_id = ?";
+            $query_del = "DELETE FROM cart_items WHERE cart_item_id = :cart_item_id";
             $stmt_del = $conn->prepare($query_del);
             
-            if ($stmt_del->execute([$cart_item_id, $cart_id])) {
+            if ($stmt_del->execute([':cart_item_id' => $cart_item_id])) {
                 echo json_encode(array("message" => "Product removed from cart."));
             } else {
                 echo json_encode(array("message" => "Unable to remove product from cart."));
