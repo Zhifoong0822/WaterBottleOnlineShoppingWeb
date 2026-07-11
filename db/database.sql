@@ -73,6 +73,9 @@ CREATE TABLE `orders` (
   `order_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `total_amount` DECIMAL(10, 2) NOT NULL,
   `status` ENUM('pending', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+  `recipient_name` VARCHAR(100) NOT NULL,       
+  `shipping_address` TEXT NOT NULL,             
+  `phone_number` VARCHAR(20) NOT NULL,          
   PRIMARY KEY (`order_id`),
   FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

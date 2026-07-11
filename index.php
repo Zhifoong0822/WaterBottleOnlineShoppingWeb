@@ -7,6 +7,6 @@
 </head>
 <body>
     <h1>Welcome to our Water Bottle Shop!</h1>
-    <a href="src/php/products.php">Go to ZhiFoong cart testing page</a>
+    <a href="products.php">Go to ZhiFoong cart testing page</a>
 </body>
 </html>
