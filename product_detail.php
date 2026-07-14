@@ -41,21 +41,37 @@ include '_head.php';
             <?= encode($product->description) ?>
         </p>
         
+        <!-- Dynamic Stock Level Alerts -->
         <p style="margin-bottom: 25px; font-size: 15px;">
             <strong>Availability:</strong> 
-            <span style="color: <?= $product->stock > 0 ? '#28a745' : '#dc3545' ?>; font-weight: bold;">
-                <?= $product->stock > 0 ? encode($product->stock) . ' units left in stock' : 'Out of Stock' ?>
-            </span>
+            <?php if ($product->stock == 0): ?>
+                <span style="color: #dc3545; font-weight: bold;">Out of Stock</span>
+            <?php elseif ($product->stock < 5): ?>
+                <span style="color: #dc3545; font-weight: bold;">
+                    Low Stock (⚠️ Only <?= encode($product->stock) ?> units left!)
+                </span>
+            <?php else: ?>
+                <span style="color: #28a745; font-weight: bold;">
+                    In Stock (<?= encode($product->stock) ?> units available)
+                </span>
+            <?php endif; ?>
         </p>
 
-        <!-- Interactive Cart Trigger Action Button -->
+        <!-- Dynamic Purchase Controls with Stock Validation -->
         <?php if ($product->stock > 0): ?>
-            <button class="add-to-cart" data-product_id="<?= $product->product_id ?>" 
-                    style="padding: 12px 28px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
-                Add to Cart
-            </button>
+            <div class="purchase-controls" style="display: flex; gap: 12px; align-items: center; margin-bottom: 25px;">
+                <label for="purchase-qty" style="font-weight: bold; font-size: 15px;">Quantity:</label>
+                <!-- Lock max entry value directly to current backend database stock levels -->
+                <input type="number" id="purchase-qty" value="1" min="1" max="<?= $product->stock ?>" 
+                       style="width: 70px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-size: 15px;">
+                
+                <button class="add-to-cart" data-product_id="<?= $product->product_id ?>" 
+                        style="padding: 12px 28px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
+                    Add to Cart
+                </button>
+            </div>
         <?php else: ?>
-            <button disabled style="padding: 12px 28px; background: #ccc; color: #666; border: none; border-radius: 4px; font-size: 16px; cursor: not-allowed; font-weight: bold;">
+            <button disabled style="padding: 12px 28px; background: #ccc; color: #666; border: none; border-radius: 4px; font-size: 16px; cursor: not-allowed; font-weight: bold; margin-bottom: 25px;">
                 Out of Stock
             </button>
         <?php endif; ?>
@@ -65,7 +81,6 @@ include '_head.php';
         </div>
     </div>
 </div>
-
 
 <?php
 // 8. Append structural trailing closures and footer elements

@@ -51,10 +51,22 @@ if (req('confirm_order')) {
     if (empty($phone)) $errors['phone'] = 'Phone number is required.';
 
     if (empty($errors)) {
-        $_db->beginTransaction();
+       $_db->beginTransaction();
 
         try {
-            // A. Create Parent Order Row (Matches your exact schema + new columns)
+            // 1. FIRST CHECK STOCK: Ensure everything is still available before placing order
+            $stmt_check = $_db->prepare("SELECT stock, name FROM products WHERE product_id = ? FOR UPDATE");
+            foreach ($cart_items as $item) {
+                $stmt_check->execute([$item->product_id]);
+                $prod = $stmt_check->fetch();
+                
+                if ($prod->stock < $item->quantity) {
+                    // Throw custom exception if stock is insufficient
+                    throw new Exception("Sorry, '" . encode($prod->name) . "' only has {$prod->stock} items left in stock. Please edit your cart selection.");
+                }
+            }
+
+            // A. Create Parent Order Row
             $stmt_order = $_db->prepare("
                 INSERT INTO orders (user_id, total_amount, status, recipient_name, shipping_address, phone_number, order_date) 
                 VALUES (?, ?, 'pending', ?, ?, ?, NOW())
@@ -62,18 +74,27 @@ if (req('confirm_order')) {
             $stmt_order->execute([$user_id, $total_amount, $name, $address, $phone]);
             $order_id = $_db->lastInsertId();
 
-           // B. Add Selected Items to order_items mapping (Updated to match your schema)
+            // B. Add Selected Items & C. Deduct Product Stock in DB
             $stmt_order_item = $_db->prepare("
                 INSERT INTO order_items (order_id, product_id, quantity, price) 
                 VALUES (?, ?, ?, ?)
             ");
-
+            
+            $stmt_deduct = $_db->prepare("
+                UPDATE products 
+                SET stock = stock - ? 
+                WHERE product_id = ?
+            ");
+            
             foreach ($cart_items as $item) {
-                // Passes the product price into the updated `price` column
+                // Record item in order
                 $stmt_order_item->execute([$order_id, $item->product_id, $item->quantity, $item->price]);
+                
+                // Deduct physical stock from inventory
+                $stmt_deduct->execute([$item->quantity, $item->product_id]);
             }
 
-            // C. Delete ONLY the checked items out of the cart
+            // D. Delete ONLY the checked items out of the cart
             $stmt_clear = $_db->prepare("DELETE FROM cart_items WHERE cart_item_id IN ($placeholders)");
             $stmt_clear->execute($selected_items);
 
@@ -84,7 +105,7 @@ if (req('confirm_order')) {
 
         } catch (Exception $e) {
             $_db->rollBack();
-            $errors['global'] = 'Order processing error: ' . $e->getMessage();
+            $errors['global'] = $e->getMessage();
         }
     }
 }

@@ -39,12 +39,27 @@ if (count($products) > 0) {
             echo "<a href='product_detail.php?id={$row->product_id}' style='text-decoration: none; color: inherit;'>";
                 echo "<img src='" . encode($row->image_url) . "' alt='" . encode($row->name) . "'>";
                 echo "<h3>" . encode($row->name) . "</h3>";
+            // Closing anchor tag correctly
             echo "</a>";
             
             echo "<p>" . encode($row->description) . "</p>";
             echo "<p>Price: RM" . number_format($row->price, 2) . "</p>";
-            echo "<p>Stock: " . encode($row->stock) . "</p>";
-            echo "<button class='add-to-cart' data-product_id='{$row->product_id}'>Add to Cart</button>";
+            
+            // Dynamic Inventory Stock Level Display & Alert System
+            if ($row->stock == 0) {
+                echo "<p style='color: #dc3545; font-weight: bold;'>Out of Stock</p>";
+            } elseif ($row->stock < 5) {
+                echo "<p>Stock: " . encode($row->stock) . " <span style='color: #dc3545; font-weight: bold; font-size: 13px; margin-left: 5px;'>⚠️ Only " . encode($row->stock) . " left!</span></p>";
+            } else {
+                echo "<p>Stock: " . encode($row->stock) . "</p>";
+            }
+            
+            // Context-Aware Button Action Locking
+            if ($row->stock == 0) {
+                echo "<button class='add-to-cart' style='background: #ccc; cursor: not-allowed; color: #666;' disabled>Out of Stock</button>";
+            } else {
+                echo "<button class='add-to-cart' data-product_id='{$row->product_id}'>Add to Cart</button>";
+            }
         echo "</div>";
     }
 } else {

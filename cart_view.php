@@ -24,9 +24,9 @@ $cart_data = $stmt_cart->fetch(); // Returns object row or false
 if ($cart_data) {
     $cart_id = $cart_data->cart_id;
 
-    // Relational SQL join query to filter cart contents by product name or description
+    // Relational SQL join query updated to fetch p.stock from the products catalog matrix
     $stmt_items = $_db->prepare("
-        SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.name, p.price, p.image_url 
+        SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.name, p.price, p.image_url, p.stock 
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.product_id
         WHERE ci.cart_id = ? AND (p.name LIKE ? OR p.description LIKE ?)
@@ -69,12 +69,15 @@ if ($cart_data) {
                         <h3><?= encode($item->name) ?></h3>
                         <p>Price: RM<?= number_format($item->price, 2) ?></p>
                         
-                        <div class="quantity-controls">
-                            <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="-1">-</button>
-                            <input type="number" value="<?= $item->quantity ?>" min="1" class="item-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" readonly>
-                            <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="1">+</button>
-                            <button type="button" class="remove-item" data-cart_item_id="<?= $item->cart_item_id ?>">Remove</button>
-                        </div>
+                       <!-- Change this section inside cart_view.php -->
+                    <div class="quantity-controls">
+                        <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="-1">-</button>
+                        
+                        <input type="number" value="<?= $item->quantity ?>" min="1" max="<?= $item->stock ?>" class="item-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" style="width: 60px; text-align: center;">
+                        
+                        <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="1">+</button>
+                        <button type="button" class="remove-item" data-cart_item_id="<?= $item->cart_item_id ?>">Remove</button>
+                    </div>
                     </div>
                     
                     <p style="font-weight: bold;">Subtotal: RM<?= number_format($subtotal, 2) ?></p>

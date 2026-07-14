@@ -62,19 +62,49 @@ if (isset($_POST["action"])) {
                 exit();
             }
 
-            // Check if cart item already exists
+            // 1. Fetch current stock levels for this product from the database
+            $query_stock = "SELECT stock FROM products WHERE product_id = :product_id LIMIT 1";
+            $stmt_stock = $conn->prepare($query_stock);
+            $stmt_stock->execute([':product_id' => $product_id]);
+            $product = $stmt_stock->fetch(PDO::FETCH_ASSOC);
+
+            if (!$product) {
+                echo json_encode(array("message" => "Error: Product not found."));
+                exit();
+            }
+            $current_stock = intval($product['stock']);
+
+            // 2. Check if this item already exists in the user's cart
             $query_check_item = "SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = :cart_id AND product_id = :product_id LIMIT 1";
             $stmt_check = $conn->prepare($query_check_item);
             $stmt_check->execute([':cart_id' => $cart_id, ':product_id' => $product_id]);
             $item = $stmt_check->fetch(PDO::FETCH_ASSOC);
 
+            // Determine what is currently in the cart (0 if it's a new item addition)
+            $existing_quantity = $item ? intval($item['quantity']) : 0;
+            
+            // Calculate what the absolute new total total would be
+            $combined_total = $existing_quantity + $quantity;
+
+            // 3. Stock Check Checkpoint: Deny entry if the new total exceeds inventory levels
+            if ($combined_total > $current_stock) {
+                $allowed_remaining = $current_stock - $existing_quantity;
+                
+                if ($allowed_remaining <= 0) {
+                    echo json_encode(array("message" => "You already have the maximum available stock ($current_stock units) in your cart."));
+                } else {
+                    echo json_encode(array("message" => "Cannot add quantity. You have $existing_quantity in cart, and only $allowed_remaining more units can be added."));
+                }
+                exit();
+            }
+
+            // 4. Update or Insert records once validation has successfully passed
             if ($item) {
                 // UPDATE quantity inline
-                $new_quantity = $item['quantity'] + $quantity;
                 $query_update = "UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
                 $stmt_update = $conn->prepare($query_update);
                 
-                if ($stmt_update->execute([':quantity' => $new_quantity, ':cart_item_id' => $item['cart_item_id']])) {
+                if ($stmt_update->execute([':quantity' => $combined_total, ':cart_item_id' => $item['cart_item_id']])) {
                     echo json_encode(array("message" => "Product quantity updated in cart."));
                 } else {
                     echo json_encode(array("message" => "Unable to update cart item quantity."));
