@@ -3,10 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Water Bottle Shop</title>
 </head>
 <body>
-    <h1>Welcome to our Water Bottle Shop!</h1>
-    <a href="products.php">Go to ZhiFoong cart testing page</a>
+
+<h1>Welcome to our Water Bottle Shop!</h1>
+
+<h3>Customer</h3>
+<a href="order_history.php">My Orders</a>
+
+<br><br>
+
+<h3>Admin</h3>
+<a href="admin_orders.php">Manage Orders</a>
+
+<br><br>
+
+<h3>Products</h3>
+<a href="products.php">Go to Products</a>
+
 </body>
 </html>
