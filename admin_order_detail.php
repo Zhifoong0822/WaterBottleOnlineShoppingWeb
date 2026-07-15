@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// Retrieve the latest order information.
+// Retrieve the latest order information
 $sql = "SELECT order_id, user_id, order_date, total_amount, status
         FROM orders
         WHERE order_id = ?";
