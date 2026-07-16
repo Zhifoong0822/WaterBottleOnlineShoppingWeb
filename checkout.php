@@ -13,20 +13,43 @@ $cart_items = [];
 $total_amount = 0;
 $errors = [];
 
+// =========================================================================
+// PRICE CALCULATION ENGINE: Dynamic Size-Based Multiplier Modifiers
+// =========================================================================
+function getVariantPrice($base_price, $size) {
+    $multiplier = 1.0; // Base baseline structural factor
+    
+    if (strpos($size, 'Micro') !== false) {
+        $multiplier = 1.00; // Base price
+    } elseif (strpos($size, 'Mini') !== false) {
+        $multiplier = 1.10; // +10% Scale Increase
+    } elseif (strpos($size, 'Medium') !== false) {
+        $multiplier = 1.20; // +20% Scale Increase
+    } elseif (strpos($size, 'Mega') !== false) {
+        $multiplier = 1.40; // +40% Scale Increase
+    }
+    
+    return $base_price * $multiplier;
+}
+
+// Fetch all saved address items belonging to current session user
+$stmt_addr = $_db->prepare("SELECT * FROM user_addresses WHERE user_id = ?");
+$stmt_addr->execute([$user_id]);
+$saved_addresses = $stmt_addr->fetchAll();
+
 // Grab only items that were selected via checkbox arrays
-$selected_items = req('selected_items'); // Array of cart_item_ids
+$selected_items = req('selected_items'); // Array of cart_item_ids[cite: 1]
 
 if (!is_post() || empty($selected_items)) {
-    // If they just typed the URL manually, bounce them back to the cart view
+    // If they just typed the URL manually, bounce them back to the cart view[cite: 1]
     redirect('cart_view.php');
 }
 
-// 4. Retrieve details for checked items only
-// Convert the array into a comma-separated string format safely for SQL validation
-$placeholders = implode(',', array_fill(0, count($selected_items), '?'));
+// 4. Retrieve details for checked items only (including the size configuration string column)[cite: 1]
+$placeholders = implode(',', array_fill(0, count($selected_items), '?')); //[cite: 1]
 
 $query = "
-    SELECT ci.cart_item_id, ci.quantity, p.product_id, p.name, p.price 
+    SELECT ci.cart_item_id, ci.quantity, ci.size, p.product_id, p.name, p.price 
     FROM cart_items ci
     JOIN products p ON ci.product_id = p.product_id
     WHERE ci.cart_item_id IN ($placeholders)
@@ -36,144 +59,252 @@ $stmt_items = $_db->prepare($query);
 $stmt_items->execute($selected_items);
 $cart_items = $stmt_items->fetchAll();
 
+// Calculate totals using dynamic sizing calculation method
 foreach ($cart_items as $item) {
-    $total_amount += $item->price * $item->quantity;
+    $item->computed_price = getVariantPrice($item->price, $item->size);
+    $total_amount += $item->computed_price * $item->quantity;
 }
 
-// 5. Finalize the Order Form Action processing
+// 5. Finalize the Order Form Action processing[cite: 1]
 if (req('confirm_order')) {
-    $name = req('name');
-    $address = req('address');
-    $phone = req('phone');
+    $address_type = req('address_type'); // 'saved' or 'new'
+    $name = '';
+    $phone = '';
+    $address = '';
 
-    if (empty($name)) $errors['name'] = 'Name is required.';
-    if (empty($address)) $errors['address'] = 'Shipping address is required.';
-    if (empty($phone)) $errors['phone'] = 'Phone number is required.';
+    if ($address_type === 'saved') {
+        $address_id = req('address_id');
+        if (empty($address_id)) {
+            $errors['address_id'] = 'Please select a saved address option profile.';
+        } else {
+            // Retrieve data fields out of lookup profile records directly
+            $stmt_lookup = $_db->prepare("SELECT * FROM user_addresses WHERE address_id = ? AND user_id = ?");
+            $stmt_lookup->execute([$address_id, $user_id]);
+            $addr_profile = $stmt_lookup->fetch();
+            
+            if ($addr_profile) {
+                $name = $addr_profile->recipient_name;
+                $phone = $addr_profile->phone_number;
+                $address = $addr_profile->address_text;
+            } else {
+                $errors['address_id'] = 'Selected address configuration context was invalid.';
+            }
+        }
+    } else {
+        // Fallback validation routes handling customized manual form additions[cite: 1]
+        $name = trim(req('name'));
+        $phone = trim(req('phone'));
+        $address = trim(req('address'));
+        $label = trim(req('address_label')) ?: 'Home';
+
+        if (empty($name)) $errors['name'] = 'Name is required.'; //[cite: 1]
+        if (empty($phone)) $errors['phone'] = 'Phone number is required.'; //[cite: 1]
+        if (empty($address)) $errors['address'] = 'Shipping address is required.'; //[cite: 1]
+        
+        // If inputs validate cleanly and user checked "save profile", update relational DB profiles
+        if (empty($errors) && req('save_new_address')) {
+            $stmt_save_addr = $_db->prepare("
+                INSERT INTO user_addresses (user_id, address_label, recipient_name, phone_number, address_text) 
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmt_save_addr->execute([$user_id, $label, $name, $phone, $address]);
+        }
+    }
 
     if (empty($errors)) {
-       $_db->beginTransaction();
+       $_db->beginTransaction(); //[cite: 1]
 
         try {
-            // 1. FIRST CHECK STOCK: Ensure everything is still available before placing order
-            $stmt_check = $_db->prepare("SELECT stock, name FROM products WHERE product_id = ? FOR UPDATE");
+            // 1. FIRST CHECK STOCK: Ensure everything is still available before placing order[cite: 1]
+            $stmt_check = $_db->prepare("SELECT stock, name FROM products WHERE product_id = ? FOR UPDATE"); //[cite: 1]
             foreach ($cart_items as $item) {
-                $stmt_check->execute([$item->product_id]);
-                $prod = $stmt_check->fetch();
+                $stmt_check->execute([$item->product_id]); //[cite: 1]
+                $prod = $stmt_check->fetch(); //[cite: 1]
                 
-                if ($prod->stock < $item->quantity) {
-                    // Throw custom exception if stock is insufficient
-                    throw new Exception("Sorry, '" . encode($prod->name) . "' only has {$prod->stock} items left in stock. Please edit your cart selection.");
+                if ($prod->stock < $item->quantity) { //[cite: 1]
+                    throw new Exception("Sorry, '" . encode($prod->name) . "' only has {$prod->stock} items left in stock. Please edit your cart selection."); //[cite: 1]
                 }
             }
 
-            // A. Create Parent Order Row
+            // A. Create Parent Order Row[cite: 1]
             $stmt_order = $_db->prepare("
                 INSERT INTO orders (user_id, total_amount, status, recipient_name, shipping_address, phone_number, order_date) 
                 VALUES (?, ?, 'pending', ?, ?, ?, NOW())
-            ");
-            $stmt_order->execute([$user_id, $total_amount, $name, $address, $phone]);
-            $order_id = $_db->lastInsertId();
+            "); //[cite: 1]
+            $stmt_order->execute([$user_id, $total_amount, $name, $address, $phone]); //[cite: 1]
+            $order_id = $_db->lastInsertId(); //[cite: 1]
 
-            // B. Add Selected Items & C. Deduct Product Stock in DB
+            // B. Add Selected Items & C. Deduct Product Stock in DB[cite: 1]
             $stmt_order_item = $_db->prepare("
-                INSERT INTO order_items (order_id, product_id, quantity, price) 
-                VALUES (?, ?, ?, ?)
+                INSERT INTO order_items (order_id, product_id, size, quantity, price) 
+                VALUES (?, ?, ?, ?, ?)
             ");
             
             $stmt_deduct = $_db->prepare("
                 UPDATE products 
                 SET stock = stock - ? 
                 WHERE product_id = ?
-            ");
+            "); //[cite: 1]
             
             foreach ($cart_items as $item) {
-                // Record item in order
-                $stmt_order_item->execute([$order_id, $item->product_id, $item->quantity, $item->price]);
+                // Record item variant configuration details inside static historical ledger orders 
+                $stmt_order_item->execute([$order_id, $item->product_id, $item->size, $item->quantity, $item->computed_price]);
                 
-                // Deduct physical stock from inventory
-                $stmt_deduct->execute([$item->quantity, $item->product_id]);
+                // Deduct physical stock from inventory[cite: 1]
+                $stmt_deduct->execute([$item->quantity, $item->product_id]); //[cite: 1]
             }
 
-            // D. Delete ONLY the checked items out of the cart
-            $stmt_clear = $_db->prepare("DELETE FROM cart_items WHERE cart_item_id IN ($placeholders)");
-            $stmt_clear->execute($selected_items);
+            // D. Delete ONLY the checked items out of the cart[cite: 1]
+            $stmt_clear = $_db->prepare("DELETE FROM cart_items WHERE cart_item_id IN ($placeholders)"); //[cite: 1]
+            $stmt_clear->execute($selected_items); //[cite: 1]
 
-            $_db->commit();
+            $_db->commit(); //[cite: 1]
             
-            echo "<script>alert('Order placed successfully!'); window.location.href='products.php';</script>";
-            exit;
+            echo "<script>alert('Order placed successfully!'); window.location.href='products.php';</script>"; //[cite: 1]
+            exit; //[cite: 1]
 
         } catch (Exception $e) {
-            $_db->rollBack();
-            $errors['global'] = $e->getMessage();
+            $_db->rollBack(); //[cite: 1]
+            $errors['global'] = $e->getMessage(); //[cite: 1]
         }
     }
 }
 ?>
 
-<div class="checkout-container" style="max-width: 800px; margin: 30px auto; padding: 0 20px; display: flex; gap: 30px;">
+<div class="checkout-container" style="max-width: 900px; margin: 30px auto; padding: 0 20px; display: flex; gap: 30px;">
     
-    <!-- Left: Order Summary Display -->
+    <!-- Left: Order Summary Display[cite: 1] -->
     <div style="flex: 1; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd; height: fit-content;">
-        <h3>Selected Items</h3>
+        <h3>Order Summary</h3>
         <hr style="border:0; border-top:1px solid #ccc; margin: 10px 0;">
         <ul style="list-style: none; padding: 0; margin: 0;">
             <?php foreach ($cart_items as $item): ?>
-                <li style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
-                    <span><?= encode($item->name) ?> (x<?= $item->quantity ?>)</span>
-                    <span>RM<?= number_format($item->price * $item->quantity, 2) ?></span>
+                <li style="margin-bottom: 12px; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                        <span><?= encode($item->name) ?> (x<?= $item->quantity ?>)</span>
+                        <span>RM<?= number_format($item->computed_price * $item->quantity, 2) ?></span>
+                    </div>
+                    <div style="font-size: 12px; color: #666; font-style: italic;">
+                        Size: <?= encode($item->size) ?> (RM<?= number_format($item->computed_price, 2) ?> each)
+                    </div>
                 </li>
             <?php endforeach; ?>
         </ul>
         <hr style="border:0; border-top:1px solid #ccc; margin: 15px 0;">
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px;">
-            <span>Total:</span>
+            <span>Grand Total:</span>
             <span style="color: #28a745;">RM<?= number_format($total_amount, 2) ?></span>
         </div>
     </div>
 
-    <!-- Right: Shipping details data forms -->
-    <div style="flex: 1.2;">
+    <!-- Right: Shipping details data forms[cite: 1] -->
+    <div style="flex: 1.3;">
         <h3>Shipping Details</h3>
         
         <?php if (isset($errors['global'])): ?>
-            <p style="color: red; font-weight: bold;"><?= encode($errors['global']) ?></p>
+            <p style="color: red; font-weight: bold;"><?= encode($errors['global']) ?></p> <!--[cite: 1] -->
         <?php endif; ?>
 
         <form method="post" action="checkout.php" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
-            <!-- Re-pass selected items down into form so submission retains scope array -->
+            <!-- Re-pass selected items down into form so submission retains scope array[cite: 1] -->
             <?php foreach ($selected_items as $id): ?>
-                <input type="hidden" name="selected_items[]" value="<?= $id ?>">
+                <input type="hidden" name="selected_items[]" value="<?= $id ?>"> <!--[cite: 1] -->
             <?php endforeach; ?>
             
-            <input type="hidden" name="confirm_order" value="1">
+            <input type="hidden" name="confirm_order" value="1"> <!--[cite: 1] -->
 
-            <div>
-                <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Full Name</label>
-                <input type="text" name="name" value="<?= encode(req('name')) ?>" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <span style="color: red; font-size: 12px;"><?= $errors['name'] ?? '' ?></span>
+            <!-- Address Choice Selector Matrix -->
+            <div style="background: #f1f3f5; padding: 15px; border-radius: 6px; border: 1px solid #e2e6ea;">
+                <p style="font-weight: bold; margin-bottom: 10px; font-size: 14px;">Select Delivery Option:</p>
+                
+                <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+                    <input type="radio" name="address_type" value="saved" checked onclick="toggleAddressFields('saved')">
+                    Use a Saved Address Profile
+                </label>
+                
+                <label style="display: block; cursor: pointer;">
+                    <input type="radio" name="address_type" value="new" onclick="toggleAddressFields('new')">
+                    Ship to a New Address Instead
+                </label>
             </div>
 
-            <div>
-                <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Phone Number</label>
-                <input type="text" name="phone" value="<?= encode(req('phone')) ?>" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                <span style="color: red; font-size: 12px;"><?= $errors['phone'] ?? '' ?></span>
+            <!-- Block A: Dropdown showing existing options -->
+            <div id="saved-address-block">
+                <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Choose Address Profile</label>
+                <?php if (count($saved_addresses) > 0): ?>
+                    <select name="address_id" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                        <?php foreach ($saved_addresses as $addr): ?>
+                            <option value="<?= $addr->address_id ?>">
+                                [<?= encode($addr->address_label) ?>] <?= encode($addr->recipient_name) ?> - <?= encode($addr->address_text) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span style="color: red; font-size: 12px;"><?= $errors['address_id'] ?? '' ?></span>
+                <?php else: ?>
+                    <p style="color:#666; font-size:13px; font-style:italic;">No addresses saved yet. Select "Ship to a New Address Instead" below.</p>
+                <?php endif; ?>
             </div>
 
-            <div>
-                <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Delivery Address</label>
-                <textarea name="address" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none;"><?= encode(req('address')) ?></textarea>
-                <span style="color: red; font-size: 12px;"><?= $errors['address'] ?? '' ?></span>
+            <!-- Block B: Input fields processing new entries manually -->
+            <div id="new-address-block" style="display: none; flex-direction: column; gap: 15px; border-left: 3px solid #007bff; padding-left: 15px;">
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Address Label (e.g. Home, Secondary)</label>
+                    <input type="text" name="address_label" value="<?= encode(req('address_label')) ?>" placeholder="Home" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Full Name</label> <!--[cite: 1] -->
+                    <input type="text" name="name" value="<?= encode(req('name')) ?>" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"> <!--[cite: 1] -->
+                    <span style="color: red; font-size: 12px;"><?= $errors['name'] ?? '' ?></span> <!--[cite: 1] -->
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Phone Number</label> <!--[cite: 1] -->
+                    <input type="text" name="phone" value="<?= encode(req('phone')) ?>" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"> <!--[cite: 1] -->
+                    <span style="color: red; font-size: 12px;"><?= $errors['phone'] ?? '' ?></span> <!--[cite: 1] -->
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Delivery Address</label> <!--[cite: 1] -->
+                    <textarea name="address" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none;"><?= encode(req('address')) ?></textarea> <!--[cite: 1] -->
+                    <span style="color: red; font-size: 12px;"><?= $errors['address'] ?? '' ?></span> <!--[cite: 1] -->
+                </div>
+
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;">
+                    <input type="checkbox" name="save_new_address" value="1" checked>
+                    Save this address to my profile configuration for next time
+                </label>
             </div>
 
             <button type="submit" style="padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;">
-                Place Order (Confirm Checkout)
+                Place Order (Confirm Checkout) <!--[cite: 1] -->
             </button>
-            <a href="cart_view.php" style="text-align: center; color: #666; font-size: 14px; text-decoration: none; margin-top: 5px;">Cancel and Return to Cart</a>
+            <a href="cart_view.php" style="text-align: center; color: #666; font-size: 14px; text-decoration: none; margin-top: 5px;">Cancel and Return to Cart</a> <!--[cite: 1] -->
         </form>
     </div>
 </div>
 
+<script>
+// Toggle UI inputs dynamically between saved values list and manual input entries
+function toggleAddressFields(mode) {
+    var savedBlock = document.getElementById('saved-address-block');
+    var newBlock = document.getElementById('new-address-block');
+    
+    if (mode === 'saved') {
+        savedBlock.style.display = 'block';
+        newBlock.style.display = 'none';
+    } else {
+        savedBlock.style.display = 'none';
+        newBlock.style.display = 'flex';
+    }
+}
+
+// Retain visibility settings correctly if form updates due to validation errors
+<?php if (req('address_type') === 'new' || isset($errors['name']) || isset($errors['phone']) || isset($errors['address'])): ?>
+    document.querySelector('input[name="address_type"][value="new"]').click();
+<?php endif; ?>
+</script>
+
 <?php
-include '_foot.php'; 
+include '_foot.php'; //[cite: 1]
 ?>
