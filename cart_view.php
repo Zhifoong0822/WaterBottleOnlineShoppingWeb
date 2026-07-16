@@ -8,7 +8,6 @@ $_title = "Shopping Cart";
 // 3. Inject standard layout structure, styling mappings, and navigation structures
 include '_head.php'; 
 
-// 4. Executing local structural database collection flows via $_db
 $user_id = 1; 
 $cart_id = null;
 $cart_items = [];
@@ -16,23 +15,38 @@ $cart_items = [];
 // Capture the search keyword from the GET request
 $search = req('search'); 
 
+// Price Calculation Engine Helper Function Matrix inside PHP routine context
+function getVariantPrice($base_price, $size) {
+    $multiplier = 1.0;
+    if (strpos($size, 'Micro') !== false) {
+        $multiplier = 1.00;
+    } elseif (strpos($size, 'Mini') !== false) {
+        $multiplier = 1.10;
+    } elseif (strpos($size, 'Medium') !== false) {
+        $multiplier = 1.20;
+    } elseif (strpos($size, 'Mega') !== false) {
+        $multiplier = 1.40;
+    }
+    return $base_price * $multiplier;
+}
+
 // Query matching the class-assigned database layer
 $stmt_cart = $_db->prepare("SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1");
 $stmt_cart->execute([$user_id]);
-$cart_data = $stmt_cart->fetch(); // Returns object row or false
+$cart_data = $stmt_cart->fetch(); 
 
 if ($cart_data) {
     $cart_id = $cart_data->cart_id;
 
-    // Relational SQL join query updated to fetch p.stock from the products catalog matrix
+    // Relational SQL join query UPDATED to fetch ci.size data elements out of storage rows
     $stmt_items = $_db->prepare("
-        SELECT ci.cart_item_id, ci.product_id, ci.quantity, p.name, p.price, p.image_url, p.stock 
+        SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, p.name, p.price, p.image_url, p.stock 
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.product_id
         WHERE ci.cart_id = ? AND (p.name LIKE ? OR p.description LIKE ?)
     ");
     $stmt_items->execute([$cart_id, "%$search%", "%$search%"]);
-    $cart_items = $stmt_items->fetchAll(); // Maps all entities cleanly as objects
+    $cart_items = $stmt_items->fetchAll(); 
 }
 ?>
 
@@ -56,36 +70,48 @@ if ($cart_data) {
     <form id="cart-selection-form" method="post" action="checkout.php">
         <div class="cart-items">
             <?php foreach ($cart_items as $item) : ?>
-                <?php $subtotal = $item->price * $item->quantity; ?>
+                <?php 
+                // Dynamic sizing logic execution engine calculation checkpoint
+                $computed_unit_price = getVariantPrice($item->price, $item->size);
+                $subtotal = $computed_unit_price * $item->quantity; 
+                ?>
                 <div class="cart-item-card" style="display: flex; align-items: center; gap: 20px; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                     
-                    <!-- Checkbox for item selection -->
+                    <!-- Checkbox for item selection populated with updated premium pricing configurations -->
                     <input type="checkbox" name="selected_items[]" value="<?= $item->cart_item_id ?>" class="item-checkbox" checked 
                            data-subtotal="<?= $subtotal ?>" style="width: 20px; height: 20px; cursor: pointer;">
                     
-                    <img src="<?= encode($item->image_url) ?>" alt="<?= encode($item->name) ?>" style="width: 80px; height: 80px; object-fit: cover;">
+                    <img src="<?= encode($item->image_url) ?>" alt="<?= encode($item->name) ?>" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
                     
                     <div style="flex: 1;">
-                        <h3><?= encode($item->name) ?></h3>
-                        <p>Price: RM<?= number_format($item->price, 2) ?></p>
+                        <h3 style="margin: 0 0 5px 0;"><?= encode($item->name) ?></h3>
                         
-                       <!-- Change this section inside cart_view.php -->
-                    <div class="quantity-controls">
-                        <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="-1">-</button>
+                        <!-- Added display layout element specifically calling out chosen variant metrics -->
+                        <div style="font-size: 13px; color: #495057; font-weight: bold; background: #e9ecef; display: inline-block; padding: 3px 8px; border-radius: 4px; margin-bottom: 8px;">
+                            Size Class: <?= encode($item->size) ?>
+                        </div>
+
+                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
+                            Price: RM<?= number_format($computed_unit_price, 2) ?> 
+                            <span style="font-size:11px; color:#999;">(Base: RM<?= number_format($item->price, 2) ?>)</span>
+                        </p>
                         
-                        <input type="number" value="<?= $item->quantity ?>" min="1" max="<?= $item->stock ?>" class="item-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" style="width: 60px; text-align: center;">
+                    <div class="quantity-controls" style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="-1" style="padding: 2px 8px;">-</button>
                         
-                        <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="1">+</button>
-                        <button type="button" class="remove-item" data-cart_item_id="<?= $item->cart_item_id ?>">Remove</button>
+                        <input type="number" value="<?= $item->quantity ?>" min="1" max="<?= $item->stock ?>" class="item-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" style="width: 50px; text-align: center;">
+                        
+                        <button type="button" class="update-quantity" data-cart_item_id="<?= $item->cart_item_id ?>" data-product_id="<?= $item->product_id ?>" data-change="1" style="padding: 2px 8px;">+</button>
+                        <button type="button" class="remove-item" data-cart_item_id="<?= $item->cart_item_id ?>" style="margin-left: 15px; background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px;">Remove</button>
                     </div>
                     </div>
                     
-                    <p style="font-weight: bold;">Subtotal: RM<?= number_format($subtotal, 2) ?></p>
+                    <p style="font-weight: bold; font-size: 16px;">Subtotal: RM<?= number_format($subtotal, 2) ?></p>
                 </div>
             <?php endforeach; ?>
         </div>
         
-        <div class="cart-summary" style="text-align: right; margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+        <div class="cart-summary" style="text-align: right; margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
             <h2>Total Selected: RM<span id="grand-total">0.00</span></h2>
             <button type="submit" style="margin-top: 15px; padding: 12px 25px; background: #28a745; color: white; border: none; font-weight: bold; border-radius: 4px; font-size: 16px; cursor: pointer;">
                 Proceed to Checkout &rarr;

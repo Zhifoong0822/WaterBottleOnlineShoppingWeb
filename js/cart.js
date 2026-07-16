@@ -1,5 +1,4 @@
 // File Path: js/cart.js
-console.log("cart.js has successfully loaded!"); // <-- ADD THIS LINE
 
 $(document).ready(function() {
 
@@ -16,13 +15,15 @@ $(document).ready(function() {
 
         var qtyToAdd = qtyInput.length ? parseInt(qtyInput.val()) : 1;
         var maxStock = qtyInput.length ? parseInt(qtyInput.attr("max")) : null;
+        
+        // Grab the value of the checked sizing radio element on the detail screen
+        var selectedSize = $("input[name='product-size']:checked").val() || "Medium (18oz / 530ml)";
 
         if (isNaN(qtyToAdd) || qtyToAdd < 1) {
             alert("Please enter a valid quantity of 1 or more.");
             return;
         }
 
-        // Local check: Block entries higher than the single item limit immediately
         if (maxStock !== null && !isNaN(maxStock)) {
             if (qtyToAdd > maxStock) {
                 alert("You cannot add " + qtyToAdd + " units. Only " + maxStock + " units are available in stock.");
@@ -31,16 +32,15 @@ $(document).ready(function() {
             }
         }
         
-        // Fire AJAX Pipeline
+        // Fire AJAX Pipeline (Now bundling the size parameter option)
         $.post("handle_cart.php", {
             action: "add_to_cart",
             product_id: product_id,
-            quantity: qtyToAdd 
+            quantity: qtyToAdd,
+            size: selectedSize // Sent directly to backend handle_cart.php script
         }, function(response) {
             if (response.success || response.message === "Product added to cart." || response.message === "Product quantity updated in cart.") {
-                if (confirm(response.message + " View cart?")) {
-                    window.location.href = "cart_view.php";
-                }
+                showCartConfirmation(response.message);
             } else {
                 alert(response.message);
             }
@@ -139,4 +139,40 @@ $(document).ready(function() {
         }
     });
 
+    // 5. MODAL EVENT HANDLERS (Now kept neatly inside the document ready wrapper)
+    $(document).on("click", "#cart-confirmation-close", function() {
+        var modal = document.getElementById("cart-confirmation-modal");
+        if (modal) {
+            modal.classList.remove("is-visible");
+            modal.setAttribute("aria-hidden", "true");
+        }
+    });
+
+    $(document).on("click", "#cart-confirmation-view", function() {
+        window.location.href = "cart_view.php";
+    });
+
+    $(document).on("click", "#cart-confirmation-modal", function(event) {
+        if (event.target === this) {
+            $("#cart-confirmation-close").trigger("click");
+        }
+    });
+
 });
+
+// Global Function (Must remain outside of ready wrapper so other files can trigger it)
+function showCartConfirmation(message) {
+    var modal = document.getElementById("cart-confirmation-modal");
+
+    if (!modal) {
+        if (confirm(message + " View cart?")) {
+            window.location.href = "cart_view.php";
+        }
+        return;
+    }
+
+    document.getElementById("cart-confirmation-message").textContent = message + " View your cart?";
+    modal.classList.add("is-visible");
+    modal.setAttribute("aria-hidden", "false");
+    document.getElementById("cart-confirmation-view").focus();
+}
