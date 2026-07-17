@@ -1,159 +1,108 @@
 <?php
-session_start();
+// 1. Load configuration utilities, session variables, and global $_db
+require '_base.php'; 
 header("Content-Type: application/json");
 
-ini_set("display_errors", 1);
-error_reporting(E_ALL);
-
-// =========================================================================
-// 1. INLINE DATABASE CONNECTION (Replaces DbConnection.php)
-// =========================================================================
-$host = "localhost";
-$db_name = "waterbottle_shop";
-$username = "root";
-$password = "";
-$conn = null;
-
-try {
-    $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name, $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $conn->exec("set names utf8");
-} catch (PDOException $exception) {
-    echo json_encode(array("message" => "Database connection failed."));
-    exit();
-}
-
-$user_id = 1;
+$user_id = 1; // Handled dynamically or mocked for your session persistence
 $cart_id = null;
 
-// =========================================================================
-// 2. INLINE PROCEDURAL CONTROL: GET OR CREATE USER CART (Replaces Cart.php)
-// =========================================================================
-$query_cart = "SELECT cart_id FROM carts WHERE user_id = :user_id LIMIT 1";
-$stmt_cart = $conn->prepare($query_cart);
-$stmt_cart->execute([':user_id' => $user_id]);
-$cart = $stmt_cart->fetch(PDO::FETCH_ASSOC);
+// 2. Fetch or create the active user cart wrapper
+$stmt_cart = $_db->prepare("SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1");
+$stmt_cart->execute([$user_id]);
+$cart_data = $stmt_cart->fetch(); // Fetches as an object via your framework configuration
 
-if ($cart) {
-    $cart_id = $cart['cart_id'];
+if ($cart_data) {
+    $cart_id = $cart_data->cart_id;
 } else {
-    $query_insert_cart = "INSERT INTO carts SET user_id = :user_id";
-    $stmt_insert_cart = $conn->prepare($query_insert_cart);
-    if ($stmt_insert_cart->execute([':user_id' => $user_id])) {
-        $cart_id = $conn->lastInsertId();
-    } else {
-        echo json_encode(array("message" => "Unable to create cart."));
-        exit();
-    }
+    $stmt_ins_cart = $_db->prepare("INSERT INTO carts (user_id) VALUES (?)");
+    $stmt_ins_cart->execute([$user_id]);
+    $cart_id = $_db->lastInsertId();
 }
 
-// =========================================================================
-// 3. ACTIONS ROUTER VIA RAW INLINE PDO (Replaces CartItem.php queries)
-// =========================================================================
-if (isset($_POST["action"])) {
-    switch ($_POST["action"]) {
-        
-        case "add_to_cart":
-            $product_id = isset($_POST["product_id"]) ? intval($_POST["product_id"]) : 0;
-            $quantity = isset($_POST["quantity"]) ? intval($_POST["quantity"]) : 1;
+// 3. Process requests via the system framework req() utility
+$action = req('action');
 
-            if ($product_id <= 0) {
-                echo json_encode(array("message" => "Error: Received product_id is invalid."));
-                exit();
-            }
+switch ($action) {
+    
+    case "add_to_cart":
+        $product_id = intval(req('product_id'));
+        $quantity = intval(req('quantity')) ?: 1;
+        // Capture the explicit text value from the selected size chip group
+        $size = req('size') ?: "Medium (18oz / 530ml)";
 
-            // 1. Fetch current stock levels for this product from the database
-            $query_stock = "SELECT stock FROM products WHERE product_id = :product_id LIMIT 1";
-            $stmt_stock = $conn->prepare($query_stock);
-            $stmt_stock->execute([':product_id' => $product_id]);
-            $product = $stmt_stock->fetch(PDO::FETCH_ASSOC);
+        if ($product_id <= 0) {
+            echo json_encode(["message" => "Error: Invalid product tracking identification."]);
+            exit;
+        }
 
-            if (!$product) {
-                echo json_encode(array("message" => "Error: Product not found."));
-                exit();
-            }
-            $current_stock = intval($product['stock']);
+        // Fetch current physical stock levels from the database catalog matrix
+        $stmt_stock = $_db->prepare("SELECT stock FROM products WHERE product_id = ? LIMIT 1");
+        $stmt_stock->execute([$product_id]);
+        $product = $stmt_stock->fetch();
 
-            // 2. Check if this item already exists in the user's cart
-            $query_check_item = "SELECT cart_item_id, quantity FROM cart_items WHERE cart_id = :cart_id AND product_id = :product_id LIMIT 1";
-            $stmt_check = $conn->prepare($query_check_item);
-            $stmt_check->execute([':cart_id' => $cart_id, ':product_id' => $product_id]);
-            $item = $stmt_check->fetch(PDO::FETCH_ASSOC);
+        if (!$product) {
+            echo json_encode(["message" => "Error: Product variant context not found."]);
+            exit;
+        }
 
-            // Determine what is currently in the cart (0 if it's a new item addition)
-            $existing_quantity = $item ? intval($item['quantity']) : 0;
-            
-            // Calculate what the absolute new total total would be
-            $combined_total = $existing_quantity + $quantity;
+        // =========================================================================
+        // CRITICAL FIX: Match BOTH product_id AND size configuration columns
+        // =========================================================================
+        $stmt_check = $_db->prepare("
+            SELECT cart_item_id, quantity 
+            FROM cart_items 
+            WHERE cart_id = ? AND product_id = ? AND size = ? 
+            LIMIT 1
+        ");
+        $stmt_check->execute([$cart_id, $product_id, $size]);
+        $existing_item = $stmt_check->fetch();
 
-            // 3. Stock Check Checkpoint: Deny entry if the new total exceeds inventory levels
-            if ($combined_total > $current_stock) {
-                $allowed_remaining = $current_stock - $existing_quantity;
-                
-                if ($allowed_remaining <= 0) {
-                    echo json_encode(array("message" => "You already have the maximum available stock ($current_stock units) in your cart."));
-                } else {
-                    echo json_encode(array("message" => "Cannot add quantity. You have $existing_quantity in cart, and only $allowed_remaining more units can be added."));
-                }
-                exit();
-            }
+        $existing_quantity = $existing_item ? intval($existing_item->quantity) : 0;
+        $combined_total = $existing_quantity + $quantity;
 
-            // 4. Update or Insert records once validation has successfully passed
-            if ($item) {
-                // UPDATE quantity inline
-                $query_update = "UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
-                $stmt_update = $conn->prepare($query_update);
-                
-                if ($stmt_update->execute([':quantity' => $combined_total, ':cart_item_id' => $item['cart_item_id']])) {
-                    echo json_encode(array("message" => "Product quantity updated in cart."));
-                } else {
-                    echo json_encode(array("message" => "Unable to update cart item quantity."));
-                }
-            } else {
-                // INSERT new item inline
-                $query_add = "INSERT INTO cart_items SET cart_id = :cart_id, product_id = :product_id, quantity = :quantity";
-                $stmt_add = $conn->prepare($query_add);
-                
-                if ($stmt_add->execute([':cart_id' => $cart_id, ':product_id' => $product_id, ':quantity' => $quantity])) {
-                    echo json_encode(array("message" => "Product added to cart."));
-                } else {
-                    echo json_encode(array("message" => "Unable to add product to cart."));
-                }
-            }
-            break;
+        // Inventory safety guard check
+        if ($combined_total > $product->stock) {
+            echo json_encode(["message" => "Cannot add quantity. Total would exceed available inventory ({$product->stock} units)."]);
+            exit;
+        }
 
-        case "update_quantity":
-            $cart_item_id = intval($_POST["cart_item_id"]);
-            $quantity = intval($_POST["quantity"]);
+        if ($existing_item) {
+            // Increments ONLY if they added the exact same product with the exact same size
+            $stmt_update = $_db->prepare("UPDATE cart_items SET quantity = ? WHERE cart_item_id = ?");
+            $stmt_update->execute([$combined_total, $existing_item->cart_item_id]);
+            echo json_encode(["message" => "Quantity updated for this size variant."]);
+        } else {
+            // Inserts a BRAND NEW row if the size string is different!
+            $stmt_insert = $_db->prepare("INSERT INTO cart_items (cart_id, product_id, size, quantity) VALUES (?, ?, ?, ?)");
+            $stmt_insert->execute([$cart_id, $product_id, $size, $quantity]);
+            echo json_encode(["message" => "New size variant added to cart."]);
+        }
+        break;
 
-            $query_qty = "UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :cart_item_id";
-            $stmt_qty = $conn->prepare($query_qty);
-            
-            if ($stmt_qty->execute([':quantity' => $quantity, ':cart_item_id' => $cart_item_id])) {
-                echo json_encode(array("message" => "Cart item quantity updated."));
-            } else {
-                echo json_encode(array("message" => "Unable to update cart item quantity."));
-            }
-            break;
+    case "update_quantity":
+        $cart_item_id = intval(req('cart_item_id'));
+        $quantity = intval(req('quantity'));
 
-        case "remove_from_cart":
-            $cart_item_id = intval($_POST["cart_item_id"]);
+        $stmt_qty = $_db->prepare("UPDATE cart_items SET quantity = ? WHERE cart_item_id = ?");
+        if ($stmt_qty->execute([$quantity, $cart_item_id])) {
+            echo json_encode(["message" => "Cart item quantity updated."]);
+        } else {
+            echo json_encode(["message" => "Unable to modify quantity layers."]);
+        }
+        break;
 
-            $query_del = "DELETE FROM cart_items WHERE cart_item_id = :cart_item_id";
-            $stmt_del = $conn->prepare($query_del);
-            
-            if ($stmt_del->execute([':cart_item_id' => $cart_item_id])) {
-                echo json_encode(array("message" => "Product removed from cart."));
-            } else {
-                echo json_encode(array("message" => "Unable to remove product from cart."));
-            }
-            break;
+    case "remove_from_cart":
+        $cart_item_id = intval(req('cart_item_id'));
 
-        default:
-            echo json_encode(array("message" => "Invalid action."));
-            break;
-    }
-} else {
-    echo json_encode(array("message" => "No action specified."));
+        $stmt_del = $_db->prepare("DELETE FROM cart_items WHERE cart_item_id = ?");
+        if ($stmt_del->execute([$cart_item_id])) {
+            echo json_encode(["message" => "Item removed successfully."]);
+        } else {
+            echo json_encode(["message" => "Unable to clear target record rows."]);
+        }
+        break;
+
+    default:
+        echo json_encode(["message" => "Invalid framework action requested."]);
+        break;
 }
-?>

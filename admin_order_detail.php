@@ -388,7 +388,7 @@ $status_class = "status-" . strtolower($order['status']);
                 method="POST"
                 action="admin_order_detail.php?id=<?php echo urlencode($order['order_id']); ?>"
                 onsubmit="return confirmStatusUpdate();"
-            >
+       >
 
                 <div class="form-group">
 
@@ -440,18 +440,21 @@ $status_class = "status-" . strtolower($order['status']);
 
 </div>
 
+
 <script>
+
+
 function confirmStatusUpdate() {
     const statusSelect = document.getElementById("status");
     const selectedStatus =
         statusSelect.options[statusSelect.selectedIndex].text;
-
     return confirm(
         "Are you sure you want to update this order status to " +
         selectedStatus +
         "?"
     );
 }
+
 </script>
 
 </body>
