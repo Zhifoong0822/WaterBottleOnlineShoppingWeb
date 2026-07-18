@@ -15,6 +15,8 @@
 <br><br>
 
 <h3>Admin</h3>
+<a href="pages/admin/admin_products.php">Manage Products</a>
+<br>
 <a href="admin_orders.php">Manage Orders</a>
 
 <br><br>
