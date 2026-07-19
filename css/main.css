@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 /* ==========================================================================
    Global Reset & Layout Styles (Fixes Head and Footer Styling)
    ========================================================================== */
@@ -6,6 +7,30 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+=======
+/* File Path: css/main.css */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+
+    background-color: #f4f4f4;
+    color: #333;
+>>>>>>> Stashed changes
 }
 
 body {
@@ -85,9 +110,32 @@ footer p {
     background: #0056b3;
 }
 
+<<<<<<< Updated upstream
 /* ==========================================================================
    2. Grid Container Setup 
    ========================================================================== */
+=======
+nav ul li a {
+    color: #fff;
+    text-decoration: none;
+}
+
+main {
+    flex: 1;
+
+    width: calc(100% - 40px);
+    max-width: 1200px;
+
+    padding: 20px;
+    margin: 20px auto;
+
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Product Catalogue Layouts */
+>>>>>>> Stashed changes
 .product-grid {
     display: grid;
     /* This creates a dynamic grid that wraps items automatically instead of piling them up */
@@ -147,6 +195,7 @@ footer p {
 }
 
 .add-to-cart {
+<<<<<<< Updated upstream
     width: 100%;
     padding: 10px;
     background: #007bff;
@@ -293,4 +342,27 @@ footer p {
 
 .size-options .size-chip:hover {
     border-color: #007bff;
+=======
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.add-to-cart:hover {
+    background-color: #0056b3;
+}
+
+footer {
+    width: 100%;
+    margin-top: auto;
+    padding: 1.5rem 20px;
+
+    text-align: center;
+    background-color: #333;
+    color: #fff;
+>>>>>>> Stashed changes
 }
