@@ -235,17 +235,4 @@ function confirmStatusUpdate() {
 
 </script>
 
-<<<<<<< Updated upstream
-</body>
-
-</html>
-
-<?php
-
-$stmt->close();
-$conn->close();
-
-?>
-=======
 <?php require "_foot.php"; ?>
->>>>>>> Stashed changes
