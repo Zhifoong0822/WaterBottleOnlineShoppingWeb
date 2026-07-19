@@ -24,20 +24,26 @@ CREATE TABLE `categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- Table structure for table `products` (Updated with category_id)
+-- Table structure for table `products` (Updated with category_id, size & colour in prod db)
 -- =========================================================
 CREATE TABLE `products` (
   `product_id` INT(11) NOT NULL AUTO_INCREMENT,
-  `category_id` INT(11) DEFAULT NULL,
+  -- Every product must belong to one category
+  `category_id` INT(11) NOT NULL,  
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT,
-  `price` DECIMAL(10, 2) NOT NULL,
-  `stock` INT(11) NOT NULL DEFAULT '0',
+  `price` DECIMAL(10,2) NOT NULL,
+  `stock` INT(11) NOT NULL DEFAULT 0,
+  `size` VARCHAR(30) NOT NULL,
+  `colour` VARCHAR(50) NOT NULL,
   `image_url` VARCHAR(255),
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`product_id`),
-  FOREIGN KEY (`category_id`) REFERENCES `categories`(`category_id`) ON DELETE SET NULL
+  PRIMARY KEY (`product_id`), CONSTRAINT fk_product_category
+  FOREIGN KEY (`category_id`) REFERENCES `categories`(`category_id`)
+      ON DELETE RESTRICT -- Prevent deletion of a category if products exist--
+      ON UPDATE CASCADE
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
@@ -142,10 +148,19 @@ INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `pho
 INSERT INTO `categories` (`category_name`) VALUES 
 ("Ace Bottle Series"), 
 ("Sense Cup Series"),
-("Knight Tumbler Series");
+("Knight Tumbler Series"),
+('Kids Collection'),
+('Accessories');
 
 -- Insert Products associated with Categories
-INSERT INTO `products` (`category_id`, `name`, `description`, `price`, `stock`, `image_url`) VALUES
-(1, "Ace Active Bottle", "A stylish, heavy-duty insulated water bottle built for sports.", 15.99, 100, "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
-(2, "Sense Coffee Cup", "Insulated travel cup designed to keep your drinks hot for 12 hours.", 22.50, 75, "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=500&auto=format&fit=crop"),
-(1, "Ace Mega Explorer", "Massive container capacity for ultra endurance trips.", 12.00, 120, "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop");
+INSERT INTO `products`(`category_id`, `name`, `description`, `price`, `stock`, `size`, `colour`, `image_url`) VALUES
+(1, "Ace Active Bottle", "Double-wall insulated bottle for everyday hydration.", 89.00, 38, "530ml", "Navy Apricot", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(1, "Ace Active Bottle", "Double-wall insulated bottle for everyday hydration.", 99.00, 25, "410ml", "Pink Cream", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(1, "Ace Mega Explorer", "Large capacity insulated bottle for outdoor adventures.", 129.00, 15, "950ml", "Linen Blue", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
+(1, "Ace Mega Explorer", "Large capacity insulated bottle for outdoor adventures.", 129.00, 12, "950ml", "Midtown Pearl", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
+(2, "Sense Coffee Cup", "Premium insulated coffee tumbler.", 89.00, 28, "500ml", "Black", "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=500&auto=format&fit=crop"),
+(3, "Knight Tumbler", "Durable stainless steel tumbler for daily use.", 99.00, 36, "600ml", "Silver", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
+(4, "Kids Bottle", "Leak-proof insulated bottle designed for children.", 69.00, 40, "400ml", "Pink", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(5, "Bottle Straw Lid", "Replacement straw lid compatible with Ace Bottles.", 19.00, 80, "Standard", "Black", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(5, "Bottle Handle", "Comfort grip carrying handle.", 15.00, 65, "Universal", "Grey", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(5, "Bottle Cleaning Brush", "Long cleaning brush suitable for all bottle sizes.", 18.00, 55, "Standard", "White", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop");
