@@ -38,11 +38,14 @@ $cart_data = $stmt_cart->fetch();
 if ($cart_data) {
     $cart_id = $cart_data->cart_id;
 
-    // Relational SQL join query UPDATED to fetch ci.size data elements out of storage rows
+    // FIXED: Joined product_variants using product_id AND size to fetch exact variant stock
     $stmt_items = $_db->prepare("
-        SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, p.name, p.price, p.image_url, p.stock 
+        SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, 
+               p.name, p.price, p.image_url, 
+               COALESCE(pv.stock, 0) AS stock 
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.product_id
+        LEFT JOIN product_variants pv ON ci.product_id = pv.product_id AND ci.size = pv.size
         WHERE ci.cart_id = ? AND (p.name LIKE ? OR p.description LIKE ?)
     ");
     $stmt_items->execute([$cart_id, "%$search%", "%$search%"]);
