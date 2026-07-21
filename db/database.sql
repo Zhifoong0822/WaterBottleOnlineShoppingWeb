@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS `order_items`;
 DROP TABLE IF EXISTS `orders`;
 DROP TABLE IF EXISTS `cart_items`;
 DROP TABLE IF EXISTS `carts`;
+DROP TABLE IF EXISTS `product_colours`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `categories`;
 DROP TABLE IF EXISTS `users`;
@@ -24,7 +25,7 @@ CREATE TABLE `categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- Table structure for table `products` (Updated with category_id, size & colour in prod db)
+-- Table structure for table `products` (removed stock, colour & created product_colours)
 -- =========================================================
 CREATE TABLE `products` (
   `product_id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -33,9 +34,7 @@ CREATE TABLE `products` (
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT,
   `price` DECIMAL(10,2) NOT NULL,
-  `stock` INT(11) NOT NULL DEFAULT 0,
   `size` VARCHAR(30) NOT NULL,
-  `colour` VARCHAR(50) NOT NULL,
   `image_url` VARCHAR(255),
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -45,6 +44,21 @@ CREATE TABLE `products` (
       ON UPDATE CASCADE
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================================================
+-- Table structure for table `product_colours` (stock is based on the num of colours available for each product)
+-- =========================================================
+CREATE TABLE product_colours (
+    colour_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    colour_name VARCHAR(50) NOT NULL,
+    colour_code VARCHAR(7) NOT NULL,
+    stock INT NOT NULL DEFAULT 0,
+
+    FOREIGN KEY (product_id)
+        REFERENCES products(product_id)
+        ON DELETE CASCADE
+);
 
 -- =========================================================
 -- Table structure for table `users`
@@ -153,14 +167,27 @@ INSERT INTO `categories` (`category_name`) VALUES
 ('Accessories');
 
 -- Insert Products associated with Categories
-INSERT INTO `products`(`category_id`, `name`, `description`, `price`, `stock`, `size`, `colour`, `image_url`) VALUES
-(1, "Ace Active Bottle", "Double-wall insulated bottle for everyday hydration.", 89.00, 38, "530ml", "Navy Apricot", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
-(1, "Ace Active Bottle", "Double-wall insulated bottle for everyday hydration.", 99.00, 25, "410ml", "Pink Cream", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
-(1, "Ace Mega Explorer", "Large capacity insulated bottle for outdoor adventures.", 129.00, 15, "950ml", "Linen Blue", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
-(1, "Ace Mega Explorer", "Large capacity insulated bottle for outdoor adventures.", 129.00, 12, "950ml", "Midtown Pearl", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
-(2, "Sense Coffee Cup", "Premium insulated coffee tumbler.", 89.00, 28, "500ml", "Black", "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=500&auto=format&fit=crop"),
-(3, "Knight Tumbler", "Durable stainless steel tumbler for daily use.", 99.00, 36, "600ml", "Silver", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
-(4, "Kids Bottle", "Leak-proof insulated bottle designed for children.", 69.00, 40, "400ml", "Pink", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
-(5, "Bottle Straw Lid", "Replacement straw lid compatible with Ace Bottles.", 19.00, 80, "Standard", "Black", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
-(5, "Bottle Handle", "Comfort grip carrying handle.", 15.00, 65, "Universal", "Grey", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
-(5, "Bottle Cleaning Brush", "Long cleaning brush suitable for all bottle sizes.", 18.00, 55, "Standard", "White", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop");
+INSERT INTO `products`(`category_id`, `name`, `description`, `price`, `size`, `image_url`) VALUES
+(1, "Ace Active Bottle", "Double-wall insulated bottle for everyday hydration.", 89.00, "530ml", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(1, "Ace Active Bottle", "Double-wall insulated bottle for everyday hydration.", 99.00, "410ml", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(1, "Ace Mega Explorer", "Large capacity insulated bottle for outdoor adventures.", 129.00, "950ml", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
+(1, "Ace Mega Explorer", "Large capacity insulated bottle for outdoor adventures.", 129.00, "950ml", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
+(2, "Sense Coffee Cup", "Premium insulated coffee tumbler.", 89.00, "500ml", "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=500&auto=format&fit=crop"),
+(3, "Knight Tumbler", "Durable stainless steel tumbler for daily use.", 99.00, "600ml", "https://images.unsplash.com/photo-1592892111425-15e04305f961?w=500&auto=format&fit=crop"),
+(4, "Kids Bottle", "Leak-proof insulated bottle designed for children.", 69.00, "400ml", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(5, "Bottle Straw Lid", "Replacement straw lid compatible with Ace Bottles.", 19.00, "Standard", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(5, "Bottle Handle", "Comfort grip carrying handle.", 15.00, "Universal", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop"),
+(5, "Bottle Cleaning Brush", "Long cleaning brush suitable for all bottle sizes.", 18.00, "Standard", "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop");
+
+-- Insert Product Colours with Stock
+INSERT INTO `product_colours` (`product_id`, `colour_name`, `colour_code`, `stock`) VALUES
+(1,'Navy Apricot','#43597A',38),
+(2,'Pink Cream','#D9ADD9',25),
+(3,'Linen Blue','#5776A3',15),
+(4,'Midtown Pearl','#EBD3A9',12),
+(5,'Black','#000000',28),
+(6,'Silver','#C0C0C0',36),
+(7,'Pink','#FFC0CB',40),
+(8,'Black','#000000',80),
+(9,'Grey','#808080',65),
+(10,'White','#FFFFFF',55);
