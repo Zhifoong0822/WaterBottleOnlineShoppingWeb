@@ -5,7 +5,7 @@ require_once "_base.php";
 $_title = "Order Details";
 
 // Temporary customer ID for testing
-$user_id = 2;
+$user_id = 1;
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");
