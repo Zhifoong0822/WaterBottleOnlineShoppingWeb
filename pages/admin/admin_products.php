@@ -10,17 +10,18 @@ $sql = "
     SELECT
     p.*,
     c.category_name,
-    pc.stock,
-    pc.colour_name,
-    pc.colour_code
+    pv.variant_id,
+    pv.size,
+    pv.colour,
+    pv.stock
 
     FROM products p
 
     LEFT JOIN categories c
     ON p.category_id = c.category_id
 
-    LEFT JOIN product_colours pc
-    ON p.product_id = pc.product_id
+    LEFT JOIN product_variants pv
+    ON p.product_id = pv.product_id
     WHERE 1=1
     ";
 
@@ -32,8 +33,8 @@ $sql = "
             AND (
                 p.name LIKE ?
                 OR c.category_name LIKE ?
-                OR p.size LIKE ?
-                OR pc.colour_name LIKE ?
+                OR pv.size LIKE ?
+                OR pv.colour LIKE ?
             )
         ";
 
@@ -69,14 +70,14 @@ $total_categories = $_db->query("
 
 $low_stock_products = $_db->query("
     SELECT COUNT(*)
-    FROM product_colours
+    FROM product_variants
     WHERE stock > 0
       AND stock <= 5
 ")->fetchColumn();
 
 $out_of_stock_products = $_db->query("
     SELECT COUNT(*)
-    FROM product_colours
+    FROM product_variants
     WHERE stock = 0
 ")->fetchColumn();
 

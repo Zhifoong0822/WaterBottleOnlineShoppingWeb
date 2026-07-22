@@ -14,18 +14,18 @@ $sql = "
 SELECT
     p.*,
     c.category_name,
-    pc.colour_id,
-    pc.colour_name,
-    pc.colour_code,
-    pc.stock
+    pv.variant_id,
+    pv.size,
+    pv.colour,
+    pv.stock
 
 FROM products p
 
 LEFT JOIN categories c
     ON p.category_id = c.category_id
 
-LEFT JOIN product_colours pc
-    ON p.product_id = pc.product_id
+LEFT JOIN product_variants pv
+    ON p.product_id = pv.product_id
 
 WHERE p.product_id = ?
 ";
@@ -89,13 +89,8 @@ include '../../_head.php';
                 <div class="detail-row">
                     <label>Colour</label>
                     <div class="colour-display">
-                        <span
-                            class="colour-circle"
-                            style="background: <?= htmlspecialchars($product['colour_code']) ?>;">
-                        </span>
-
                         <span class="colour-name">
-                            <?= htmlspecialchars($product['colour_name']) ?>
+                            <?= htmlspecialchars($product['colour']) ?>
                         </span>
                     </div>
                 </div>

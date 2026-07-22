@@ -29,18 +29,18 @@ $sql = "
 SELECT
     p.*,
     c.category_name,
-    pc.colour_id,
-    pc.colour_name,
-    pc.colour_code,
-    pc.stock
+    pv.variant_id,
+    pv.size,
+    pv.colour,
+    pv.stock
 
 FROM products p
 
 LEFT JOIN categories c
 ON p.category_id = c.category_id
 
-LEFT JOIN product_colours pc
-ON p.product_id = pc.product_id
+LEFT JOIN product_variants pv
+ON p.product_id = pv.product_id
 
 WHERE p.product_id = ?
 ";
@@ -65,8 +65,7 @@ $size        = $product['size'];
 $description = $product['description'];
 $image_url   = $product['image_url'];
 
-$colour_name = $product['colour_name'];
-$colour_code = $product['colour_code'];
+$colour = $product['colour'];
 $stock       = $product['stock'];
 
 $error = [];
@@ -82,8 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $size        = trim($_POST['size']);
     $description = trim($_POST['description']);
 
-    $colour_name = trim($_POST['colour_name']);
-    $colour_code = $_POST['colour_code'];
+    $colour = trim($_POST['colour']);
     $stock       = $_POST['stock'];
 
     /*-------------------------
@@ -98,8 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($stock == '' || !is_numeric($stock))
         $error['stock'] = "Valid stock is required.";
 
-    if ($colour_name == '')
-        $error['colour_name'] = "Colour name is required.";
+    if ($colour == '')
+        $error['colour'] = "Colour is required.";
 
     /*-------------------------
         Upload Image
@@ -132,12 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt = $_db->prepare("
             UPDATE products
             SET
-                category_id=?,
-                name=?,
-                description=?,
-                price=?,
-                size=?,
-                image_url=?
+
+            category_id=?,
+            name=?,
+            description=?,
+            price=?,
+            image_url=?
 
             WHERE product_id=?
             ");
@@ -148,29 +146,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $name,
                 $description,
                 $price,
-                $size,
                 $image_url,
                 $product_id
 
             ]);
 
             $stmt = $_db->prepare("
-            UPDATE product_colours
+            UPDATE product_variants
             SET
 
-                colour_name=?,
-                colour_code=?,
+                size=?,
+                colour=?,
                 stock=?
 
-            WHERE colour_id=?
+            WHERE variant_id=?
             ");
 
             $stmt->execute([
 
-                $colour_name,
-                $colour_code,
+                $size,
+                $colour,
                 $stock,
-                $product['colour_id']
+                $product['variant_id']
 
             ]);
 
@@ -290,28 +287,28 @@ include '../../_head.php';
 
                 <!-- Colour Name -->
                 <div class="form-group">
-                    <label>Colour Name</label>
+                    <label>Colour</label>
                     <input
                         type="text"
-                        name="colour_name"
-                        value="<?= htmlspecialchars($colour_name) ?>">
+                        name="colour"
+                        value="<?= htmlspecialchars($colour) ?>">
 
                     <small class="error">
-                        <?= $error['colour_name'] ?? '' ?>
+                        <?= $error['colour'] ?? '' ?>
                     </small>
                 </div>
 
                 <!-- Colour Picker -->
-                <div class="form-group">
+                <!-- <div class="form-group">
 
                     <label>Colour</label>
 
                     <input
                         type="color"
                         name="colour_code"
-                        value="<?= htmlspecialchars($colour_code) ?>">
+                        value="<?= htmlspecialchars($colour) ?>">
 
-                </div>
+                </div> -->
                 <!-- Stock -->
                 <div class="form-group">
                     <label>Stock</label>
