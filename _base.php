@@ -36,6 +36,11 @@ function post($key, $value = null) {
 // Obtain REQUEST (GET and POST) parameter
 function req($key, $value = null) {
     $value = $_REQUEST[$key] ?? $value;
+
+    if ($value === null) {
+        return null;
+    }
+
     return is_array($value) ? array_map('trim', $value) : trim($value);
 }
 

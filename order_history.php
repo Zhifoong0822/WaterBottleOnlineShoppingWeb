@@ -1,223 +1,350 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+require_once "_base.php";
 
-require_once __DIR__ . "/config/db_connect.php";
+$_title = "My Orders";
 
-// Temporary user ID for testing
-$user_id = 2;
+$user_id = 1;
 
-$sql = "SELECT order_id, order_date, status, total_amount
-        FROM orders
-        WHERE user_id = ?
-        ORDER BY order_date DESC";
+$status_filter = get("status", "pending");
 
-$stmt = $conn->prepare($sql);
+$allowed_statuses = [
+    "pending",
+    "shipped",
+    "completed",
+    "cancelled"
+];
 
-if (!$stmt) {
-    die("Query preparation failed: " . $conn->error);
+if (!in_array($status_filter, $allowed_statuses, true)) {
+    $status_filter = "pending";
 }
 
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
+// Customer clicks Order Received button
+if (is_post() && post("action") === "confirm_received") {
 
-$result = $stmt->get_result();
+    $received_order_id = post("order_id");
+
+    if (!ctype_digit($received_order_id)) {
+        temp("info", "Invalid order.");
+        redirect("order_history.php?status=shipped");
+    }
+
+    $received_order_id = (int) $received_order_id;
+
+    $sql = "UPDATE orders
+            SET status = 'completed'
+            WHERE order_id = :order_id
+              AND user_id = :user_id
+              AND status = 'shipped'";
+
+    $stmt = $_db->prepare($sql);
+
+    $stmt->execute([
+        "order_id" => $received_order_id,
+        "user_id" => $user_id
+    ]);
+
+    if ($stmt->rowCount() > 0) {
+        redirect("order_history.php?status=completed");
+    }
+
+    redirect("order_history.php?status=shipped");
+}
+
+// Customer clicks Cancel Order button
+if (is_post() && post("action") === "cancel_order") {
+
+    $cancel_order_id = post("order_id");
+
+    if (!ctype_digit($cancel_order_id)) {
+        redirect("order_history.php?status=pending");
+    }
+
+    $cancel_order_id = (int) $cancel_order_id;
+
+    $sql = "UPDATE orders
+            SET status = 'cancelled'
+            WHERE order_id = :order_id
+              AND user_id = :user_id
+              AND status = 'pending'";
+
+    $stmt = $_db->prepare($sql);
+
+    $stmt->execute([
+        "order_id" => $cancel_order_id,
+        "user_id" => $user_id
+    ]);
+
+    if ($stmt->rowCount() > 0) {
+        redirect("order_history.php?status=cancelled");
+    }
+
+    redirect("order_history.php?status=pending");
+}
+
+$sql = "SELECT
+            o.order_id,
+            o.order_date,
+            o.status,
+            o.total_amount,
+            oi.order_item_id,
+            oi.product_id,
+            oi.quantity,
+            oi.price AS item_price,
+            p.name AS product_name,
+            p.image_url
+        FROM orders AS o
+        LEFT JOIN order_items AS oi
+            ON o.order_id = oi.order_id
+        LEFT JOIN products AS p
+            ON oi.product_id = p.product_id
+        WHERE o.user_id = :user_id
+        AND o.status = :status
+        ORDER BY
+            o.order_date DESC,
+            o.order_id DESC,
+            oi.order_item_id ASC";
+
+$stmt = $_db->prepare($sql);
+$stmt->execute([
+    "user_id" => $user_id,
+    "status" => $status_filter
+]);
+
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$orders = [];
+
+foreach ($rows as $row) {
+    $order_id = $row["order_id"];
+
+    if (!isset($orders[$order_id])) {
+        $orders[$order_id] = [
+            "order_id" => $row["order_id"],
+            "order_date" => $row["order_date"],
+            "status" => $row["status"],
+            "total_amount" => $row["total_amount"],
+            "items" => []
+        ];
+    }
+
+    if ($row["product_id"] !== null) {
+        $orders[$order_id]["items"][] = [
+            "product_name" => $row["product_name"],
+            "image_url" => $row["image_url"],
+            "quantity" => $row["quantity"],
+            "item_price" => $row["item_price"]
+        ];
+    }
+}
+
+require "_head.php";
 
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
+<nav class="order-tabs">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <a
+        href="order_history.php?status=pending"
+        class="<?= $status_filter === "pending" ? "active" : "" ?>"
+    >
+        To Ship
+    </a>
 
-    <title>My Orders</title>
+    <a
+        href="order_history.php?status=shipped"
+        class="<?= $status_filter === "shipped" ? "active" : "" ?>"
+    >
+        To Receive
+    </a>
 
-    <link rel="stylesheet" href="css/style.css">
+    <a
+        href="order_history.php?status=completed"
+        class="<?= $status_filter === "completed" ? "active" : "" ?>"
+    >
+        Completed
+    </a>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 40px 20px;
-        }
+    <a
+        href="order_history.php?status=cancelled"
+        class="<?= $status_filter === "cancelled" ? "active" : "" ?>"
+    >
+        Cancelled
+    </a>
 
-        .order-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-        }
+</nav>
 
-        .page-title {
-            margin-top: 0;
-            margin-bottom: 25px;
-            color: #222;
-        }
+<section class="order-history">
 
-        .order-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+    <?php if ($orders): ?>
 
-        .order-table th {
-            background-color: #222;
-            color: white;
-            padding: 14px;
-            text-align: left;
-        }
+        <?php foreach ($orders as $order): ?>
 
-        .order-table td {
-            padding: 14px;
-            border-bottom: 1px solid #ddd;
-        }
+            <article class="order-card">
 
-        .order-table tr:hover {
-            background-color: #f1f1f1;
-        }
+    <div class="order-left">
 
-        .status {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
+        <?php if ($order["items"]): ?>
 
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
+            <?php
+            $firstItem = $order["items"][0];
 
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
-        }
+            $productName = $firstItem["product_name"] ?: "Unknown Product";
+            $imageUrl = $firstItem["image_url"]
+                ?: "https://placehold.co/100x100?text=No+Image";
 
-        .status-cancelled {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+            $quantity = (int) $firstItem["quantity"];
+            ?>
 
-        .view-button {
-            display: inline-block;
-            padding: 8px 14px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-        }
+            <img
+                class="order-image"
+                src="<?= encode($imageUrl) ?>"
+                alt="<?= encode($productName) ?>"
+            >
 
-        .view-button:hover {
-            background-color: #0056b3;
-        }
+            <div class="order-info">
 
-        .no-orders {
-            text-align: center;
-            color: #777;
-            padding: 30px;
-        }
+                <h2>
+                    <?= encode($productName) ?>
+                </h2>
 
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            text-decoration: none;
-            color: #333;
-        }
+                <p class="quantity">
+                    x<?= $quantity ?>
+                </p>
 
-        .back-link:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
+                <p class="order-meta">
+                    Order #<?= encode($order["order_id"]) ?>
+                    ·
+                    <?= date(
+                        "d M Y, h:i A",
+                        strtotime($order["order_date"])
+                    ) ?>
+                </p>
 
-<body>
+                <a
+                    class="view-details"
+                    href="order_detail.php?id=<?= urlencode(
+                        $order["order_id"]
+                    ) ?>"
+                >
+                    View Details
+                </a>
 
-<div class="order-container">
-
-    <h2 class="page-title">My Orders</h2>
-
-    <table class="order-table">
-
-        <tr>
-            <th>Order ID</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>Action</th>
-        </tr>
-
-        <?php if ($result->num_rows > 0): ?>
-
-            <?php while ($row = $result->fetch_assoc()): ?>
-
-                <?php
-                $status = strtolower($row['status']);
-                $status_class = "status-" . $status;
-                ?>
-
-                <tr>
-                    <td>
-                        #<?php echo htmlspecialchars($row['order_id']); ?>
-                    </td>
-
-                    <td>
-                        <?php
-                        echo date(
-                            "d M Y, h:i A",
-                            strtotime($row['order_date'])
-                        );
-                        ?>
-                    </td>
-
-                    <td>
-                        <span class="status <?php echo $status_class; ?>">
-                            <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
-                        </span>
-                    </td>
-
-                    <td>
-                        RM <?php echo number_format($row['total_amount'], 2); ?>
-                    </td>
-
-                    <td>
-                        <a class="view-button"
-                           href="order_detail.php?id=<?php echo urlencode($row['order_id']); ?>">
-                            View Details
-                        </a>
-                    </td>
-                </tr>
-
-            <?php endwhile; ?>
+            </div>
 
         <?php else: ?>
 
-            <tr>
-                <td colspan="5" class="no-orders">
-                    You do not have any orders yet.
-                </td>
-            </tr>
+            <div class="order-info">
+                <h2>No product information</h2>
+
+                <p class="order-meta">
+                    Order #<?= encode($order["order_id"]) ?>
+                </p>
+            </div>
 
         <?php endif; ?>
 
-    </table>
+    </div>
 
-    <a class="back-link" href="index.php">← Back to Home</a>
+    <div class="order-right">
+
+    <span class="status status-<?= encode($order["status"]) ?>">
+        <?= ucfirst(encode($order["status"])) ?>
+    </span>
+
+    <div class="amount-section">
+
+        <span class="amount-label">
+            Total Amount Paid
+        </span>
+
+        <strong class="amount">
+            RM <?= number_format(
+                (float) $order["total_amount"],
+                2
+            ) ?>
+        </strong>
+
+        <?php if ($order["status"] === "shipped"): ?>
+
+            <form
+                method="POST"
+                class="received-form"
+                onsubmit="return confirm(
+                    'Confirm that you have received this order?'
+                );"
+            >
+
+                <input
+                    type="hidden"
+                    name="action"
+                    value="confirm_received"
+                >
+
+                <input
+                    type="hidden"
+                    name="order_id"
+                    value="<?= encode($order["order_id"]) ?>"
+                >
+
+                <button
+                    type="submit"
+                    class="received-button"
+                >
+                    Order Received
+                </button>
+
+            </form>
+
+        <?php endif; ?>
+
+        <?php if ($order["status"] === "pending"): ?>
+
+        <form
+            method="POST"
+            class="cancel-form"
+            onsubmit="return confirm(
+            'Are you sure you want to cancel this order?'
+            );"
+        >
+
+        <input
+            type="hidden"
+            name="action"
+            value="cancel_order"
+        >
+
+        <input
+            type="hidden"
+            name="order_id"
+            value="<?= encode($order["order_id"]) ?>"
+        >
+
+        <button
+            type="submit"
+            class="cancel-button"
+        >
+            Cancel Order
+        </button>
+
+        </form>
+
+    <?php endif; ?>
+
+    </div>
 
 </div>
 
-</body>
+</article>
 
-</html>
+        <?php endforeach; ?>
 
-<?php
+    <?php else: ?>
 
-$stmt->close();
-$conn->close();
+        <p>You do not have any orders yet.</p>
 
-?>
+    <?php endif; ?>
+
+</section>
+
+<?php require "_foot.php"; ?>

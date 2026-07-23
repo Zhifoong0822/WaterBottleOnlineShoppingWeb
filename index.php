@@ -10,6 +10,8 @@ include '_head.php';
 
 <h3>Customer</h3>
 <a href="order_history.php">My Orders</a>
+<br>
+<a href="member_registration.php">Member Registration</a>
 
 <br><br>
 
@@ -21,6 +23,13 @@ include '_head.php';
 
     <br><br>
 <?php endif; ?>
+<h3>Admin</h3>
+<a href="pages/admin/admin_products.php">Manage Products</a>
+<br>
+<a href="admin_orders.php">Manage Orders</a>
+<br>
+<a href="pages/admin/member_listing.php">Member Listing</a>
+<br><br>
 
 <h3>Products</h3>
 <a href="products.php">Go to Products</a>

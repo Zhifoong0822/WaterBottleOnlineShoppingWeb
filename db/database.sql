@@ -223,6 +223,7 @@ INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 (4, 'Mega (32oz / 950ml)', 'Brushed Steel', 6),
 
 -- Product 5: Ace Pastel Edition (Low stock alert test)
+-- Product 5: Ace Pastel Edition
 (5, 'Micro (12oz / 350ml)', 'Sakura Pink', 2),
 (5, 'Mini (15oz / 450ml)', 'Sakura Pink', 1),
 
@@ -236,6 +237,7 @@ INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 
 -- Product 8: Silicone Protective Sleeve
 (8, 'Standard', 'Black', 50),
+(8, 'Medium (18oz / 530ml)', 'Black', 50),
 
 -- Product 9: Ace Matte Sport Bottle
 (9, 'Medium (18oz / 530ml)', 'Stealth Black', 14),
@@ -251,12 +253,13 @@ INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 (12, 'Micro (12oz / 350ml)', 'Dino Green', 19),
 
 -- Product 13: Cleaning Brush Kit
-(13, 'Standard', 'Multicolor', 100),
+(13, 'Medium (18oz / 530ml)', 'Multicolor', 100),
 
 -- Product 14: Ace Luxe Metallic Gold
 (14, 'Medium (18oz / 530ml)', 'Metallic Gold', 5),
 
 -- Product 15: Sense Espresso Travel Cup (Low stock alert test)
+-- Product 15: Sense Espresso Travel Cup
 (15, 'Micro (12oz / 350ml)', 'Charcoal Grey', 3),
 
 -- Product 16: Ice Infuser Fruit Bottle
@@ -264,6 +267,7 @@ INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 
 -- Product 17: Paracord Bottle Strap
 (17, 'Standard', 'Army Green', 45),
+(17, 'Medium (18oz / 530ml)', 'Army Green', 45),
 
 -- Product 18: Knight Wide-Mouth Hydrator
 (18, 'Mega (32oz / 950ml)', 'Deep Blue', 16),
@@ -272,4 +276,5 @@ INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 (19, 'Medium (18oz / 530ml)', 'Frost White', 0),
 
 -- Product 20: Ace Pocket Mini Flask
+(20, 'Micro (12oz / 350ml)', 'Rose Gold', 25);
 (20, 'Micro (12oz / 350ml)', 'Rose Gold', 25);
