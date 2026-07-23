@@ -152,3 +152,24 @@ $_genders = [
     'F' => 'Female',
     'M' => 'Male',
 ];
+
+// ============================================================================
+// Access Control - require login for every page except these public ones
+// ============================================================================
+
+$_public_pages = [
+    'login.php',
+    'register.php',
+    'forgot_password.php',
+    'reset_password.php',
+    'index.php',
+    'products.php',
+    'product_detail.php',
+];
+
+$_current_page = basename($_SERVER['PHP_SELF']);
+
+if (!isset($_SESSION['user_id']) && !in_array($_current_page, $_public_pages)) {
+    temp('info', 'Please login to continue.');
+    //redirect('login.php');
+}
