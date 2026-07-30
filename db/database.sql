@@ -4,6 +4,7 @@ USE `waterbottle_shop`;
 
 -- Drop existing tables in reverse order of dependencies
 DROP TABLE IF EXISTS `user_addresses`; 
+DROP TABLE IF EXISTS `order_feedback`;
 DROP TABLE IF EXISTS `order_items`;
 DROP TABLE IF EXISTS `orders`;
 DROP TABLE IF EXISTS `cart_items`;
@@ -138,6 +139,34 @@ CREATE TABLE `order_items` (
   CONSTRAINT `fk_order_item_product` FOREIGN KEY (`product_id`) 
     REFERENCES `products`(`product_id`) 
     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================================================
+-- Table structure for table `order_feedback`
+-- =========================================================
+CREATE TABLE `order_feedback` (
+  `feedback_id` INT(11) NOT NULL AUTO_INCREMENT,
+  `order_id` INT(11) NOT NULL,
+  `user_id` INT(11) NOT NULL,
+  `rating` TINYINT NOT NULL,
+  `feedback` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (`feedback_id`),
+
+  UNIQUE KEY `unique_order_feedback` (`order_id`, `user_id`),
+
+  FOREIGN KEY (`order_id`)
+      REFERENCES `orders`(`order_id`)
+      ON DELETE CASCADE,
+
+  FOREIGN KEY (`user_id`)
+      REFERENCES `users`(`user_id`)
+      ON DELETE CASCADE,
+
+  CHECK (`rating` BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
