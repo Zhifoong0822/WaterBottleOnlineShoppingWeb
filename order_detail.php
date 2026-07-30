@@ -4,8 +4,10 @@ require_once "_base.php";
 
 $_title = "Order Details";
 
-// Temporary customer ID for testing
-$user_id = 1;
+if (!isset($_SESSION['user_id'])) {
+    redirect('login.php');
+}
+$user_id = (int) $_SESSION['user_id'];
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");

@@ -3,7 +3,12 @@
 require '_base.php'; 
 header("Content-Type: application/json");
 
-$user_id = 1; // Handled dynamically or mocked for your session persistence
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['message' => 'Please log in first.']);
+    exit;
+}
+
+$user_id = (int) $_SESSION['user_id'];
 $cart_id = null;
 
 // 2. Fetch or create the active user cart wrapper
