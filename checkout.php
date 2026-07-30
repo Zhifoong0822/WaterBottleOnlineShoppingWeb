@@ -5,32 +5,15 @@ require '_base.php';
 // 2. Supply dynamic metadata tracking to _head.php template
 $_title = "Checkout";
 
-// 3. Inject standard layout structure, styling mappings, and navigation structures
-include '_head.php'; 
-
-$user_id = 1; 
+if (!isset($_SESSION['user_id'])) {
+    redirect('login.php');
+}
+$user_id = (int) $_SESSION['user_id'];
 $cart_items = [];
 $total_amount = 0;
 $errors = [];
 
-// =========================================================================
-// PRICE CALCULATION ENGINE: Dynamic Size-Based Multiplier Modifiers
-// =========================================================================
-function getVariantPrice($base_price, $size) {
-    $multiplier = 1.0; // Base baseline structural factor
-    
-    if (strpos($size, 'Micro') !== false) {
-        $multiplier = 1.00; // Base price
-    } elseif (strpos($size, 'Mini') !== false) {
-        $multiplier = 1.10; // +10% Scale Increase
-    } elseif (strpos($size, 'Medium') !== false) {
-        $multiplier = 1.20; // +20% Scale Increase
-    } elseif (strpos($size, 'Mega') !== false) {
-        $multiplier = 1.40; // +40% Scale Increase
-    }
-    
-    return $base_price * $multiplier;
-}
+
 
 // Fetch all saved address items belonging to current session user
 $stmt_addr = $_db->prepare("SELECT * FROM user_addresses WHERE user_id = ?");
@@ -38,12 +21,21 @@ $stmt_addr->execute([$user_id]);
 $saved_addresses = $stmt_addr->fetchAll();
 
 // Grab only items that were selected via checkbox arrays
-$selected_items = req('selected_items'); // Array of cart_item_ids
+$selected_items = post('selected_items', []);
 
-if (!is_post() || empty($selected_items)) {
-    // If they just typed the URL manually, bounce them back to the cart view
+if (!is_array($selected_items) || empty($selected_items)) {
     redirect('cart_view.php');
 }
+
+$selected_items = array_values(array_unique($selected_items));
+
+foreach ($selected_items as $id) {
+    if (!valid_positive_int($id)) {
+        redirect('cart_view.php');
+    }
+}
+
+$selected_items = array_map('intval', $selected_items);
 
 // 4. Retrieve details for checked items only (including the size configuration string column)
 $placeholders = implode(',', array_fill(0, count($selected_items), '?'));
@@ -51,17 +43,24 @@ $placeholders = implode(',', array_fill(0, count($selected_items), '?'));
 $query = "
     SELECT ci.cart_item_id, ci.quantity, ci.size, p.product_id, p.name, p.price 
     FROM cart_items ci
+    JOIN carts c ON c.cart_id = ci.cart_id
     JOIN products p ON ci.product_id = p.product_id
-    WHERE ci.cart_item_id IN ($placeholders)
+    WHERE c.user_id = ?
+      AND ci.cart_item_id IN ($placeholders)
 ";
 
 $stmt_items = $_db->prepare($query);
-$stmt_items->execute($selected_items);
+$stmt_items->execute(array_merge([$user_id], $selected_items));
 $cart_items = $stmt_items->fetchAll();
+
+if (count($cart_items) !== count($selected_items)) {
+    temp('info', 'One or more selected cart items are no longer available.');
+    redirect('cart_view.php');
+}
 
 // Calculate totals using dynamic sizing calculation method
 foreach ($cart_items as $item) {
-    $item->computed_price = getVariantPrice($item->price, $item->size);
+    $item->computed_price = variant_price($item->price, $item->size);
     $total_amount += $item->computed_price * $item->quantity;
 }
 
@@ -90,16 +89,26 @@ if (req('confirm_order')) {
                 $errors['address_id'] = 'Selected address configuration context was invalid.';
             }
         }
-    } else {
+    } elseif ($address_type === 'new') {
         // Fallback validation routes handling customized manual form additions
         $name = trim(req('name'));
         $phone = trim(req('phone'));
         $address = trim(req('address'));
         $label = trim(req('address_label')) ?: 'Home';
 
-        if (empty($name)) $errors['name'] = 'Name is required.';
-        if (empty($phone)) $errors['phone'] = 'Phone number is required.';
-        if (empty($address)) $errors['address'] = 'Shipping address is required.';
+        if ($name === '') {
+            $errors['name'] = 'Name is required.';
+        }
+
+        if ($phone === '') {
+            $errors['phone'] = 'Phone number is required.';
+        } elseif (!valid_phone($phone)) {
+            $errors['phone'] = 'Enter a valid phone number.';
+        }
+
+        if ($address === '') {
+            $errors['address'] = 'Shipping address is required.';
+        }
         
         // If inputs validate cleanly and user checked "save profile", update relational DB profiles
         if (empty($errors) && req('save_new_address')) {
@@ -109,6 +118,8 @@ if (req('confirm_order')) {
             ");
             $stmt_save_addr->execute([$user_id, $label, $name, $phone, $address]);
         }
+    } else {
+        $errors['address_type'] = 'Please select a delivery option.';
     }
 
     if (empty($errors)) {
@@ -167,13 +178,19 @@ if (req('confirm_order')) {
             }
 
             // D. Delete ONLY the checked items out of the cart
-            $stmt_clear = $_db->prepare("DELETE FROM cart_items WHERE cart_item_id IN ($placeholders)");
-            $stmt_clear->execute($selected_items);
+            $stmt_clear = $_db->prepare("
+                DELETE ci
+                FROM cart_items ci
+                JOIN carts c ON c.cart_id = ci.cart_id
+                WHERE c.user_id = ?
+                  AND ci.cart_item_id IN ($placeholders)
+            ");
+            $stmt_clear->execute(array_merge([$user_id], $selected_items));
 
             $_db->commit();
-            
-            echo "<script>alert('Order placed successfully!'); window.location.href='products.php';</script>";
-            exit;
+
+            temp('info', 'Order placed successfully.');
+            redirect('order_detail.php?id=' . $order_id);
 
         } catch (Exception $e) {
             $_db->rollBack();
@@ -181,6 +198,9 @@ if (req('confirm_order')) {
         }
     }
 }
+
+// Render the shared page layout only after all possible redirects are complete.
+include '_head.php';
 ?>
 
 <div class="checkout-container" style="max-width: 900px; margin: 30px auto; padding: 0 20px; display: flex; gap: 30px;">

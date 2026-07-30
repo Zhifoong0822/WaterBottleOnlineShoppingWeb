@@ -4,7 +4,10 @@ require_once "_base.php";
 
 $_title = "My Orders";
 
-$user_id = 1;
+if (!isset($_SESSION['user_id'])) {
+    redirect('login.php');
+}
+$user_id = (int) $_SESSION['user_id'];
 
 $status_filter = get("status", "pending");
 

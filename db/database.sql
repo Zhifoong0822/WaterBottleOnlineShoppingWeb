@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS `order_items`;
 DROP TABLE IF EXISTS `orders`;
 DROP TABLE IF EXISTS `cart_items`;
 DROP TABLE IF EXISTS `carts`;
-DROP TABLE IF EXISTS `product_variants`;
+DROP TABLE IF EXISTS `product_variants`;  
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `categories`;
 DROP TABLE IF EXISTS `users`;
@@ -163,6 +163,8 @@ CREATE TABLE `user_addresses` (
 INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`) VALUES
 (1, 'member1', 'member1@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'member'),
 (2, 'admin', 'admin@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'admin');
+(3, 'John', 'john@example.com','$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO','member'),
+(4, 'Jane', 'jane@example.com','$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa','member');
 
 INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `phone_number`, `address_text`) VALUES
 (1, 'Home (Default)', 'Member One', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),

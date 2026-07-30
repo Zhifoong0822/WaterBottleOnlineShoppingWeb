@@ -107,6 +107,27 @@ function html_select($key, $items, $default = '- Select One -', $attr = '') {
 }
 
 // ============================================================================
+// Check Price helper function
+// ============================================================================
+function variant_price($base_price, $size) {
+    if (str_contains($size, 'Mini'))   return $base_price * 1.10;
+    if (str_contains($size, 'Medium')) return $base_price * 1.20;
+    if (str_contains($size, 'Mega'))   return $base_price * 1.40;
+
+    return $base_price; // Micro/default
+}
+
+function valid_phone($phone) {
+    return preg_match('/^[0-9+\-\s]{8,20}$/', $phone);
+}
+
+function valid_positive_int($value) {
+    return filter_var($value, FILTER_VALIDATE_INT, [
+        'options' => ['min_range' => 1]
+    ]) !== false;
+}
+
+// ============================================================================
 // Error Handlings
 // ============================================================================
 
