@@ -572,6 +572,17 @@
     background-color: #555555;
 }
 
+.form-section select option:disabled {
+    color: #999999;
+    background-color: #eeeeee;
+}
+
+.button-group button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+}
+
 .back-button {
     display: inline-block;
     background-color: #e9ecef;

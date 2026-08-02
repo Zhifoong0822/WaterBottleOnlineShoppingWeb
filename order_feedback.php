@@ -4,9 +4,15 @@ require_once "_base.php";
 
 $_title = "Order Feedback";
 
-// Temporary customer ID for testing.
-// Replace with the logged-in user ID later.
-$user_id = 1;
+if (!isset($_SESSION['user_id'])) {
+    redirect('login.php');
+}
+
+if ($_SESSION['role'] !== 'member') {
+    redirect('admin_orders.php');
+}
+
+$user_id = (int) $_SESSION['user_id']; //set user_id in the current session
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");
