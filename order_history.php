@@ -90,19 +90,32 @@ $sql = "SELECT
             o.order_date,
             o.status,
             o.total_amount,
+
+            EXISTS (
+                SELECT 1
+                FROM order_feedback AS f
+                WHERE f.order_id = o.order_id
+                  AND f.user_id = o.user_id
+            ) AS feedback_submitted,
+
             oi.order_item_id,
             oi.product_id,
             oi.quantity,
             oi.price AS item_price,
             p.name AS product_name,
             p.image_url
+
         FROM orders AS o
+
         LEFT JOIN order_items AS oi
             ON o.order_id = oi.order_id
+
         LEFT JOIN products AS p
             ON oi.product_id = p.product_id
+
         WHERE o.user_id = :user_id
-        AND o.status = :status
+          AND o.status = :status
+
         ORDER BY
             o.order_date DESC,
             o.order_id DESC,
@@ -127,6 +140,7 @@ foreach ($rows as $row) {
             "order_date" => $row["order_date"],
             "status" => $row["status"],
             "total_amount" => $row["total_amount"],
+            "feedback_submitted" => (bool) $row["feedback_submitted"],
             "items" => []
         ];
     }
@@ -185,67 +199,82 @@ require "_head.php";
 
             <article class="order-card">
 
-    <div class="order-left">
+            <div class="order-left">
 
         <?php if ($order["items"]): ?>
 
-            <?php
-            $firstItem = $order["items"][0];
+            <div class="order-items-list">
 
-            $productName = $firstItem["product_name"] ?: "Unknown Product";
-            $imageUrl = $firstItem["image_url"]
+        <?php foreach ($order["items"] as $item): ?>
+
+            <?php
+            $productName = $item["product_name"] ?: "Unknown Product";
+
+            $imageUrl = $item["image_url"]
                 ?: "https://placehold.co/100x100?text=No+Image";
 
-            $quantity = (int) $firstItem["quantity"];
+            $quantity = (int) $item["quantity"];
             ?>
 
-            <img
-                class="order-image"
-                src="<?= encode($imageUrl) ?>"
-                alt="<?= encode($productName) ?>"
-            >
+            <div class="order-item-preview">
 
-            <div class="order-info">
-
-                <h2>
-                    <?= encode($productName) ?>
-                </h2>
-
-                <p class="quantity">
-                    x<?= $quantity ?>
-                </p>
-
-                <p class="order-meta">
-                    Order #<?= encode($order["order_id"]) ?>
-                    ·
-                    <?= date(
-                        "d M Y, h:i A",
-                        strtotime($order["order_date"])
-                    ) ?>
-                </p>
-
-                <a
-                    class="view-details"
-                    href="order_detail.php?id=<?= urlencode(
-                        $order["order_id"]
-                    ) ?>"
+                <img
+                    class="order-image"
+                    src="<?= encode($imageUrl) ?>"
+                    alt="<?= encode($productName) ?>"
                 >
-                    View Details
-                </a>
+
+                <div class="order-info">
+
+                    <h2>
+                        <?= encode($productName) ?>
+                    </h2>
+
+                    <p class="quantity">
+                        x<?= $quantity ?>
+                    </p>
+
+                </div>
 
             </div>
 
-        <?php else: ?>
+        <?php endforeach; ?>
 
-            <div class="order-info">
-                <h2>No product information</h2>
+        <div class="order-meta-section">
 
-                <p class="order-meta">
-                    Order #<?= encode($order["order_id"]) ?>
-                </p>
-            </div>
+            <p class="order-meta">
+                <?= date(
+                    "d M Y, h:i A",
+                    strtotime($order["order_date"])
+                ) ?>
+            </p>
 
-        <?php endif; ?>
+            <a
+                class="view-details"
+                href="order_detail.php?id=<?= urlencode(
+                    $order["order_id"]
+                ) ?>"
+            >
+                View Details
+            </a>
+
+        </div>
+
+    </div>
+
+<?php else: ?>
+
+    <div class="order-info">
+
+        <h2>No product information</h2>
+
+        <p class="order-meta">
+            Order #<?= encode($order["order_id"]) ?>
+        </p>
+
+    </div>
+
+    <?php endif; ?>
 
     </div>
 
@@ -333,6 +362,29 @@ require "_head.php";
         </form>
 
     <?php endif; ?>
+
+    <?php if ($order["status"] === "completed"): ?>
+
+<?php if ($order["feedback_submitted"]): ?>
+
+    <span class="rating-submitted">
+        Rating Submitted
+    </span>
+
+<?php else: ?>
+
+    <a
+        class="feedback-button"
+        href="order_feedback.php?id=<?= urlencode(
+            $order["order_id"]
+        ) ?>"
+    >
+        Add Feedback or Rating
+    </a>
+
+    <?php endif; ?>
+
+<?php endif; ?>
 
     </div>
 

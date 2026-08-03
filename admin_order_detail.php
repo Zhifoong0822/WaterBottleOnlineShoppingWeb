@@ -13,37 +13,102 @@ $order_id = (int) $_GET["id"];
 $message = "";
 $error = "";
 
-$allowed_statuses = [
-    "pending",
-    "shipped",
-    "completed",
-    "cancelled"
+//retrieve the current order first
+try {
+    $sql = "SELECT
+                order_id,
+                user_id,
+                order_date,
+                total_amount,
+                status
+            FROM orders
+            WHERE order_id = :order_id";
+
+    $stmt = $_db->prepare($sql);
+
+    $stmt->execute([
+        "order_id" => $order_id
+    ]);
+
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$order) {
+        die("Order not found.");
+    }
+
+} catch (PDOException $e) {
+    die("Unable to retrieve order: " . $e->getMessage());
+}
+
+$current_status = strtolower($order["status"]);
+
+//valid status transitions
+$status_transitions = [
+    "pending" => [
+        "pending",
+        "shipped",
+        "cancelled"
+    ],
+
+    "shipped" => [
+        "shipped",
+        "completed"
+    ],
+
+    "completed" => [
+        "completed"
+    ],
+
+    "cancelled" => [
+        "cancelled"
+    ]
 ];
 
+//process status update
 if (is_post()) {
 
-    $status = post("status");
+    $new_status = post("status"); //capture admin input(new status)
 
-    if (!in_array($status, $allowed_statuses, true)) {
-        $error = "Invalid order status.";
+    $allowed_next_statuses =
+        $status_transitions[$current_status] ?? [];
+
+    if (!in_array($new_status, $allowed_next_statuses, true)) {
+        
+        $error =
+            "The order status cannot be changed from " .
+            ucfirst($current_status) .
+            " to " .
+            ucfirst($new_status) .
+            ".";
+
+    } elseif ($new_status === $current_status) {
+
+        $message = "The order status remains unchanged.";
+
     } else {
+
         try {
             $update_sql = "UPDATE orders
-                           SET status = :status
-                           WHERE order_id = :order_id";
+                           SET status = :new_status
+                           WHERE order_id = :order_id
+                             AND status = :current_status";
 
             $update_stmt = $_db->prepare($update_sql);
 
             $update_stmt->execute([
-                "status" => $status,
-                "order_id" => $order_id
+                "new_status" => $new_status,
+                "order_id" => $order_id,
+                "current_status" => $current_status
             ]);
 
             if ($update_stmt->rowCount() > 0) {
-                $message = "Order status updated successfully.";
-            } else {
-                $message = "The order status remains unchanged.";
+                redirect(
+                    "admin_order_detail.php?id=" .
+                    urlencode($order_id)
+                );
             }
+
+            $error = "The order status could not be updated.";
 
         } catch (PDOException $e) {
             $error = "Unable to update order status.";
@@ -51,6 +116,7 @@ if (is_post()) {
     }
 }
 
+//retrieve the latest order information
 try {
     $sql = "SELECT
                 order_id,
@@ -170,47 +236,80 @@ require "_head.php";
 
                 <select name="status" id="status" required>
 
-                    <option
-                        value="pending"
-                        <?= $status === "pending" ? "selected" : "" ?>
-                    >
-                        Pending
-                    </option>
+        <option
+            value="pending"
+            <?= $status === "pending" ? "selected" : "" ?>
+            <?= in_array(
+                "pending",
+                $status_transitions[$status] ?? [],
+                true
+            ) ? "" : "disabled" ?>
+        >
+            Pending
+        </option>
 
-                    <option
-                        value="shipped"
-                        <?= $status === "shipped" ? "selected" : "" ?>
-                    >
-                        Shipped
-                    </option>
+        <option
+            value="shipped"
+            <?= $status === "shipped" ? "selected" : "" ?>
+            <?= in_array(
+                "shipped",
+                $status_transitions[$status] ?? [],
+                true
+            ) ? "" : "disabled" ?>
+        >
+            Shipped
+        </option>
 
-                    <option
-                        value="completed"
-                        <?= $status === "completed" ? "selected" : "" ?>
-                    >
-                        Completed
-                    </option>
+        <option
+            value="completed"
+            <?= $status === "completed" ? "selected" : "" ?>
+            <?= in_array(
+                "completed",
+                $status_transitions[$status] ?? [],
+                true
+            ) ? "" : "disabled" ?>
+        >
+            Completed
+        </option>
 
-                    <option
-                        value="cancelled"
-                        <?= $status === "cancelled" ? "selected" : "" ?>
-                    >
-                        Cancelled
-                    </option>
+        <option
+            value="cancelled"
+            <?= $status === "cancelled" ? "selected" : "" ?>
+            <?= in_array(
+                "cancelled",
+                $status_transitions[$status] ?? [],
+                true
+            ) ? "" : "disabled" ?>
+        >
+                Cancelled
+            </option>
 
-                </select>
+        </select>
 
-                <div class="button-group">
+        <div class="button-group">
 
-                    <button type="submit">
-                        Update Status
-                    </button>
+            <?php
+            $is_final_status = in_array(
+                $status,
+                ["completed", "cancelled"],
+                true
+            );
+            ?>
 
-                    <a class="back-button" href="admin_orders.php">
-                        ← Back to Manage Orders
-                    </a>
+            <button
+                type="submit"
+                <?= $is_final_status ? "disabled" : "" ?>
+            >
+                <?= $is_final_status
+                    ? "Status Finalised"
+                    : "Update Status" ?>
+            </button>
 
-                </div>
+            <a class="back-button" href="admin_orders.php">
+                ← Back to Manage Orders
+            </a>
+
+        </div>
 
             </form>
 

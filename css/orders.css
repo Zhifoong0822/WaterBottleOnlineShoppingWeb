@@ -206,6 +206,29 @@
     text-align: center;
 }
 
+/* Feedback and rating button */
+.feedback-button {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 9px 15px;
+
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+
+    background-color: #ffffff;
+    color: #b45309;
+
+    font-size: 14px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.feedback-button:hover {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+
 @media (max-width: 700px) {
     .order-card {
         flex-direction: column;
@@ -549,6 +572,17 @@
     background-color: #555555;
 }
 
+.form-section select option:disabled {
+    color: #999999;
+    background-color: #eeeeee;
+}
+
+.button-group button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+}
+
 .back-button {
     display: inline-block;
     background-color: #e9ecef;
@@ -578,4 +612,194 @@
 .order-tabs a.active {
     color: #222222;
     border-bottom-color: #222222;
+}
+
+.order-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.order-items-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.order-item-preview {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.order-item-preview:not(:last-of-type) {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.order-meta-section {
+    margin-top: 4px;
+}
+
+/* ==========================================================================
+   Order Feedback Page
+   ========================================================================== */
+
+   .feedback-page {
+    width: 100%;
+    max-width: 750px;
+    margin: 0 auto;
+}
+
+.feedback-card {
+    overflow: hidden;
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 14px;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
+}
+
+.feedback-card-header {
+    padding: 22px 25px;
+    background-color: #222222;
+    color: #ffffff;
+}
+
+.feedback-card-header h2 {
+    margin: 0;
+}
+
+.feedback-card-body {
+    padding: 25px;
+}
+
+.feedback-description {
+    margin-top: 0;
+    margin-bottom: 24px;
+    color: #666666;
+}
+
+.rating-fieldset {
+    margin: 0 0 24px;
+    padding: 0;
+    border: none;
+}
+
+.rating-fieldset legend {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.star-rating {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.star-rating input {
+    display: none;
+}
+
+.star-rating label {
+    color: #cccccc;
+    font-size: 38px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+    color: #f59e0b;
+}
+
+.feedback-form-group {
+    margin-bottom: 22px;
+}
+
+.feedback-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.optional-text {
+    color: #777777;
+    font-size: 13px;
+    font-weight: normal;
+}
+
+.feedback-form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+
+    font-family: inherit;
+    font-size: 15px;
+    resize: vertical;
+}
+
+.feedback-form-group textarea:focus {
+    outline: none;
+    border-color: #333333;
+}
+
+.feedback-error {
+    margin: 7px 0 0;
+    color: #dc3545;
+    font-size: 14px;
+}
+
+.feedback-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.submit-feedback-button,
+.feedback-back-button {
+    padding: 11px 18px;
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+.submit-feedback-button {
+    border: none;
+    background-color: #222222;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.submit-feedback-button:hover {
+    background-color: #555555;
+}
+
+.feedback-back-button {
+    display: inline-block;
+    background-color: #e9ecef;
+    color: #222222;
+    text-decoration: none;
+}
+
+.feedback-back-button:hover {
+    background-color: #dfe3e6;
+}
+
+.rating-submitted {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 9px 15px;
+
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+
+    background-color: #eeeeee;
+    color: #777777;
+
+    font-size: 14px;
+    font-weight: bold;
+    cursor: not-allowed;
 }
