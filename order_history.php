@@ -65,21 +65,57 @@ if (is_post() && post("action") === "cancel_order") {
 
     $cancel_order_id = (int) $cancel_order_id;
 
-    $sql = "UPDATE orders
-            SET status = 'cancelled'
+    try {
+        $_db->beginTransaction();
+
+        $stmt_order = $_db->prepare("
+            SELECT points_used, points_earned
+            FROM orders
             WHERE order_id = :order_id
               AND user_id = :user_id
-              AND status = 'pending'";
+              AND status = 'pending'
+            FOR UPDATE
+        ");
+        $stmt_order->execute([
+            "order_id" => $cancel_order_id,
+            "user_id" => $user_id
+        ]);
+        $cancelled_order = $stmt_order->fetch();
 
-    $stmt = $_db->prepare($sql);
+        if (!$cancelled_order) {
+            $_db->rollBack();
+            redirect("order_history.php?status=pending");
+        }
 
-    $stmt->execute([
-        "order_id" => $cancel_order_id,
-        "user_id" => $user_id
-    ]);
+        $stmt_cancel = $_db->prepare("
+            UPDATE orders
+            SET status = 'cancelled'
+            WHERE order_id = :order_id
+        ");
+        $stmt_cancel->execute(["order_id" => $cancel_order_id]);
 
-    if ($stmt->rowCount() > 0) {
+        $stmt_points = $_db->prepare("
+            UPDATE users
+            SET reward_points = GREATEST(
+                reward_points + :points_used - :points_earned,
+                0
+            )
+            WHERE user_id = :user_id
+        ");
+        $stmt_points->execute([
+            "points_used" => $cancelled_order->points_used,
+            "points_earned" => $cancelled_order->points_earned,
+            "user_id" => $user_id
+        ]);
+
+        $_db->commit();
+        temp("info", "Order cancelled and reward points adjusted.");
         redirect("order_history.php?status=cancelled");
+    } catch (PDOException $e) {
+        if ($_db->inTransaction()) {
+            $_db->rollBack();
+        }
+        temp("info", "Unable to cancel the order. Please try again.");
     }
 
     redirect("order_history.php?status=pending");

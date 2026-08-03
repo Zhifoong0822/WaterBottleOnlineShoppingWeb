@@ -20,7 +20,14 @@ try {
                 user_id,
                 order_date,
                 total_amount,
-                status
+                subtotal_amount,
+                points_used,
+                points_discount,
+                points_earned,
+                status,
+                payment_method,
+                payment_reference,
+                payment_status
             FROM orders
             WHERE order_id = :order_id";
 
@@ -123,7 +130,14 @@ try {
                 user_id,
                 order_date,
                 total_amount,
-                status
+                subtotal_amount,
+                points_used,
+                points_discount,
+                points_earned,
+                status,
+                payment_method,
+                payment_reference,
+                payment_status
             FROM orders
             WHERE order_id = :order_id";
 
@@ -144,6 +158,8 @@ try {
 }
 
 $status = strtolower($order["status"]);
+$payment_method = ucwords(str_replace('_', ' ', $order["payment_method"]));
+$payment_status = ucfirst($order["payment_status"]);
 
 require "_head.php";
 
@@ -198,7 +214,27 @@ require "_head.php";
             </tr>
 
             <tr>
-                <th>Total Amount</th>
+                <th>Subtotal</th>
+                <td class="amount">
+                    RM <?= number_format(
+                        (float) $order["subtotal_amount"],
+                        2
+                    ) ?>
+                </td>
+            </tr>
+
+            <?php if ((int) $order["points_used"] > 0): ?>
+            <tr>
+                <th>Reward Points Used</th>
+                <td>
+                    <?= number_format((int) $order["points_used"]) ?> points
+                    (- RM <?= number_format((float) $order["points_discount"], 2) ?>)
+                </td>
+            </tr>
+            <?php endif; ?>
+
+            <tr>
+                <th>Amount Paid</th>
                 <td class="amount">
                     RM <?= number_format(
                         (float) $order["total_amount"],
@@ -206,6 +242,28 @@ require "_head.php";
                     ) ?>
                 </td>
             </tr>
+
+            <tr>
+                <th>Reward Points Earned</th>
+                <td>+<?= number_format((int) $order["points_earned"]) ?> points</td>
+            </tr>
+
+            <tr>
+                <th>Payment Method</th>
+                <td><?= encode($payment_method) ?></td>
+            </tr>
+
+            <tr>
+                <th>Payment Status</th>
+                <td><?= encode($payment_status) ?></td>
+            </tr>
+
+            <?php if ($order["payment_reference"]): ?>
+            <tr>
+                <th>Payment Reference</th>
+                <td><?= encode($order["payment_reference"]) ?></td>
+            </tr>
+            <?php endif; ?>
 
             <tr>
                 <th>Current Status</th>
