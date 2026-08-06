@@ -67,11 +67,8 @@ CREATE TABLE `users` (
   `email` VARCHAR(100) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
   `role` ENUM('admin', 'member') NOT NULL DEFAULT 'member',
-<<<<<<< HEAD
   `profilepic` VARCHAR(255) DEFAULT NULL,
-=======
   `reward_points` INT UNSIGNED NOT NULL DEFAULT 0,
->>>>>>> 2bb5b064f476b32d2cfced29395b07ee3bf652e1
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -202,11 +199,11 @@ CREATE TABLE `user_addresses` (
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
 INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`) VALUES
-(1, 'member1', 'member1@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'member'),
-(2, 'admin', 'admin@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'admin'),
-(3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member'),
-(4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member'),
-(5, 'Jane', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member');
+(1, 'member1', 'member1@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'member', NULL),
+(2, 'admin', 'admin@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'admin', NULL),
+(3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', NULL),
+(4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL),
+(5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL);
 
 INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `phone_number`, `address_text`) VALUES
 (3, 'Home (Default)', 'Member One', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),
