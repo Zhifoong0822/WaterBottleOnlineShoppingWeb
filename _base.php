@@ -218,7 +218,7 @@ $_public_pages = [
 
 $_current_page = basename($_SERVER['PHP_SELF']);
 
-if (!isset($_SESSION['user_id']) && !in_array($_current_page, $_public_pages)) {
+if (!isset($_SESSION['users']) && !in_array($_current_page, $_public_pages)) {
     temp('info', 'Please login to continue.');
     //redirect('login.php');
 }

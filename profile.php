@@ -15,24 +15,31 @@ $user_id = $_SESSION['users']->user_id;
 
 // --- PHP BACKEND: Handle Profile Data Updates ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+
     // 1. Clean and sanitize the raw input from the form
     $updated_name = trim($_POST['user-name']);
     $updated_profilepic = null;
-    
-    //check if the user selected photos or not 
-    if(isset($_FILES['photo']) && $_FILES['photo']['error']===0) {
-        
-    $folder = "update/profile/";
 
-    //create filename
-    $filename = time() . "_" . $_FILES['photo']['name'];
-    $updated_profilepic = $folder . $filename;
-    // Move image to folder
-        move_uploaded_file(
-            $_FILES['photo']['tmp_name'],
-            $updated_profilepic
-        );
+    // check if the user selected a photo or not
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === 0) {
+
+        $folder = __DIR__ . '/update/profile';   // no trailing slash
+
+        if (!is_dir($folder)) {
+            mkdir($folder, 0777, true);
+        }
+
+        $filename = time() . '_' . basename($_FILES['photo']['name']);
+        $target_path = $folder . '/' . $filename;
+
+        if (move_uploaded_file($_FILES['photo']['tmp_name'], $target_path)) {
+            // store the web-relative path in the DB, not the filesystem path
+            $updated_profilepic = 'update/profile/' . $filename;
+        } else {
+            // move failed — don't silently save a broken path to the DB
+            $updated_profilepic = null;
+            error_log('Profile photo upload failed for user ' . $user_id);
+        }
     }
 
     // Update database
@@ -69,7 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($updated_profilepic) {
         $_SESSION['users']->profilepic = $updated_profilepic;
     }
-
 
     header("Location: profile.php");
     exit;
@@ -122,13 +128,13 @@ include '_head.php';
             <div class="card-header">
                 <h4>Profile</h4>
                 <!-- Edit -->
-                <input type ="file" id="profilephoto-input" name=photo accept="image/*" disabled>
+                <input type="file" id="profilephoto-input" name="photo" accept="image/*" disabled>
                 <button type="button" id="edit-btn" class="edit-profile-btn" onclick="toggleEdit()">Edit</button>
             </div>
 
             <div class="form-group">
                 <label>Name</label>
-                <input type="text" id="input-name" name="user-name" class="input-field" value="<?= encode($_SESSION['users']->username) ?>"disabled>
+                <input type="text" id="input-name" name="user-name" class="input-field" value="<?= encode($_SESSION['users']->username) ?>" disabled>
             </div>
 
             <div class="form-group">
