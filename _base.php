@@ -128,6 +128,26 @@ function valid_positive_int($value) {
 }
 
 // ============================================================================
+// Reward Points
+// ============================================================================
+
+const POINTS_PER_RINGGIT = 100;
+const POINTS_EARNED_PER_RM10 = 10;
+const MAX_POINTS_REDEMPTION_RATE = 0.10;
+
+function points_to_ringgit($points) {
+    return $points / POINTS_PER_RINGGIT;
+}
+
+function maximum_redeemable_points($subtotal) {
+    return (int) floor($subtotal * MAX_POINTS_REDEMPTION_RATE * POINTS_PER_RINGGIT);
+}
+
+function earned_reward_points($amount_paid) {
+    return (int) floor($amount_paid / 10) * POINTS_EARNED_PER_RM10;
+}
+
+// ============================================================================
 // Error Handlings
 // ============================================================================
 

@@ -12,6 +12,12 @@ $user_id = (int) $_SESSION['user_id'];
 $cart_items = [];
 $total_amount = 0;
 $errors = [];
+$payment_methods = [
+    'online_banking' => 'Online Banking (Demo)',
+    'ewallet' => 'E-Wallet (Demo)',
+    'credit_debit_card' => 'Credit / Debit Card (Demo)',
+    'cash_on_delivery' => 'Cash on Delivery',
+];
 
 
 
@@ -64,12 +70,49 @@ foreach ($cart_items as $item) {
     $total_amount += $item->computed_price * $item->quantity;
 }
 
+$stmt_points = $_db->prepare("SELECT reward_points FROM users WHERE user_id = ?");
+$stmt_points->execute([$user_id]);
+$points_balance = (int) $stmt_points->fetchColumn();
+$maximum_points_for_order = min(
+    $points_balance,
+    maximum_redeemable_points($total_amount)
+);
+
+$points_input = post('points_to_use', '0');
+$display_points_to_use = ctype_digit($points_input) ? (int) $points_input : 0;
+$display_points_to_use = min($display_points_to_use, $maximum_points_for_order);
+$display_points_discount = points_to_ringgit($display_points_to_use);
+$display_amount_due = $total_amount - $display_points_discount;
+
 // 5. Finalize the Order Form Action processing
 if (req('confirm_order')) {
     $address_type = req('address_type'); // 'saved' or 'new'
     $name = '';
     $phone = '';
     $address = '';
+    $payment_method = post('payment_method', '');
+    $payment_reference = trim(post('payment_reference', ''));
+    $points_to_use = 0;
+
+    if (!array_key_exists($payment_method, $payment_methods)) {
+        $errors['payment_method'] = 'Please select a payment method.';
+    } elseif ($payment_method !== 'cash_on_delivery' && $payment_reference === '') {
+        $errors['payment_reference'] = 'Enter a demo payment reference.';
+    } elseif (strlen($payment_reference) > 100) {
+        $errors['payment_reference'] = 'Payment reference must not exceed 100 characters.';
+    }
+
+    $payment_status = $payment_method === 'cash_on_delivery' ? 'pending' : 'paid';
+
+    if (!ctype_digit($points_input)) {
+        $errors['points_to_use'] = 'Points used must be a whole number.';
+    } else {
+        $points_to_use = (int) $points_input;
+
+        if ($points_to_use > $maximum_points_for_order) {
+            $errors['points_to_use'] = 'You may use up to ' . $maximum_points_for_order . ' points for this order.';
+        }
+    }
 
     if ($address_type === 'saved') {
         $address_id = req('address_id');
@@ -126,6 +169,28 @@ if (req('confirm_order')) {
         $_db->beginTransaction();
 
         try {
+            // Lock the member's point balance so concurrent checkouts cannot overspend points.
+            $stmt_member = $_db->prepare("
+                SELECT reward_points
+                FROM users
+                WHERE user_id = ?
+                FOR UPDATE
+            ");
+            $stmt_member->execute([$user_id]);
+            $current_points = (int) $stmt_member->fetchColumn();
+            $maximum_points_for_order = min(
+                $current_points,
+                maximum_redeemable_points($total_amount)
+            );
+
+            if ($points_to_use > $maximum_points_for_order) {
+                throw new Exception('Your reward-points balance changed. Please review your checkout again.');
+            }
+
+            $points_discount = points_to_ringgit($points_to_use);
+            $amount_due = round($total_amount - $points_discount, 2);
+            $points_earned = earned_reward_points($amount_due);
+
             // 1. FIRST CHECK STOCK: Check specific size variant stock in product_variants
             $stmt_check = $_db->prepare("
                 SELECT pv.stock, p.name 
@@ -150,11 +215,25 @@ if (req('confirm_order')) {
 
             // A. Create Parent Order Row
             $stmt_order = $_db->prepare("
-                INSERT INTO orders (user_id, total_amount, status, recipient_name, shipping_address, phone_number, order_date) 
-                VALUES (?, ?, 'pending', ?, ?, ?, NOW())
+                INSERT INTO orders (
+                    user_id, total_amount, subtotal_amount, points_used, points_discount, points_earned,
+                    status, recipient_name, shipping_address, phone_number,
+                    payment_method, payment_reference, payment_status, order_date
+                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, NOW())
             ");
-            $stmt_order->execute([$user_id, $total_amount, $name, $address, $phone]);
+            $stmt_order->execute([
+                $user_id, $amount_due, $total_amount, $points_to_use, $points_discount, $points_earned,
+                $name, $address, $phone,
+                $payment_method, $payment_reference ?: null, $payment_status
+            ]);
             $order_id = $_db->lastInsertId();
+
+            $stmt_update_points = $_db->prepare("
+                UPDATE users
+                SET reward_points = reward_points - ? + ?
+                WHERE user_id = ?
+            ");
+            $stmt_update_points->execute([$points_to_use, $points_earned, $user_id]);
 
             // B. Add Selected Items & C. Deduct Variant Product Stock in DB
             $stmt_order_item = $_db->prepare("
@@ -223,9 +302,17 @@ include '_head.php';
             <?php endforeach; ?>
         </ul>
         <hr style="border:0; border-top:1px solid #ccc; margin: 15px 0;">
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px;">
-            <span>Grand Total:</span>
-            <span style="color: #28a745;">RM<?= number_format($total_amount, 2) ?></span>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px;">
+            <span>Subtotal:</span>
+            <span>RM<?= number_format($total_amount, 2) ?></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+            <span>Reward points discount:</span>
+            <span id="points-discount-display">- RM<?= number_format($display_points_discount, 2) ?></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; margin-top: 12px;">
+            <span>Amount Due:</span>
+            <span id="amount-due-display" style="color: #28a745;">RM<?= number_format($display_amount_due, 2) ?></span>
         </div>
     </div>
 
@@ -250,14 +337,56 @@ include '_head.php';
                 <p style="font-weight: bold; margin-bottom: 10px; font-size: 14px;">Select Delivery Option:</p>
                 
                 <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-                    <input type="radio" name="address_type" value="saved" checked onclick="toggleAddressFields('saved')">
+                    <input type="radio" name="address_type" value="saved" checked>
                     Use a Saved Address Profile
                 </label>
                 
                 <label style="display: block; cursor: pointer;">
-                    <input type="radio" name="address_type" value="new" onclick="toggleAddressFields('new')">
+                    <input type="radio" name="address_type" value="new">
                     Ship to a New Address Instead
                 </label>
+            </div>
+
+            <div style="background: #f1f3f5; padding: 15px; border-radius: 6px; border: 1px solid #e2e6ea;">
+                <label for="payment_method" style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Payment Method</label>
+                <select id="payment_method" name="payment_method" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                    <option value="">- Select a payment method -</option>
+                    <?php foreach ($payment_methods as $value => $label): ?>
+                        <option value="<?= $value ?>" <?= post('payment_method') === $value ? 'selected' : '' ?>>
+                            <?= encode($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <span style="color: red; font-size: 12px;"><?= $errors['payment_method'] ?? '' ?></span>
+
+                <div id="payment-reference-block" style="margin-top: 12px;">
+                    <label for="payment_reference" style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Demo Payment Reference</label>
+                    <input id="payment_reference" type="text" name="payment_reference" maxlength="100" value="<?= encode(post('payment_reference')) ?>" placeholder="Example: DEMO-123456 or card last 4 digits" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <small style="display: block; margin-top: 5px; color: #666;">Demo only. Do not enter real card or bank-account details.</small>
+                    <span style="color: red; font-size: 12px;"><?= $errors['payment_reference'] ?? '' ?></span>
+                </div>
+            </div>
+
+            <div style="background: #fff8e8; padding: 15px; border-radius: 6px; border: 1px solid #f0cf86;">
+                <label for="points_to_use" style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Reward Points</label>
+                <p style="margin: 0 0 8px; font-size: 13px; color: #666;">
+                    Balance: <strong><?= number_format($points_balance) ?> points</strong>.
+                    100 points = RM1. You may use up to <?= number_format($maximum_points_for_order) ?> points (10% order limit).
+                </p>
+                <input
+                    id="points_to_use"
+                    type="number"
+                    name="points_to_use"
+                    min="0"
+                    max="<?= $maximum_points_for_order ?>"
+                    step="1"
+                    value="<?= $display_points_to_use ?>"
+                    data-subtotal="<?= $total_amount ?>"
+                    data-max-points="<?= $maximum_points_for_order ?>"
+                    style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
+                >
+                <small style="display: block; margin-top: 5px; color: #666;">Earn 10 points for every RM10 paid after redemption.</small>
+                <span style="color: red; font-size: 12px;"><?= $errors['points_to_use'] ?? '' ?></span>
             </div>
 
             <!-- Block A: Dropdown showing existing options -->
@@ -317,23 +446,11 @@ include '_head.php';
 </div>
 
 <script>
-// Toggle UI inputs dynamically between saved values list and manual input entries
-function toggleAddressFields(mode) {
-    var savedBlock = document.getElementById('saved-address-block');
-    var newBlock = document.getElementById('new-address-block');
-    
-    if (mode === 'saved') {
-        savedBlock.style.display = 'block';
-        newBlock.style.display = 'none';
-    } else {
-        savedBlock.style.display = 'none';
-        newBlock.style.display = 'flex';
-    }
-}
-
 // Retain visibility settings correctly if form updates due to validation errors
 <?php if (req('address_type') === 'new' || isset($errors['name']) || isset($errors['phone']) || isset($errors['address'])): ?>
-    document.querySelector('input[name="address_type"][value="new"]').click();
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelector('input[name="address_type"][value="new"]').checked = true;
+    });
 <?php endif; ?>
 </script>
 
