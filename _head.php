@@ -28,10 +28,10 @@
                     <div class="nav-group">
                         <li><a href="products.php" class="nav-link">Products</a></li>
 
-                        <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php if (isset($_SESSION['users']->user_id)): ?>
                             <li><a href="cart_view.php" class="nav-link">View Cart</a></li>
                             <li><a href="order_history.php" class="nav-link">My Orders</a></li>
-                            <?php if ($_SESSION['role'] === 'admin'): ?>
+                            <?php if ($_SESSION['users']->user_id === 'admin'): ?>
                                 <li><a href="admin_orders.php" class="nav-link">Manage Orders</a></li>
                             <?php endif; ?>
                         <?php endif; ?>
@@ -39,9 +39,9 @@
 
                     <!-- Right Navigation Group -->
                     <div class="nav-group">
-                        <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php if (isset($_SESSION['users']->user_id)): ?>
                             <li class="user-greeting">
-                                Hi, <a href="profile.php" class="user-name"><?= encode($_SESSION['name']) ?></a>
+                                Hi, <a href="profile.php" class="user-name"><?= encode($_SESSION['users']->username) ?></a>
                             </li>
                             <li><a href="logout.php" class="nav-link nav-link-btn">Logout</a></li>
                         <?php else: ?>

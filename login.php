@@ -20,14 +20,12 @@ if (is_post()) {
 
     // Verify password and build the session using object arrow syntax
     if ($user && password_verify($password, $user->password)) {
-        $_SESSION['user_id'] = $user->user_id;
-        $_SESSION['name']    = $user->username;
-        $_SESSION['role']    = $user->role;
+        $_SESSION['users'] = $user;
 
-        temp('info', "Welcome back, " . encode($_SESSION['name']) . "!");
+        temp('info', "Welcome back, " . encode($_SESSION['users']->username) . "!");
 
-        // Route users according to their access roles
-        redirect($_SESSION['role'] === 'admin' ? 'admin_orders.php' : 'products.php');
+        // Route users according to their access roales
+        redirect($_SESSION['users']->role === 'admin' ? 'admin_orders.php' : 'products.php');
         exit;
     } else {
         $_err['login'] = "Invalid email or password.";
@@ -60,13 +58,15 @@ if (is_post()) {
             <ul style="display: flex; align-items: center; list-style: none; margin: 0; padding: 0; gap: 20px;">
                 <li><a href="products.php">Products</a></li>
 
-                <?php if (isset($_SESSION['user_id'])): ?>
+                <?php if (isset($_SESSION['users'])): ?>
                     <li><a href="cart_view.php">View Cart</a></li>
                     <li><a href="order_history.php">My Orders</a></li>
-                    <?php if ($_SESSION['role'] === 'admin'): ?>
+
+                    <?php if ($_SESSION['users']->role === 'admin'): ?>
                         <li><a href="admin_orders.php">Manage Orders</a></li>
                     <?php endif; ?>
-                    <li>Hi, <?= encode($_SESSION['name']) ?></li>
+                    
+                    <li>Hi, <?= encode($_SESSION['users']->username) ?></li>
                     
                     <!-- Pushes Logout to the right -->
                     <li style="margin-left: auto;"><a href="logout.php">Logout</a></li>
