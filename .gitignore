@@ -18,3 +18,4 @@
 # Environment variables
 .env
 .env.local
+mail_config.php

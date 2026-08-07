@@ -15,6 +15,17 @@ if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
 
 $order_id = (int) $_GET["id"];
 
+if (is_post() && post('action') === 'send_receipt') {
+    try {
+        send_order_receipt($order_id, $user_id);
+        temp('info', 'Your e-receipt has been sent to your registered email address.');
+    } catch (Throwable $mail_error) {
+        temp('info', 'Unable to send the e-receipt. Please try again later.');
+    }
+
+    redirect('order_detail.php?id=' . urlencode($order_id));
+}
+
 try {
     $sql = "SELECT
                 order_id,
@@ -151,6 +162,11 @@ require "_head.php";
         </table>
 
         <div class="button-area">
+
+            <form method="post" class="receipt-form">
+                <input type="hidden" name="action" value="send_receipt">
+                <button type="submit" class="receipt-button">Send E-Receipt</button>
+            </form>
 
             <a class="back-button" href="order_history.php">
                 ← Back to My Orders

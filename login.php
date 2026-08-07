@@ -20,7 +20,14 @@ if (is_post()) {
 
     // Verify password and build the session using object arrow syntax
     if ($user && password_verify($password, $user->password)) {
+        session_regenerate_id(true);
+
+        // Keep the session keys used by both merged codebases. Profile pages
+        // use the user object, while cart/checkout/order pages use these keys.
         $_SESSION['users'] = $user;
+        $_SESSION['user_id'] = (int) $user->user_id;
+        $_SESSION['name'] = $user->username;
+        $_SESSION['role'] = $user->role;
 
         temp('info', "Welcome back, " . encode($_SESSION['users']->username) . "!");
 

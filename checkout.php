@@ -268,7 +268,14 @@ if (req('confirm_order')) {
 
             $_db->commit();
 
-            temp('info', 'Order placed successfully.');
+            // The order has already been committed, so email failure never
+            // reverses a successful checkout.
+            try {
+                send_order_receipt($order_id, $user_id);
+                temp('info', 'Order placed successfully. Your e-receipt has been sent to your email.');
+            } catch (Throwable $mail_error) {
+                temp('info', 'Order placed successfully. Your e-receipt could not be sent; you can resend it from Order Details after email is configured.');
+            }
             redirect('order_detail.php?id=' . $order_id);
 
         } catch (Exception $e) {
