@@ -9,9 +9,10 @@ if (!isset($_SESSION['user_id'])) {
 }
 $user_id = (int) $_SESSION['user_id'];
 
-$status_filter = get("status", "pending");
+$status_filter = get("status", "all");
 
 $allowed_statuses = [
+    "all",
     "pending",
     "shipped",
     "completed",
@@ -19,7 +20,7 @@ $allowed_statuses = [
 ];
 
 if (!in_array($status_filter, $allowed_statuses, true)) {
-    $status_filter = "pending";
+    $status_filter = "all";
 }
 
 // Customer clicks Order Received button
@@ -35,7 +36,9 @@ if (is_post() && post("action") === "confirm_received") {
     $received_order_id = (int) $received_order_id;
 
     $sql = "UPDATE orders
-            SET status = 'completed'
+            SET status = 'completed',
+                /* record exact date&time for completed_at when cust clicks Order Received */
+                completed_at = NOW() 
             WHERE order_id = :order_id
               AND user_id = :user_id
               AND status = 'shipped'";
@@ -89,8 +92,10 @@ if (is_post() && post("action") === "cancel_order") {
 
         $stmt_cancel = $_db->prepare("
             UPDATE orders
-            SET status = 'cancelled'
+            SET status = 'cancelled',
+                cancelled_at = NOW()  
             WHERE order_id = :order_id
+                AND status = 'pending'
         ");
         $stmt_cancel->execute(["order_id" => $cancel_order_id]);
 
@@ -139,7 +144,8 @@ $sql = "SELECT
             oi.quantity,
             oi.price AS item_price,
             p.name AS product_name,
-            p.image_url
+            p.image_url,
+            oi.size AS size
 
         FROM orders AS o
 
@@ -149,19 +155,28 @@ $sql = "SELECT
         LEFT JOIN products AS p
             ON oi.product_id = p.product_id
 
-        WHERE o.user_id = :user_id
-          AND o.status = :status
+        WHERE o.user_id = :user_id";
 
-        ORDER BY
+if ($status_filter !== "all") {
+    $sql .= " AND o.status = :status";
+}
+
+$sql .= " ORDER BY
             o.order_date DESC,
             o.order_id DESC,
             oi.order_item_id ASC";
 
-$stmt = $_db->prepare($sql);
-$stmt->execute([
-    "user_id" => $user_id,
-    "status" => $status_filter
-]);
+            $stmt = $_db->prepare($sql);
+
+            $params = [
+                "user_id" => $user_id
+            ];
+            
+            if ($status_filter !== "all") {
+                $params["status"] = $status_filter;
+            }
+            
+            $stmt->execute($params);
 
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -186,7 +201,8 @@ foreach ($rows as $row) {
             "product_name" => $row["product_name"],
             "image_url" => $row["image_url"],
             "quantity" => $row["quantity"],
-            "item_price" => $row["item_price"]
+            "item_price" => $row["item_price"],
+            "size" => $row["size"]
         ];
     }
 }
@@ -196,6 +212,13 @@ require "_head.php";
 ?>
 
 <nav class="order-tabs">
+
+    <a
+        href="order_history.php?status=all"
+        class="<?= $status_filter === "all" ? "active" : "" ?>"
+    >
+        All
+    </a>
 
     <a
         href="order_history.php?status=pending"
@@ -262,15 +285,21 @@ require "_head.php";
 
                 <div class="order-info">
 
-                    <h2>
-                        <?= encode($productName) ?>
-                    </h2>
+    <h2>
+        <?= encode($productName) ?>
+    </h2>
 
-                    <p class="quantity">
-                        x<?= $quantity ?>
-                    </p>
+    <?php if (!empty($item["size"])): ?>
+        <p class="product-variation">
+            Size: <?= encode($item["size"]) ?>
+        </p>
+    <?php endif; ?>
 
-                </div>
+    <p class="quantity">
+        x<?= $quantity ?>
+    </p>
+
+</div>
 
             </div>
 

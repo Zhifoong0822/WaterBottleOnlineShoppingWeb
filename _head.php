@@ -8,10 +8,24 @@
     <!-- Load main stylesheet -->
     <link rel="stylesheet" href="css/main.css">    
 
-    <!-- ONLY load cart specific styles on the cart view page -->
-    <?php if (basename($_SERVER['PHP_SELF']) == 'cart_view.php'): ?>
-        <link rel="stylesheet" href="css/cart.css">
-    <?php endif; ?>
+    <!-- ONLY load order styles and icons on order-related pages -->
+    <?php if (in_array(basename($_SERVER['PHP_SELF']), [
+        'order_history.php',
+        'order_detail.php',
+        'order_feedback.php',
+        'admin_orders.php',
+        'admin_order_detail.php'
+    ])): ?>
+
+    <link rel="stylesheet" href="css/orders.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+<?php endif; ?>
+    
 </head>
 <body>
     <div id="info"><?= temp('info') ?></div>

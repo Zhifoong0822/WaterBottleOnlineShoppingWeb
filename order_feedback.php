@@ -141,15 +141,14 @@ require "_head.php";
 
         <div class="feedback-card-header">
             <h2>
-                Feedback for Order #<?= encode($order["order_id"]) ?>
+                Feedback for Order #<?= encode($order_id) ?>
             </h2>
         </div>
 
         <div class="feedback-card-body">
 
             <p class="feedback-description">
-                Rate your completed order and optionally share
-                your experience.
+                Rate your completed order and optionally share your experience.
             </p>
 
             <form method="POST">
@@ -160,30 +159,54 @@ require "_head.php";
 
                     <div class="star-rating">
 
-                        <?php for ($star = 5; $star >= 1; $star--): ?>
+                        <input
+                            type="radio"
+                            id="star5"
+                            name="rating"
+                            value="5"
+                            <?= $rating == 5 ? "checked" : "" ?>
+                        >
+                        <label for="star5">★</label>
 
-                            <input
-                                type="radio"
-                                id="star<?= $star ?>"
-                                name="rating"
-                                value="<?= $star ?>"
-                                <?= (string) $rating === (string) $star
-                                    ? "checked"
-                                    : "" ?>
-                            >
+                        <input
+                            type="radio"
+                            id="star4"
+                            name="rating"
+                            value="4"
+                            <?= $rating == 4 ? "checked" : "" ?>
+                        >
+                        <label for="star4">★</label>
 
-                            <label
-                                for="star<?= $star ?>"
-                                title="<?= $star ?> stars"
-                            >
-                                ★
-                            </label>
+                        <input
+                            type="radio"
+                            id="star3"
+                            name="rating"
+                            value="3"
+                            <?= $rating == 3 ? "checked" : "" ?>
+                        >
+                        <label for="star3">★</label>
 
-                        <?php endfor; ?>
+                        <input
+                            type="radio"
+                            id="star2"
+                            name="rating"
+                            value="2"
+                            <?= $rating == 2 ? "checked" : "" ?>
+                        >
+                        <label for="star2">★</label>
+
+                        <input
+                            type="radio"
+                            id="star1"
+                            name="rating"
+                            value="1"
+                            <?= $rating == 1 ? "checked" : "" ?>
+                        >
+                        <label for="star1">★</label>
 
                     </div>
 
-                    <?php if (isset($errors["rating"])): ?>
+                    <?php if (!empty($errors["rating"])): ?>
                         <p class="feedback-error">
                             <?= encode($errors["rating"]) ?>
                         </p>
@@ -191,22 +214,24 @@ require "_head.php";
 
                 </fieldset>
 
+
                 <div class="feedback-form-group">
 
                     <label for="feedback">
                         Feedback
-                        <span class="optional-text">(Optional)</span>
+                        <span class="optional-text">
+                            (Optional)
+                        </span>
                     </label>
 
                     <textarea
                         id="feedback"
                         name="feedback"
                         rows="6"
-                        maxlength="1000"
                         placeholder="Share your experience with this order..."
                     ><?= encode($feedback) ?></textarea>
 
-                    <?php if (isset($errors["feedback"])): ?>
+                    <?php if (!empty($errors["feedback"])): ?>
                         <p class="feedback-error">
                             <?= encode($errors["feedback"]) ?>
                         </p>
@@ -214,20 +239,19 @@ require "_head.php";
 
                 </div>
 
+
                 <div class="feedback-actions">
 
                     <button
                         type="submit"
                         class="submit-feedback-button"
                     >
-                        <?= $existing_feedback
-                            ? "Update Feedback"
-                            : "Submit Feedback" ?>
+                        Submit Feedback
                     </button>
 
                     <a
-                        class="feedback-back-button"
                         href="order_history.php?status=completed"
+                        class="feedback-back-button"
                     >
                         ← Back to Completed Orders
                     </a>
