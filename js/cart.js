@@ -2,11 +2,16 @@
 
 $(document).ready(function() {
 
-    // 1. ADD TO CART ACTION (Strictly validates against inventory limits)
-    $(document).on("click", ".add-to-cart", function() {
-        var product_id = $(this).data("product_id");
+    // 1. ADD TO CART ACTION (Redirects to products.php after adding)
+    // 1. ADD TO CART ACTION (Guaranteed redirect to products.php)
+    $(document).on("click", ".add-to-cart", function(e) {
+        // PREVENT default form submission or link click from reloading page early!
+        e.preventDefault();
+
+        var $btn = $(this);
+        var product_id = $btn.data("product_id");
         
-        var parentContainer = $(this).closest('.purchase-controls');
+        var parentContainer = $btn.closest('.purchase-controls');
         var qtyInput = parentContainer.find(".product-qty");
         
         if (!qtyInput.length) {
@@ -32,33 +37,45 @@ $(document).ready(function() {
             }
         }
         
-        // Fire AJAX Pipeline (Now bundling the size parameter option)
-        $.post("handle_cart.php", {
-            action: "add_to_cart",
-            product_id: product_id,
-            quantity: qtyToAdd,
-            size: selectedSize // Sent directly to backend handle_cart.php script
-        }, function(response) {
-            if (response.success || response.message === "Product added to cart." || response.message === "Product quantity updated in cart.") {
-                showCartConfirmation(response.message);
-            } else {
-                alert(response.message);
+        // Fire AJAX Request
+        $.ajax({
+            url: "handle_cart.php",
+            type: "POST",
+            data: {
+                action: "add_to_cart",
+                product_id: product_id,
+                quantity: qtyToAdd,
+                size: selectedSize
+            },
+            dataType: "json",
+            success: function(response) {
+                if (response.message) {
+                    alert(response.message);
+                }
+                // Redirect immediately back to products.php
+                window.location.href = "products.php";
+            },
+            error: function(xhr, status, error) {
+                console.error("AJAX Error:", error, xhr.responseText);
+                // Fallback: If server responded but failed JSON parsing, redirect anyway
+                window.location.href = "products.php";
             }
-        }, "json");
+        });
     });
 
-    // 2. UPDATE QUANTITY VIA BUTTONS (+ / -) (Blocks increments above maximum stock)
+    // 2. UPDATE QUANTITY VIA BUTTONS (+ / -)
     $(document).on("click", ".update-quantity", function() {
-        var cart_item_id = $(this).data("cart_item_id");
-        var product_id = $(this).data("product_id");
-        var change = $(this).data("change");
+        var $btn = $(this);
+        var cart_item_id = $btn.data("cart_item_id");
+        var product_id = $btn.data("product_id");
+        var change = $btn.data("change");
         
-        var siblingInput = $(this).siblings(".item-quantity");
+        var siblingInput = $btn.siblings(".item-quantity");
         var current_quantity = parseInt(siblingInput.val());
         var maxStock = parseInt(siblingInput.attr("max")); 
         var new_quantity = current_quantity + change;
 
-        // Enforce upper boundary conditions before firing AJAX pipeline
+        // Enforce upper boundary conditions
         if (change > 0 && new_quantity > maxStock) {
             alert("Cannot increase quantity. Only " + maxStock + " units are available in inventory.");
             return;
@@ -71,9 +88,10 @@ $(document).ready(function() {
                 product_id: product_id,
                 quantity: new_quantity
             }, function(response) {
-                alert(response.message);
-                if (response.message === "Cart item quantity updated.") {
+                if (response.success || (response.message && response.message.toLowerCase().includes("updated"))) {
                     location.reload(); 
+                } else {
+                    alert(response.message);
                 }
             }, "json");
         } else if (new_quantity === 0) {
@@ -82,8 +100,14 @@ $(document).ready(function() {
                     action: "remove_from_cart",
                     cart_item_id: cart_item_id
                 }, function(response) {
-                    alert(response.message);
-                    if (response.message === "Product removed from cart.") {
+                    if (response.success || (response.message && response.message.toLowerCase().includes("remove"))) {
+                        // Visually fade out and reload
+                        $btn.closest('.cart-item-card').fadeOut(300, function() {
+                            $(this).remove();
+                            location.reload();
+                        });
+                    } else {
+                        alert(response.message);
                         location.reload();
                     }
                 }, "json");
@@ -91,7 +115,7 @@ $(document).ready(function() {
         }
     });
 
-    // 3. UPDATE QUANTITY VIA DIRECT INPUT CHANGE (Validates manual typed values)
+    // 3. UPDATE QUANTITY VIA DIRECT INPUT CHANGE
     $(document).on("change", ".item-quantity", function() {
         var cart_item_id = $(this).data("cart_item_id");
         var product_id = $(this).data("product_id");        
@@ -112,9 +136,10 @@ $(document).ready(function() {
                 product_id: product_id,
                 quantity: new_quantity
             }, function(response) {
-                alert(response.message);
-                if (response.message === "Cart item quantity updated.") {
+                if (response.success || (response.message && response.message.toLowerCase().includes("updated"))) {
                     location.reload();
+                } else {
+                    alert(response.message);
                 }
             }, "json");
         } else {
@@ -125,21 +150,29 @@ $(document).ready(function() {
 
     // 4. REMOVE ITEM COMPLETELY ACTION
     $(document).on("click", ".remove-item", function() {
-        var cart_item_id = $(this).data("cart_item_id");
+        var $btn = $(this);
+        var cart_item_id = $btn.data("cart_item_id");
+
         if (confirm("Are you sure you want to remove this item from your cart?")) {
             $.post("handle_cart.php", {
                 action: "remove_from_cart",
                 cart_item_id: cart_item_id
             }, function(response) {
-                alert(response.message);
-                if (response.message === "Product removed from cart.") {
+                if (response.success || (response.message && response.message.toLowerCase().includes("remove"))) {
+                    // Remove card from DOM instantly and refresh page data
+                    $btn.closest('.cart-item-card').fadeOut(300, function() {
+                        $(this).remove();
+                        location.reload();
+                    });
+                } else {
+                    alert(response.message || "Failed to remove item.");
                     location.reload();
                 }
             }, "json");
         }
     });
 
-    // 5. MODAL EVENT HANDLERS (Now kept neatly inside the document ready wrapper)
+    // 5. MODAL EVENT HANDLERS
     $(document).on("click", "#cart-confirmation-close", function() {
         var modal = document.getElementById("cart-confirmation-modal");
         if (modal) {
@@ -160,7 +193,7 @@ $(document).ready(function() {
 
 });
 
-// Global Function (Must remain outside of ready wrapper so other files can trigger it)
+// Global Function
 function showCartConfirmation(message) {
     var modal = document.getElementById("cart-confirmation-modal");
 

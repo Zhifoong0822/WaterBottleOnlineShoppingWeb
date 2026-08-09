@@ -1,0 +1,14 @@
+<?php
+
+// create mail.config.php and Copy this file to mail_config.php 
+// and enter the ur own email and Gmail app password created(for ur own testing)
+// for the shop email account. Do not commit mail_config.php.
+return [
+    'enabled' => true,
+    'host' => 'smtp.gmail.com',
+    'port' => 587,
+    'username' => 'your-shop-email@gmail.com',
+    'password' => 'your-16-character-gmail-app-password',
+    'from_email' => 'your-shop-email@gmail.com',
+    'from_name' => 'Water Bottle Shop',
+];

@@ -8,27 +8,16 @@ $_title = "Shopping Cart";
 // 3. Inject standard layout structure, styling mappings, and navigation structures
 include '_head.php'; 
 
-$user_id = 1; 
+if (!isset($_SESSION['user_id'])) {
+    redirect('login.php');
+}
+$user_id = (int) $_SESSION['user_id'];
 $cart_id = null;
 $cart_items = [];
 
 // Capture the search keyword from the GET request
 $search = req('search'); 
 
-// Price Calculation Engine Helper Function Matrix inside PHP routine context
-function getVariantPrice($base_price, $size) {
-    $multiplier = 1.0;
-    if (strpos($size, 'Micro') !== false) {
-        $multiplier = 1.00;
-    } elseif (strpos($size, 'Mini') !== false) {
-        $multiplier = 1.10;
-    } elseif (strpos($size, 'Medium') !== false) {
-        $multiplier = 1.20;
-    } elseif (strpos($size, 'Mega') !== false) {
-        $multiplier = 1.40;
-    }
-    return $base_price * $multiplier;
-}
 
 // Query matching the class-assigned database layer
 $stmt_cart = $_db->prepare("SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1");
@@ -38,11 +27,14 @@ $cart_data = $stmt_cart->fetch();
 if ($cart_data) {
     $cart_id = $cart_data->cart_id;
 
-    // Relational SQL join query UPDATED to fetch ci.size data elements out of storage rows
+    // FIXED: Joined product_variants using product_id AND size to fetch exact variant stock
     $stmt_items = $_db->prepare("
-        SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, p.name, p.price, p.image_url, p.stock 
+        SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, 
+               p.name, p.price, p.image_url, 
+               COALESCE(pv.stock, 0) AS stock 
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.product_id
+        LEFT JOIN product_variants pv ON ci.product_id = pv.product_id AND ci.size = pv.size
         WHERE ci.cart_id = ? AND (p.name LIKE ? OR p.description LIKE ?)
     ");
     $stmt_items->execute([$cart_id, "%$search%", "%$search%"]);
@@ -72,7 +64,7 @@ if ($cart_data) {
             <?php foreach ($cart_items as $item) : ?>
                 <?php 
                 // Dynamic sizing logic execution engine calculation checkpoint
-                $computed_unit_price = getVariantPrice($item->price, $item->size);
+                $computed_unit_price = variant_price($item->price, $item->size);
                 $subtotal = $computed_unit_price * $item->quantity; 
                 ?>
                 <div class="cart-item-card" style="display: flex; align-items: center; gap: 20px; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">

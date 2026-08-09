@@ -16,5 +16,8 @@
     ?>
         <script src="js/cart.js"></script>
     <?php endif; ?>
+    <?php if ($current_page === 'checkout.php'): ?>
+        <script src="js/checkout.js"></script>
+    <?php endif; ?>
 </body>
 </html>
