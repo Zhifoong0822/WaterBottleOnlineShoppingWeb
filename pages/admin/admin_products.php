@@ -5,7 +5,38 @@ require_once '../../_base.php';
 
 $search = trim($_GET['search'] ?? '');
 $category = $_GET['category'] ?? '';
+$status = $_GET['status'] ?? '';
+$page = $_GET['page'] ?? 1;
 
+$sort = $_GET['sort'] ?? 'product_id';
+$order = $_GET['order'] ?? 'desc';
+$page = max(1, (int)$page);
+$limit = 10;
+$offset = ($page - 1) * $limit;
+
+function sortIcon($column, $sort, $order)
+{
+    if ($sort != $column) {
+        return "⇅";
+    }
+
+    return strtolower($order) == "asc"
+        ? "▲"
+        : "▼";
+}
+function nextOrder($column, $sort, $order)
+{
+    if ($sort != $column) {
+        return "asc";
+    }
+
+    if (strtolower($order) == "asc") {
+        return "desc";
+    }
+
+    return "";
+}
+// Base SQL
 $sql = "
     SELECT
     p.*,
@@ -26,10 +57,32 @@ $sql = "
     ";
 
     $params = [];
+    $countSql = "
+        SELECT COUNT(*)
+
+        FROM products p
+
+        LEFT JOIN categories c
+            ON p.category_id = c.category_id
+
+        LEFT JOIN product_variants pv
+            ON p.product_id = pv.product_id
+
+        WHERE 1=1
+    ";
+    $countParams = [];
 
     if ($search != '') {
-
         $sql .= "
+            AND (
+                p.name LIKE ?
+                OR c.category_name LIKE ?
+                OR pv.size LIKE ?
+                OR pv.colour LIKE ?
+            )
+        ";
+
+        $countSql .= "
             AND (
                 p.name LIKE ?
                 OR c.category_name LIKE ?
@@ -40,30 +93,84 @@ $sql = "
 
         $keyword = "%{$search}%";
 
-        $params[] = $keyword;
-        $params[] = $keyword;
-        $params[] = $keyword;
-        $params[] = $keyword;
+        for ($i = 0; $i < 4; $i++) {
+            $params[] = $keyword;
+            $countParams[] = $keyword;
+        }
     }
     if ($category != '') {
-
         $sql .= "
             AND p.category_id = ?
         ";
 
+        $countSql .= "
+            AND p.category_id = ?
+        ";
+
         $params[] = $category;
+        $countParams[] = $category;
     }
+    
+    if ($status == 'low') {
+        $sql .= "
+            AND pv.stock > 0
+            AND pv.stock <= 5
+        ";
+        $countSql .= "
+            AND pv.stock > 0
+            AND pv.stock <= 5
+        ";
+
+    }
+    elseif ($status == 'out') {
+
+        $sql .= "
+            AND pv.stock = 0
+        ";
+        $countSql .= "
+            AND pv.stock = 0
+        ";
+
+    }
+
+    $allowedSort = [
+        'product_id'    => 'p.product_id',
+        'name'          => 'p.name',
+        'category_name' => 'c.category_name',
+        'price'         => 'p.price',
+        'stock'         => 'pv.stock'
+    ];
+    if (!array_key_exists($sort, $allowedSort)) {
+        $sort = 'product_id';
+    }
+
+    if ($order == 'asc') {
+        $orderSql = 'ASC';
+    }
+    elseif ($order == 'desc') {
+        $orderSql = 'DESC';
+    }
+    else {
+        $sort = 'product_id';
+        $orderSql = 'ASC';
+    }
+
     $sql .= "
-    ORDER BY p.product_id ASC
+    ORDER BY {$allowedSort[$sort]} $orderSql
+    LIMIT $limit OFFSET $offset
     ";
 
-$stmt = $_db->prepare($sql);
+// Count all matching records
+$countStmt = $_db->prepare($countSql);
+$countStmt->execute($countParams);
 
+$total_products = $countStmt->fetchColumn();
+$totalPages = ceil($total_products / $limit);
+
+$stmt = $_db->prepare($sql);
 $stmt->execute($params);
 
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$total_products = count($products);
-
 $total_categories = $_db->query("
     SELECT COUNT(*) FROM categories
 ")->fetchColumn();
@@ -74,7 +181,6 @@ $low_stock_products = $_db->query("
     WHERE stock > 0
       AND stock <= 5
 ")->fetchColumn();
-
 $out_of_stock_products = $_db->query("
     SELECT COUNT(*)
     FROM product_variants
@@ -86,6 +192,14 @@ SELECT *
 FROM categories
 ORDER BY category_name
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+$query = http_build_query([
+    'search'   => $search,
+    'category' => $category,
+    'status'   => $status,
+    'sort'     => $sort, // Ensure the sort parameter is included in the query string
+    'order'    => strtolower($order)
+]);
 
 $_title = 'Product Management';
 include '../../_head.php';
@@ -106,15 +220,19 @@ include '../../_head.php';
             <h2><?= $total_categories ?></h2>
         </div>
 
-        <div class="dashboard-card">
-            <h3>Low Stock Products</h3>
+        <a href="<?= ($status == 'low') ? 'admin_products.php' : 'admin_products.php?status=low' ?>" class="dashboard-card">
+            <h3>Low Stock Products 
+                <?= $status == 'low' ? '▼' : '▲' ?>
+            </h3>
             <h2><?= $low_stock_products ?></h2>
-        </div>
+        </a>
 
-        <div class="dashboard-card">
-            <h3>Out of Stock Products</h3>
+        <a href="<?= ($status == 'out') ? 'admin_products.php' : 'admin_products.php?status=out' ?>" class="dashboard-card">
+            <h3>Out of Stock Products
+                <?= $status == 'out' ? '▼' : '▲' ?>
+            </h3>
             <h2><?= $out_of_stock_products ?></h2>
-        </div>
+        </a>
     </div>
 
     <div class="product-card">
@@ -167,11 +285,62 @@ include '../../_head.php';
                 <thead>
                     <tr>
                         <th>Image</th>
-                        <th>Product</th>
-                        <th>Category</th>
+                        <th>
+                            <a href="?<?= http_build_query([
+                                'search'=>$search,
+                                'category'=>$category,
+                                'status'=>$status,
+                                'sort'=>'name',
+                                'order'=>nextOrder('name',$sort,$order),
+                                'page'=>1
+                            ]) ?>" class="sort-link">
+
+                            Product <?= sortIcon('name',$sort,$order) ?>
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?<?= http_build_query([
+                                'search'=>$search,
+                                'category'=>$category,
+                                'status'=>$status,
+                                'sort'=>'category_name',
+                                'order'=>nextOrder('category_name',$sort,$order),
+                                'page'=>1
+                            ]) ?>" class="sort-link">
+
+                            Category <?= sortIcon('category_name',$sort,$order) ?>
+
+                            </a>
+                        </th>
                         <th>Size</th>
-                        <th>Price</th>
-                        <th>Stock</th>
+                        <th>
+                            <a href="?<?= http_build_query([
+                                'search'=>$search,
+                                'category'=>$category,
+                                'status'=>$status,
+                                'sort'=>'price',
+                                'order'=>nextOrder('price',$sort,$order),
+                                'page'=>1
+                            ]) ?>" class="sort-link">
+
+                            Price <?= sortIcon('price',$sort,$order) ?>
+
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?<?= http_build_query([
+                                'search'=>$search,
+                                'category'=>$category,
+                                'status'=>$status,
+                                'sort'=>'stock',
+                                'order'=>nextOrder('stock',$sort,$order),
+                                'page'=>1
+                            ]) ?>" class="sort-link">
+
+                            Stock <?= sortIcon('stock',$sort,$order) ?>
+
+                            </a>
+                        </th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -226,23 +395,26 @@ include '../../_head.php';
 
                                 <td class="action-buttons">
 
-                                    <a href="product_view.php?id=<?= $product['product_id'] ?>"
-                                    class="btn-view">
-                                        View
-                                    </a>
+                                    <div class="action-button-group">
 
-                                    <a href="product_edit.php?id=<?= $product['product_id'] ?>"
-                                    class="btn-edit">
-                                        Edit
-                                    </a>
+                                        <a href="product_view.php?id=<?= $product['product_id'] ?>"
+                                        class="btn-view">
+                                            View
+                                        </a>
 
-                                    <a href="product_delete.php?id=<?= $product['product_id'] ?>"
-                                    class="btn-delete">
-                                        Delete
-                                    </a>
+                                        <a href="product_edit.php?id=<?= $product['product_id'] ?>"
+                                        class="btn-edit">
+                                            Edit
+                                        </a>
+
+                                        <a href="product_delete.php?id=<?= $product['product_id'] ?>"
+                                        class="btn-delete">
+                                            Delete
+                                        </a>
+
+                                    </div>
 
                                 </td>
-
                             </tr>
 
                         <?php endforeach; ?>
@@ -259,6 +431,36 @@ include '../../_head.php';
 
                 </tbody>
             </table>
+        </div>
+        <div class="pagination">
+            <?php if ($page > 1): ?>
+
+                <a href="?<?= $query ?>&page=<?= $page - 1 ?>">
+                    Previous
+                </a>
+
+            <?php endif; ?>
+
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+
+                <a
+                    class="<?= $page == $i ? 'active' : '' ?>"
+                    href="?<?= $query ?>&page=<?= $i ?>">
+
+                    <?= $i ?>
+
+                </a>
+
+            <?php endfor; ?>
+
+            <?php if ($page < $totalPages): ?>
+
+                <a href="?<?= $query ?>&page=<?= $page + 1 ?>">
+                    Next
+                </a>
+
+            <?php endif; ?>
+
         </div>
     </div>
 </div>

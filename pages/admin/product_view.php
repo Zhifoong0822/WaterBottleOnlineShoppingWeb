@@ -53,8 +53,18 @@ include '../../_head.php';
         </div>
         <div class="view-content">
             <div class="view-image">
+                <?php
+                $imagePath = $product['image_url'];
+
+                if (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://')) {
+                    $imageSrc = $imagePath;
+                } else {
+                    $imageSrc = '../../' . ltrim($imagePath, '/');
+                }
+                ?>
+
                 <img
-                    src="<?= htmlspecialchars($product['image_url']) ?>"
+                    src="<?= htmlspecialchars($imageSrc) ?>"
                     alt="<?= htmlspecialchars($product['name']) ?>"
                     class="view-product-image"
                 >
