@@ -1,7 +1,7 @@
 </main> <!-- Closes the main tag opened in header -->
 
     <footer>
-        <p>&copy; <?= date('Y') ?> Water Bottle Shop. All rights reserved.</p>
+        <p>&copy; <?= date('Y') ?> SippyGo. All rights reserved.</p>
     </footer>
 
     <!-- 1. Load jQuery dependency first -->

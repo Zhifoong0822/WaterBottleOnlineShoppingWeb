@@ -1,5 +1,83 @@
 <?php
 require_once '../../_base.php';
+<<<<<<< HEAD
+require_admin('../../products.php');
+
+$_title = 'Add Product';
+$categories = $_db->query('SELECT category_id, category_name FROM categories ORDER BY category_name')->fetchAll(PDO::FETCH_ASSOC);
+$error = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name'] ?? '');
+    $categoryId = (int) ($_POST['category'] ?? 0);
+    $price = $_POST['price'] ?? '';
+    $size = trim($_POST['size'] ?? '');
+    $colour = trim($_POST['colour'] ?? '');
+    $stock = $_POST['stock'] ?? '';
+    $description = trim($_POST['description'] ?? '');
+
+    if ($name === '') $error[] = 'Product name is required.';
+    if ($categoryId < 1) $error[] = 'Please select a category.';
+    if (!is_numeric($price) || (float) $price < 0) $error[] = 'Enter a valid price.';
+    if ($size === '') $error[] = 'Size is required.';
+    if ($colour === '') $error[] = 'Colour is required.';
+    if (filter_var($stock, FILTER_VALIDATE_INT) === false || (int) $stock < 0) $error[] = 'Enter a valid stock quantity.';
+    if (empty($_FILES['images']['name'][0])) $error[] = 'Add at least one product photo.';
+
+    $savedImages = [];
+    if (!$error) {
+        $uploadDir = '../../uploads/products/';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true)) {
+            $error[] = 'Could not create the product image folder.';
+        }
+
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+        foreach ($_FILES['images']['name'] as $index => $originalName) {
+            if ($_FILES['images']['error'][$index] !== UPLOAD_ERR_OK) {
+                $error[] = 'One of the photos could not be uploaded.';
+                break;
+            }
+
+            $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+            if (!in_array($extension, $allowedExtensions, true)) {
+                $error[] = 'Photos must be JPG, PNG, or WebP files.';
+                break;
+            }
+
+            $filename = uniqid('product_', true) . '.' . $extension;
+            if (!move_uploaded_file($_FILES['images']['tmp_name'][$index], $uploadDir . $filename)) {
+                $error[] = 'One of the photos could not be saved.';
+                break;
+            }
+            $savedImages[] = 'uploads/products/' . $filename;
+        }
+    }
+
+    if (!$error) {
+        $_db->beginTransaction();
+        try {
+            $stmt = $_db->prepare('INSERT INTO products (category_id, name, description, price, image_url) VALUES (?, ?, ?, ?, ?)');
+            $stmt->execute([$categoryId, $name, $description, $price, $savedImages[0]]);
+            $productId = (int) $_db->lastInsertId();
+
+            $stmt = $_db->prepare('INSERT INTO product_variants (product_id, size, colour, stock) VALUES (?, ?, ?, ?)');
+            $stmt->execute([$productId, $size, $colour, $stock]);
+
+            $imageStmt = $_db->prepare('INSERT INTO product_images (product_id, image_url, sort_order) VALUES (?, ?, ?)');
+            foreach ($savedImages as $position => $imageUrl) {
+                $imageStmt->execute([$productId, $imageUrl, $position + 1]);
+            }
+            $_db->commit();
+            header('Location: product_view.php?id=' . $productId);
+            exit;
+        } catch (Throwable $exception) {
+            $_db->rollBack();
+            $error[] = 'The product could not be saved. Make sure the product_images table has been imported.';
+        }
+    }
+}
+
+=======
 
 $_title = 'Add Product';
 
@@ -224,11 +302,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 }
+>>>>>>> 055c30c62a095c55984c52f24f16ca80e9aa6f8f
 include '../../_head.php';
 ?>
 <link rel="stylesheet" href="../../css/main.css">
 <link rel="stylesheet" href="../../css/admin.css">
 
+<<<<<<< HEAD
+<section class="product-card" style="max-width:760px; margin:0 auto;">
+    <div class="page-header"><h2>Add Product</h2><p>Create a product with one or more gallery photos.</p></div>
+    <?php if ($error): ?>
+        <div id="info"><?= htmlspecialchars(implode(' ', $error)) ?></div>
+    <?php endif; ?>
+    <form method="post" enctype="multipart/form-data" class="product-form">
+        <label>Product name<input required name="name" value="<?= htmlspecialchars($_POST['name'] ?? '') ?>"></label>
+        <label>Category<select required name="category"><option value="">Select category</option><?php foreach ($categories as $category): ?><option value="<?= $category['category_id'] ?>" <?= (string) $category['category_id'] === ($_POST['category'] ?? '') ? 'selected' : '' ?>><?= htmlspecialchars($category['category_name']) ?></option><?php endforeach; ?></select></label>
+        <div class="form-row"><label>Price (RM)<input required min="0" step="0.01" type="number" name="price" value="<?= htmlspecialchars($_POST['price'] ?? '') ?>"></label><label>Stock<input required min="0" type="number" name="stock" value="<?= htmlspecialchars($_POST['stock'] ?? '') ?>"></label></div>
+        <div class="form-row"><label>Size<input required name="size" placeholder="Medium (18oz / 530ml)" value="<?= htmlspecialchars($_POST['size'] ?? '') ?>"></label><label>Colour<input required name="colour" value="<?= htmlspecialchars($_POST['colour'] ?? '') ?>"></label></div>
+        <label>Description<textarea name="description" rows="4"><?= htmlspecialchars($_POST['description'] ?? '') ?></textarea></label>
+        <label>Product photos <small>Choose multiple files for the product gallery.</small><input required type="file" name="images[]" accept="image/png,image/jpeg,image/webp" multiple></label>
+        <div class="form-actions"><a href="admin_products.php" class="btn-view">Cancel</a><button type="submit" class="add-button">Save Product</button></div>
+    </form>
+</section>
+<?php include '../../_foot.php'; ?>
+=======
 <div class="admin-container">
 
     <div class="edit-card">
@@ -505,3 +602,4 @@ document.getElementById("imageInput").addEventListener("change", function(){
 });
 </script>
 <?php include '../../_foot.php'; ?>
+>>>>>>> 055c30c62a095c55984c52f24f16ca80e9aa6f8f

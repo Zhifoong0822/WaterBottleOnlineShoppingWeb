@@ -1,8 +1,7 @@
-<!-- Member Listing Page -->
-
 <?php
 // Core Components
 require_once '../../_base.php';
+require_admin('../../products.php');
 $_title = 'Member Listing';
 include '../../_head.php';
 

@@ -1,7 +1,6 @@
-<!-- display prod, search prod, filter with category, stock, add btn, view btn, edit btn, delete btn -->
-
 <?php
 require_once '../../_base.php';
+require_admin('../../products.php');
 
 $search = trim($_GET['search'] ?? '');
 $category = $_GET['category'] ?? '';

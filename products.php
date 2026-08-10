@@ -2,6 +2,7 @@
 require '_base.php';
 
 $_title = 'Shop Water Bottles';
+$_hide_page_title = true;
 
 $search = trim(get('search', ''));
 $category_id = get('category', '');

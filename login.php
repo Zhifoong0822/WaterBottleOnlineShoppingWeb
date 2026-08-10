@@ -59,7 +59,7 @@ if (is_post()) {
     <div id="info"><?= temp('info') ?></div>
 
     <header>
-        <h1>Water Bottle Shop</h1>
+        <h1>SippyGo</h1>
         <nav>
             <!-- Flexbox navigation line layout -->
             <ul style="display: flex; align-items: center; list-style: none; margin: 0; padding: 0; gap: 20px;">

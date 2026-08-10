@@ -1,8 +1,7 @@
-<!-- Member Details Page -->
-
 <?php
 // Core Components
 require_once '../../_base.php';
+require_admin('../../products.php');
 $_title = 'Member Details';
 include '../../_head.php';
 

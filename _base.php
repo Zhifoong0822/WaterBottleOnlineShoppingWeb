@@ -219,7 +219,7 @@ function receipt_html($order, $items) {
 
     return '<!doctype html><html><body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#1f2937;">'
         . '<div style="max-width:640px;margin:24px auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">'
-        . '<div style="padding:24px;background:#222;color:#fff;"><h1 style="margin:0;font-size:24px;">Water Bottle Shop</h1><p style="margin:8px 0 0;">E-Receipt for Order #' . (int) $order->order_id . '</p></div>'
+        . '<div style="padding:24px;background:#0284c7;color:#fff;"><h1 style="margin:0;font-size:24px;">SippyGo</h1><p style="margin:8px 0 0;">E-Receipt for Order #' . (int) $order->order_id . '</p></div>'
         . '<div style="padding:24px;"><p>Hi ' . encode($order->recipient_name) . ',</p><p>Thank you for your order. Your e-receipt is below.</p>'
         . '<p style="line-height:1.6;"><strong>Order date:</strong> ' . date('d M Y, h:i A', strtotime($order->order_date)) . '<br>'
         . '<strong>Payment method:</strong> ' . encode($payment_method) . '<br>'
@@ -250,7 +250,7 @@ function send_order_receipt($order_id, $user_id) {
     $mail = get_mail();
     $mail->addAddress($order->email, $order->recipient_name);
     $mail->isHTML(true);
-    $mail->Subject = 'Water Bottle Shop e-Receipt - Order #' . $order->order_id;
+    $mail->Subject = 'SippyGo e-Receipt - Order #' . $order->order_id;
     $mail->Body = receipt_html($order, $items);
     $mail->AltBody = 'Thank you for your order. E-receipt for order #' . $order->order_id . '. Amount paid: RM ' . number_format((float) $order->total_amount, 2) . '.';
     $mail->send();
@@ -279,7 +279,7 @@ function err($key) {
 // ============================================================================
 
 // Global user object
-$_user = $_SESSION['user'] ?? null;
+$_user = $_SESSION['user'] ?? $_SESSION['users'] ?? null;
 
 function auth(...$roles) {
     global $_user;
@@ -295,6 +295,17 @@ function auth(...$roles) {
     }
     
     redirect('/login.php');
+}
+
+// Use this on every admin-only route. Navigation links are not a security
+// boundary: the role must be checked again when a URL is requested directly.
+function require_admin($redirect_to = 'products.php') {
+    if (($_SESSION['role'] ?? '') === 'admin') {
+        return;
+    }
+
+    temp('info', 'You do not have permission to access that page.');
+    redirect($redirect_to);
 }
 
 // ============================================================================

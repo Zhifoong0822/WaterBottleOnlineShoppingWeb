@@ -10,8 +10,8 @@ $db = new PDO('mysql:dbname=waterbottle_shop', 'root', '', [
 ]);
 
 $demo_accounts = [
-    ['name' => 'Demo Admin',    'email' => 'admin@demo.com',    'password' => 'Admin@123',    'role' => 'admin'],
-    ['name' => 'Demo Customer', 'email' => 'customer@demo.com', 'password' => 'Customer@123', 'role' => 'customer'],
+    ['username' => 'daniel',        'email' => 'daniel@example.com',    'password' => 'Daniel@123',    'role' => 'admin'],
+    ['username' => 'demo_customer', 'email' => 'customer@demo.com',      'password' => 'Customer@123',  'role' => 'member'],
 ];
 
 foreach ($demo_accounts as $acc) {
@@ -23,13 +23,13 @@ foreach ($demo_accounts as $acc) {
     $existing = $stmt->fetch();
 
     if ($existing) {
-        $stmt = $db->prepare("UPDATE users SET name = ?, password = ?, role = ? WHERE user_id = ?");
-        $stmt->execute([$acc['name'], $hashed, $acc['role'], $existing->user_id]);
+        $stmt = $db->prepare("UPDATE users SET username = ?, password = ?, role = ? WHERE user_id = ?");
+        $stmt->execute([$acc['username'], $hashed, $acc['role'], $existing->user_id]);
         echo "Updated existing account: {$acc['email']}<br>";
     }
     else {
-        $stmt = $db->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$acc['name'], $acc['email'], $hashed, $acc['role']]);
+        $stmt = $db->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$acc['username'], $acc['email'], $hashed, $acc['role']]);
         echo "Created new account: {$acc['email']}<br>";
     }
 }

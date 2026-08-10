@@ -33,7 +33,7 @@
     <header class="site-header">
         <div class="header-container">
             <a href="index.php" class="logo-link">
-                <h1>Water Bottle Shop</h1>
+                <h1>Sippy<span>Go</span></h1>
             </a>
         
             <nav class="main-nav">
@@ -67,8 +67,10 @@
         </div>
     </header>
 
-    <main>
-        <h1><?= $_title ?? 'Untitled' ?></h1>
+    <main<?= !empty($_hide_page_title) ? ' class="main-without-page-title"' : '' ?>>
+        <?php if (empty($_hide_page_title)): ?>
+            <h1><?= $_title ?? 'Untitled' ?></h1>
+        <?php endif; ?>
 
 <?php
 $current_page = basename($_SERVER["PHP_SELF"]);
