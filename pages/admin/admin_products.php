@@ -204,6 +204,13 @@ $query = http_build_query([
 $_title = 'Product Management';
 include '../../_head.php';
 ?>
+<?php if (isset($_GET['deleted']) && $_GET['deleted'] == '1'): ?>
+
+    <div class="success-message">
+        Product deleted successfully.
+    </div>
+
+<?php endif; ?>
 
 <link rel="stylesheet" href="../../css/main.css">
 <link rel="stylesheet" href="../../css/admin.css">
@@ -324,7 +331,6 @@ include '../../_head.php';
                             ]) ?>" class="sort-link">
 
                             Price <?= sortIcon('price',$sort,$order) ?>
-
                             </a>
                         </th>
                         <th>
@@ -347,11 +353,8 @@ include '../../_head.php';
                 </thead>
 
                 <tbody>
-
                     <?php if (!empty($products)): ?>
-
                         <?php foreach ($products as $product): ?>
-
                             <?php
                             if ($product['stock'] > 5) {
                                 $stockClass = 'stock-in';
@@ -366,35 +369,27 @@ include '../../_head.php';
                             ?>
 
                             <tr>
-
                                 <td>
                                     <img
-                                        src="<?= htmlspecialchars($product['image_url']) ?>"
+                                        src="../../<?= htmlspecialchars($product['image_url']) ?>"
                                         class="product-image"
                                         alt="<?= htmlspecialchars($product['name']) ?>"
                                     >
                                 </td>
 
                                 <td><?= htmlspecialchars($product['name']) ?></td>
-
                                 <td><?= htmlspecialchars($product['category_name']) ?></td>
-
                                 <td><?= htmlspecialchars($product['size']) ?></td>
-
                                 <td class="product-price">
                                     RM <?= number_format($product['price'], 2) ?>
                                 </td>
-
                                 <td><?= $product['stock'] ?></td>
-
                                 <td>
                                     <span class="stock-badge <?= $stockClass ?>">
                                         <?= $stockText ?>
                                     </span>
                                 </td>
-
                                 <td class="action-buttons">
-
                                     <div class="action-button-group">
 
                                         <a href="product_view.php?id=<?= $product['product_id'] ?>"
@@ -411,14 +406,10 @@ include '../../_head.php';
                                         class="btn-delete">
                                             Delete
                                         </a>
-
                                     </div>
-
                                 </td>
                             </tr>
-
                         <?php endforeach; ?>
-
                     <?php else: ?>
 
                     <tr>
@@ -426,41 +417,30 @@ include '../../_head.php';
                             No products found.
                         </td>
                     </tr>
-
                     <?php endif; ?>
-
                 </tbody>
             </table>
         </div>
         <div class="pagination">
             <?php if ($page > 1): ?>
-
                 <a href="?<?= $query ?>&page=<?= $page - 1 ?>">
                     Previous
                 </a>
-
             <?php endif; ?>
 
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-
                 <a
                     class="<?= $page == $i ? 'active' : '' ?>"
                     href="?<?= $query ?>&page=<?= $i ?>">
-
                     <?= $i ?>
-
                 </a>
 
             <?php endfor; ?>
-
             <?php if ($page < $totalPages): ?>
-
                 <a href="?<?= $query ?>&page=<?= $page + 1 ?>">
                     Next
                 </a>
-
             <?php endif; ?>
-
         </div>
     </div>
 </div>
