@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     --------------------------*/
     if (!empty($_FILES['image']['name'])) {
 
-        $folder = "../../uploads/";
+        $folder = "../../img/products/";
 
         if (!is_dir($folder)) {
             mkdir($folder, 0777, true);
@@ -145,7 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_FILES['image']['tmp_name'],
             $target
         );
-        $image_url = "../../uploads/" . $filename;
+
+        $image_url = "img/products/" . $filename;
     }
 
     /*-------------------------
