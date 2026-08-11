@@ -221,9 +221,17 @@ require "_head.php";
     <div class="order-tracking">
 
 <!-- Order Placed -->
+<!--
 <div class="tracking-step completed-step">
 
     <div class="tracking-circle">✓</div>
+
+-->
+<div class="tracking-step completed-step">
+
+    <div class="tracking-circle">
+        <i class="fa-solid fa-receipt"></i>
+    </div>
 
     <div class="tracking-info">
         <strong>Order Placed</strong>
@@ -256,7 +264,8 @@ require "_head.php";
     <div class="tracking-step
         <?= !empty($order["shipped_at"]) ? "completed-step" : "" ?>">
 
-        <div class="tracking-circle">
+        <div class="tracking-circle admin-tracking-icon">
+            <i class="fa-solid fa-truck"></i>
             <?= !empty($order["shipped_at"]) ? "✓" : "2" ?>
         </div>
 
@@ -290,16 +299,35 @@ require "_head.php";
 
     </div>
 
+    <div class="tracking-line
+        <?= !empty($order["completed_at"]) ? "active-line" : "" ?>">
+    </div>
+
+<?php else: ?>
+
+    <div class="tracking-line active-line"></div>
+
 <?php endif; ?>
 
 
-<div class="tracking-line active-line"></div>
-
-
 <!-- Completed / Cancelled -->
-<div class="tracking-step completed-step">
+<div class="tracking-step
+    <?= (!empty($order["completed_at"]) || !empty($order["cancelled_at"]))
+        ? "completed-step"
+        : "" ?>
+    <?= ($status !== "cancelled" && !empty($order["completed_at"]))
+        ? "completed-status-step"
+        : "" ?>
+    <?= ($status === "cancelled" && !empty($order["cancelled_at"]))
+        ? "cancelled-status-step"
+        : "" ?>">
 
-    <div class="tracking-circle">
+    <div class="tracking-circle admin-tracking-icon">
+        <?php if ($status === "cancelled"): ?>
+            <i class="fa-solid fa-xmark"></i>
+        <?php else: ?>
+            <i class="fa-solid fa-star"></i>
+        <?php endif; ?>
         <?= $status === "cancelled" ? "✕" : "3" ?>
     </div>
 
@@ -309,19 +337,23 @@ require "_head.php";
 
             <strong>Cancelled</strong>
 
-            <span>
-                <?= date(
-                    "d M Y",
-                    strtotime($order["cancelled_at"])
-                ) ?>
-            </span>
+            <?php if (!empty($order["cancelled_at"])): ?>
 
-            <span>
-                <?= date(
-                    "h:i A",
-                    strtotime($order["cancelled_at"])
-                ) ?>
-            </span>
+                <span>
+                    <?= date(
+                        "d M Y",
+                        strtotime($order["cancelled_at"])
+                    ) ?>
+                </span>
+
+                <span>
+                    <?= date(
+                        "h:i A",
+                        strtotime($order["cancelled_at"])
+                    ) ?>
+                </span>
+
+            <?php endif; ?>
 
         <?php else: ?>
 
@@ -363,7 +395,7 @@ require "_head.php";
 
         <div class="card-header">
             <h2>
-                Order #<?= encode($order["order_id"]) ?>
+                Order Details
             </h2>
         </div>
 
@@ -472,7 +504,14 @@ require "_head.php";
                     Select New Status
                 </label>
 
-                <select name="status" id="status" required>
+                <select
+                    name="status"
+                    id="status"
+                    required
+                    <?= in_array($status, ["completed", "cancelled"], true)
+                        ? "disabled"
+                        : "" ?>
+                >
 
         <option
             value="pending"

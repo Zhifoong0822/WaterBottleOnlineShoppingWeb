@@ -69,7 +69,7 @@
 
     <main<?= !empty($_hide_page_title) ? ' class="main-without-page-title"' : '' ?>>
         <?php if (empty($_hide_page_title)): ?>
-            <h1><?= $_title ?? 'Untitled' ?></h1>
+            <h1<?= !empty($_page_title_class) ? ' class="' . encode($_page_title_class) . '"' : '' ?>><?= $_title ?? 'Untitled' ?></h1>
         <?php endif; ?>
 
 <?php

@@ -4,6 +4,7 @@ require_once "_base.php";
 require_admin('products.php');
 
 $_title = "Manage Orders";
+$_hide_page_title = true;
 
 try {
     $sql = "SELECT
@@ -33,6 +34,8 @@ require "_head.php";
 
     <div class="page-header">
 
+        <h1>Manage Orders</h1>
+
         <div class="order-count">
             Total Orders: <?= $total_orders ?>
         </div>
@@ -43,11 +46,21 @@ require "_head.php";
 
         <div class="table-tools">
 
+            <label class="search-field-label" for="orderSearchField">
+                Search by
+            </label>
+
+            <select id="orderSearchField" class="search-field-select">
+                <option value="order-id">Order ID</option>
+                <option value="user-id">User ID</option>
+                <option value="status">Order Status</option>
+            </select>
+
             <input
                 type="text"
                 id="orderSearch"
                 class="search-box"
-                placeholder="Search by order ID, user ID or status"
+                placeholder="Enter order ID"
             >
 
         </div>
@@ -77,7 +90,11 @@ require "_head.php";
                         $status = strtolower($order["status"]);
                         ?>
 
-                        <tr>
+                        <tr
+                            data-order-id="<?= encode($order["order_id"]) ?>"
+                            data-user-id="<?= encode($order["user_id"]) ?>"
+                            data-status="<?= encode($status) ?>"
+                        >
 
                             <td class="order-id">
                                 #<?= encode($order["order_id"]) ?>
@@ -148,15 +165,35 @@ require "_head.php";
 
 <script>
 const searchInput = document.getElementById("orderSearch");
+const searchField = document.getElementById("orderSearchField");
+const searchPlaceholders = {
+    "order-id": "Enter order ID",
+    "user-id": "Enter user ID",
+    "status": "Enter order status"
+};
+const searchDataKeys = {
+    "order-id": "orderId",
+    "user-id": "userId",
+    "status": "status"
+};
 
-searchInput.addEventListener("keyup", function () {
-    const filter = searchInput.value.toLowerCase();
-    const rows = document.querySelectorAll("#orderTable tbody tr");
+function filterOrders() {
+    const filter = searchInput.value.trim().toLowerCase().replace(/^#/, "");
+    const field = searchField.value;
+    const rows = document.querySelectorAll("#orderTable tbody tr[data-order-id]");
 
     rows.forEach(function (row) {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+        const value = row.dataset[searchDataKeys[field]].toLowerCase();
+        row.style.display = value.includes(filter) ? "" : "none";
     });
+}
+
+searchInput.addEventListener("input", filterOrders);
+
+searchField.addEventListener("change", function () {
+    searchInput.placeholder = searchPlaceholders[searchField.value];
+    filterOrders();
+    searchInput.focus();
 });
 </script>
 

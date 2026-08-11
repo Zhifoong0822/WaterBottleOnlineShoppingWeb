@@ -3,6 +3,7 @@
 require_once "_base.php";
 
 $_title = "My Orders";
+$_page_title_class = "my-orders-title";
 
 if (!isset($_SESSION['user_id'])) {
     redirect('login.php');
@@ -366,9 +367,17 @@ require "_head.php";
 
     <div class="order-right">
 
-    <span class="status status-<?= encode($order["status"]) ?>">
-        <?= ucfirst(encode($order["status"])) ?>
-    </span>
+    <div class="order-status-line">
+        <?php if ($order["status"] === "cancelled"): ?>
+            <span class="refund-success-message">
+                Refund has been returned successfully.
+            </span>
+        <?php endif; ?>
+
+        <span class="status status-<?= encode($order["status"]) ?>">
+            <?= ucfirst(encode($order["status"])) ?>
+        </span>
+    </div>
 
     <div class="amount-section">
 
@@ -497,7 +506,7 @@ require "_head.php";
 
 <section id="rating-popover" class="rating-popover" hidden role="dialog" aria-modal="false" aria-labelledby="rating-popover-title">
     <button type="button" class="rating-popover-close" aria-label="Close rating">&times;</button>
-    <p class="rating-popover-eyebrow">Your rating for order <span id="rating-popover-order"></span></p>
+    <p class="rating-popover-eyebrow">Your Rating</p>
     <h2 id="rating-popover-title"><span id="rating-popover-stars"></span> <span id="rating-popover-score"></span></h2>
     <p id="rating-popover-feedback" class="rating-popover-feedback"></p>
     <p id="rating-popover-date" class="rating-popover-date"></p>
@@ -516,8 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('rating-popover-score').textContent = `${rating}/5`;
             document.getElementById('rating-popover-feedback').textContent = button.dataset.feedback || 'No written feedback was added.';
             document.getElementById('rating-popover-date').textContent = button.dataset.updatedAt ? `Submitted ${button.dataset.updatedAt}` : '';
-            document.getElementById('rating-popover-order').textContent = `#${button.dataset.orderId}`;
-
             popover.hidden = false;
             const buttonRect = button.getBoundingClientRect();
             const popoverWidth = popover.offsetWidth;

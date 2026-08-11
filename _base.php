@@ -317,6 +317,33 @@ $_db = new PDO('mysql:dbname=waterbottle_shop', 'root', '', [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
 ]);
 
+const ORDER_AUTO_COMPLETE_DAYS = 7;
+
+/**
+ * Complete shipped orders once their seven-day delivery window has passed.
+ *
+ * This runs during normal website requests. completed_at is set to the exact
+ * deadline rather than the time of the next visit, so the recorded date and
+ * time remain accurate even when the site has no traffic at that moment.
+ */
+function auto_complete_shipped_orders() {
+    global $_db;
+
+    $days = ORDER_AUTO_COMPLETE_DAYS;
+    $sql = "UPDATE orders
+            SET status = 'completed',
+                completed_at = DATE_ADD(shipped_at, INTERVAL $days DAY)
+            WHERE status = 'shipped'
+              AND shipped_at IS NOT NULL
+              AND completed_at IS NULL
+              AND DATE_ADD(shipped_at, INTERVAL $days DAY) <= NOW()";
+
+    $_db->exec($sql);
+}
+
+// Keep overdue order statuses current whenever the application is used.
+auto_complete_shipped_orders();
+
 // Is unique?
 function is_unique($value, $table, $field) {
     global $_db;

@@ -3,6 +3,7 @@
 require_once "_base.php";
 
 $_title = "Order Feedback";
+$_hide_page_title = true;
 
 if (!isset($_SESSION['user_id'])) {
     redirect('login.php');
@@ -141,7 +142,7 @@ require "_head.php";
 
         <div class="feedback-card-header">
             <h2>
-                Feedback for Order #<?= encode($order_id) ?>
+                Order Feedback
             </h2>
         </div>
 
@@ -151,7 +152,7 @@ require "_head.php";
                 Rate your completed order and optionally share your experience.
             </p>
 
-            <form method="POST">
+            <form method="POST" id="feedbackForm">
 
                 <fieldset class="rating-fieldset">
 
@@ -265,5 +266,17 @@ require "_head.php";
     </div>
 
 </section>
+
+<script>
+document.getElementById("feedbackForm").addEventListener("submit", function (event) {
+    const confirmed = window.confirm(
+        "Are you sure you want to submit this feedback?"
+    );
+
+    if (!confirmed) {
+        event.preventDefault();
+    }
+});
+</script>
 
 <?php require "_foot.php"; ?>

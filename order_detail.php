@@ -3,6 +3,7 @@
 require_once "_base.php";
 
 $_title = "Order Details";
+$_hide_page_title = true;
 
 if (!isset($_SESSION['user_id'])) {
     redirect('login.php');
@@ -170,6 +171,12 @@ require "_head.php";
     <?= (!empty($order["completed_at"]) ||
          !empty($order["cancelled_at"]))
         ? "completed-step"
+        : "" ?>
+    <?= ($status !== "cancelled" && !empty($order["completed_at"]))
+        ? "completed-status-step"
+        : "" ?>
+    <?= ($status === "cancelled" && !empty($order["cancelled_at"]))
+        ? "cancelled-status-step"
         : "" ?>">
 
         <div class="tracking-circle">
@@ -251,7 +258,7 @@ require "_head.php";
 
         <div class="card-header">
             <h2>
-                Order #<?= encode($order["order_id"]) ?>
+                Order Details
             </h2>
         </div>
 
