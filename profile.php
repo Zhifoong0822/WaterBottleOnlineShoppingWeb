@@ -168,11 +168,38 @@ $stmt->execute([$user_id]);
 $current_user = $stmt->fetch(PDO::FETCH_OBJ);
 $saved_avatar = $current_user->profilepic ?? '';
 
+// --- OVERVIEW TAB DATA ---
+// ASSUMPTIONS: orders(order_id, user_id, status, total, created_at)
+// Adjust column/table names below if yours differ.
+function safe_scalar($db, $sql, $params = []) {
+    try {
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $val = $stmt->fetchColumn();
+        return $val !== false ? $val : 0;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+$is_admin = ($_SESSION['users']->role === 'admin');
+
+if ($is_admin) {
+    // Site-wide stats for admins
+    $overview_total_orders   = safe_scalar($_db, "SELECT COUNT(*) FROM orders");
+    $overview_pending_orders = safe_scalar($_db, "SELECT COUNT(*) FROM orders WHERE status = 'pending'");
+    $overview_total_revenue  = safe_scalar($_db, "SELECT SUM(total) FROM orders WHERE status != 'cancelled'");
+    $overview_total_users    = safe_scalar($_db, "SELECT COUNT(*) FROM users WHERE role = 'member'");
+} else {
+    // Personal stats for a regular member
+    $overview_my_orders = safe_scalar($_db, "SELECT COUNT(*) FROM orders WHERE user_id = ?", [$user_id]);
+    $overview_my_spend  = safe_scalar($_db, "SELECT SUM(total) FROM orders WHERE user_id = ? AND status != 'cancelled'", [$user_id]);
+}
+
 include '_head.php';
 ?>
 <link rel="stylesheet" href="css/profile.css">
-
-<main>
+<link rel="stylesheet" href="css/admim.css">
 
     <!-- Mockup Header Section Matching Image Component -->
     <div class="header-banner">
@@ -201,8 +228,57 @@ include '_head.php';
   <button onclick="switchTab('settings')">Settings</button>
 </nav>
 
+<!-- Overview Tab Content -->
+<div id="overview" class="tab-content">
+    <?php if ($is_admin): ?>
+        <h2>Store Overview</h2>
+        <div class="overview-stats">
+            <div class="overview-card">
+                <span class="overview-label">Total Orders</span>
+                <span class="overview-value"><?= $overview_total_orders !== null ? (int) $overview_total_orders : '—' ?></span>
+            </div>
+            <div class="overview-card">
+                <span class="overview-label">Pending Orders</span>
+                <span class="overview-value"><?= $overview_pending_orders !== null ? (int) $overview_pending_orders : '—' ?></span>
+            </div>
+            <div class="overview-card">
+                <span class="overview-label">Total Revenue</span>
+                <span class="overview-value">
+                    <?= $overview_total_revenue !== null ? '$' . number_format((float) $overview_total_revenue, 2) : '—' ?>
+                </span>
+            </div>
+            <div class="overview-card">
+                <span class="overview-label">Registered Customers</span>
+                <span class="overview-value"><?= $overview_total_users !== null ? (int) $overview_total_users : '—' ?></span>
+            </div>
+        </div>
+        <p class="overview-link"><a href="admin_orders.php">View all orders →</a></p>
+    <?php else: ?>
+        <h2>Your Overview</h2>
+        <div class="overview-stats">
+            <div class="overview-card">
+                <span class="overview-label">Orders Placed</span>
+                <span class="overview-value"><?= $overview_my_orders !== null ? (int) $overview_my_orders : '—' ?></span>
+            </div>
+            <div class="overview-card">
+                <span class="overview-label">Total Spent</span>
+                <span class="overview-value">
+                    <?= $overview_my_spend !== null ? '$' . number_format((float) $overview_my_spend, 2) : '—' ?>
+                </span>
+            </div>
+        </div>
+        <p class="overview-link"><a href="order_history.php">View your order history →</a></p>
+    <?php endif; ?>
+</div>
+
+<!-- Wishlist Tab Content -->
+<div id="wishlist" class="tab-content" style="display: none;">
+    <h2>Wishlist</h2>
+    <p class="overview-empty">Your saved items will show up here.</p>
+</div>
+
 <!-- Settings Tab Content -->
-<div id="settings" class="tab-content">
+<div id="settings" class="tab-content" style="display: none;">
     <h2>Settings Dashboard</h2>
 
     <!-- ==================== PROFILE INFO FORM ==================== -->
@@ -341,6 +417,9 @@ function switchTab(tabId) {
   const targetTab = document.getElementById(tabId);
   if (targetTab) targetTab.style.display = 'block';
 }
+
+// Show the Overview tab by default when the page loads
+switchTab('overview');
 </script>
 
 </main>

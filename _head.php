@@ -39,9 +39,11 @@
 
                     <!-- Right Navigation Group -->
                     <div class="nav-group">
-                        <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php if (isset($_SESSION['users']->user_id)): ?>
                             <li class="user-greeting">
-                                Hi, <a href="profile.php" class="user-name"><?= encode($_SESSION['name'] ?? $_SESSION['users']->username) ?></a>
+                            <a href="profile.php" class="user-name">
+                                <img src="D:\web assm\WaterBottleOnlineShoppingWeb\img\user-icon.png" alt="User Profile" class="nav-user-icon">
+                            </a>
                             </li>
                             <li><a href="logout.php" class="nav-link nav-link-btn">Logout</a></li>
                         <?php else: ?>

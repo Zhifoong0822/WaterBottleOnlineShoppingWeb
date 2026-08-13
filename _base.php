@@ -332,28 +332,6 @@ $_genders = [
 ];
 
 // ============================================================================
-// Email Functions
-// ============================================================================
-
-// Initialize and return mail object
-function get_mail() {
-    require_once $mailer_file;
-    require_once $smtp_file;
-
-    $m = new PHPMailer(true);
-    $m->isSMTP();
-    $m->SMTPAuth = true;
-    $m->Host = $mail_config['host'];
-    $m->Port = (int)$mail_config['port'];
-    $m->Username = 'extraa0678@gmail.com';
-    $m->Password = 'dvnb rajt ulbl tymd';
-    $m->CharSet = 'utf-8';
-    $m->setFrom($m->Username, '😺 Admin');
-
-    return $m;
-}
-
-// ============================================================================
 // Access Control - require login for every page except these public ones
 // ============================================================================
 

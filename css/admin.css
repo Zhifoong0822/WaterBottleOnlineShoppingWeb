@@ -271,3 +271,199 @@ input:invalid,select:invalid,textarea:invalid{border-color:#dc3545;}
     .search-box,.category-filter {width: 100%;}
     .add-button {width: 100%; text-align: center;}
 }
+
+/* =====================================================
+   Admin Profile
+===================================================== */
+/* Structural styles for the admin dashboard.
+   No brand background/text colors are hardcoded — those inherit from
+   css/main.css. The only colors set here are functional status badges
+   (pending/completed/cancelled), which need to be distinguishable
+   regardless of theme. */
+
+.dash {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+}
+
+.dash-header {
+    margin-bottom: 32px;
+}
+
+.dash-header h1 {
+    margin: 0 0 6px;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.dash-subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+    opacity: 0.75;
+}
+
+/* Stat cards */
+.dash-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    padding: 20px;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+/* Panel (table container) */
+.dash-panel {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    padding: 24px;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.panel-link {
+    font-size: 0.9rem;
+    text-decoration: underline;
+}
+
+.dash-empty {
+    opacity: 0.6;
+    font-size: 0.95rem;
+}
+
+/* Table */
+.dash-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.dash-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dash-table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dash-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status badges — functional color coding, kept minimal */
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.badge-pending {
+    background: #fdf0d5;
+    color: #8a5a00;
+}
+
+.badge-completed {
+    background: #dff3e3;
+    color: #1e7a34;
+}
+
+.badge-cancelled {
+    background: #fbe1e1;
+    color: #a02020;
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+    .dash-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .dash-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .dash-table {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* Reused stat-card styling for the profile page's Overview tab */
+.overview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.overview-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.overview-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+}
+
+.overview-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.overview-link {
+    font-size: 0.9rem;
+}
+
+.overview-empty {
+    opacity: 0.6;
+    font-size: 0.95rem;
+}

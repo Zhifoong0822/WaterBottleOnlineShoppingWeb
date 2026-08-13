@@ -1,12 +1,4 @@
 /* ============================================================================
-   PROFILE PAGE STYLES (profile.php only)
-   Loaded only on profile.php — keep selectors scoped to profile-specific
-   classes/containers so nothing leaks into the shared header (_head.php)
-   or other pages.
-   ============================================================================ */
-
-
-/* ============================================================================
    1. HEADER BANNER (avatar, name, email at top of profile page)
    ============================================================================ */
 
@@ -152,12 +144,7 @@
 
 
 /* ============================================================================
-   4. FORM FIELDS (labels + inputs, used inside .card-container /
-      .personal-info-card)
-   NOTE: merged from two duplicate `.form-group` blocks in the original file
-   (the second block was silently overriding the first's `display: block`
-   with `flex-direction: column` — kept the flex version since it also sets
-   the label/input gap).
+   4. FORM FIELDS
    ============================================================================ */
 
 .form-group {
