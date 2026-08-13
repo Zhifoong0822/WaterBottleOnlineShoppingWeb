@@ -5,12 +5,21 @@ require_once "_base.php";
 $_title = "My Orders";
 $_page_title_class = "my-orders-title";
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
 }
-$user_id = (int) $_SESSION['user_id'];
+$user_id = (int) $_SESSION['users']->user_id;
 
 $status_filter = get("status", "all");
+$page = get("page", "1");
+
+if (!ctype_digit($page) || (int) $page < 1) {
+    $page = 1;
+} else {
+    $page = (int) $page;
+}
+
+$orders_per_page = 8;
 
 $allowed_statuses = [
     "all",
@@ -228,6 +237,20 @@ foreach ($rows as $row) {
         ];
     }
 }
+
+$total_orders = count($orders);
+$total_pages = max(1, (int) ceil($total_orders / $orders_per_page));
+
+if ($page > $total_pages) {
+    $page = $total_pages;
+}
+
+$orders = array_slice(
+    $orders,
+    ($page - 1) * $orders_per_page,
+    $orders_per_page,
+    true
+);
 
 require "_head.php";
 
@@ -503,6 +526,42 @@ require "_head.php";
     <?php endif; ?>
 
 </section>
+
+<?php if ($total_pages > 1): ?>
+
+    <nav class="order-pagination" aria-label="Order history pages">
+        <?php if ($page > 1): ?>
+            <a
+                class="pagination-link pagination-direction"
+                href="order_history.php?status=<?= urlencode($status_filter) ?>&amp;page=<?= $page - 1 ?>"
+                rel="prev"
+            >
+                Previous
+            </a>
+        <?php endif; ?>
+
+        <?php for ($page_number = 1; $page_number <= $total_pages; $page_number++): ?>
+            <a
+                class="pagination-link <?= $page_number === $page ? "active" : "" ?>"
+                href="order_history.php?status=<?= urlencode($status_filter) ?>&amp;page=<?= $page_number ?>"
+                <?= $page_number === $page ? 'aria-current="page"' : '' ?>
+            >
+                <?= $page_number ?>
+            </a>
+        <?php endfor; ?>
+
+        <?php if ($page < $total_pages): ?>
+            <a
+                class="pagination-link pagination-direction"
+                href="order_history.php?status=<?= urlencode($status_filter) ?>&amp;page=<?= $page + 1 ?>"
+                rel="next"
+            >
+                Next
+            </a>
+        <?php endif; ?>
+    </nav>
+
+<?php endif; ?>
 
 <section id="rating-popover" class="rating-popover" hidden role="dialog" aria-modal="false" aria-labelledby="rating-popover-title">
     <button type="button" class="rating-popover-close" aria-label="Close rating">&times;</button>

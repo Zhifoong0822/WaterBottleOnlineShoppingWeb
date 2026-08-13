@@ -8,10 +8,10 @@ $_title = "Shopping Cart";
 // 3. Inject standard layout structure, styling mappings, and navigation structures
 include '_head.php'; 
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['users'])) {
     redirect('login.php');
 }
-$user_id = (int) $_SESSION['user_id'];
+$user_id = (int) $_SESSION['users']->user_id;
 $cart_id = null;
 $cart_items = [];
 

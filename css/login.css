@@ -1,0 +1,88 @@
+.login-page {
+    display: flex;
+    justify-content: center;
+    padding: 60px 20px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 460px;
+    text-align: center;
+}
+
+.login-card h1 {
+    margin: 0 0 12px;
+    font-size: 2.25rem;
+    font-weight: 700;
+}
+
+.login-subtitle {
+    margin: 0 0 32px;
+    font-size: 1rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: left;
+}
+
+.input-pill {
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    padding: 14px 22px;
+}
+
+.input-pill label.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.input-pill input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1rem;
+    padding: 0;
+}
+
+.password-row .forgot-link {
+    position: absolute;
+    top: 50%;
+    right: 22px;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.password-row input {
+    padding-right: 140px;
+}
+
+.login-btn {
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.new-customer {
+    margin-top: 24px;
+    font-size: 0.95rem;
+}
+
+.login-err {
+    font-size: 0.9rem;
+}

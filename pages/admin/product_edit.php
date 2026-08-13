@@ -1,6 +1,5 @@
 <?php
 require_once '../../_base.php';
-require_admin('../../products.php');
 
 $_title = 'Edit Product';
 
@@ -111,35 +110,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
     }
-    $stock  = $_POST['stock'];
-    /*-------------------------
-        Handle Custom Size
-    --------------------------*/
-    $standard_sizes = [
-        'Micro (12oz / 350ml)',
-        'Mini (15oz / 450ml)',
-        'Medium (18oz / 530ml)',
-        'Mega (32oz / 950ml)'
-    ];
-    if ($size === 'custom') {
-        $custom_size = trim($_POST['custom_size'] ?? '');
-        if ($custom_size == '') {
-            $error['size'] = "Please enter a custom size.";
-        } else {
-            // If custom size matches a standard size, use the standard size value.
-            foreach ($standard_sizes as $standard_size) {
-                if (strcasecmp($custom_size, $standard_size) == 0) {
-                    $size = $standard_size;
-                    break;
-                }
-            }
-
-            // If it does not match any standard size, save it as a custom size.
-            if ($size === 'custom') {
-                $size = $custom_size;
-            }
-        }
-    }
 
     /*-------------------------
         Validation
@@ -161,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     --------------------------*/
     if (!empty($_FILES['image']['name'])) {
 
-        $folder = "../../uploads/";
+        $folder = "../../img/products/";
 
         if (!is_dir($folder)) {
             mkdir($folder, 0777, true);
@@ -175,7 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_FILES['image']['tmp_name'],
             $target
         );
-        $image_url = "../../uploads/" . $filename;
+
+        $image_url = "img/products/" . $filename;
     }
 
     /*-------------------------
@@ -249,15 +220,6 @@ $standard_sizes = [
 
 $is_custom_size = !in_array($size, $standard_sizes);
 
-$standard_sizes = [
-    'Micro (12oz / 350ml)',
-    'Mini (15oz / 450ml)',
-    'Medium (18oz / 530ml)',
-    'Mega (32oz / 950ml)'
-];
-
-$is_custom_size = !in_array($size, $standard_sizes);
-
 include '../../_head.php';
 ?>
 
@@ -278,28 +240,6 @@ include '../../_head.php';
         <div class="edit-content">
             <!-- Left Side -->
             <div class="edit-image">
-            <?php
-            $imagePath = $image_url;
-            if (
-                str_starts_with($imagePath, 'http://') ||
-                str_starts_with($imagePath, 'https://')
-            ) {
-                $imageSrc = $imagePath;
-            } else {
-                $imageSrc = '../../' . ltrim($imagePath, '/');
-            }
-            ?>
-            <img
-                src="<?= htmlspecialchars($imageSrc) ?>"
-                class="edit-product-image"
-                alt="Product Image">
-
-            <input
-                type="file"
-                name="image"
-                class="file-input"
-                accept="image/jpeg,image/png,image/webp">
-        </div>
             <?php
             $imagePath = $image_url;
             if (
@@ -387,45 +327,7 @@ include '../../_head.php';
 
                     <!-- Custom Size -->
                     <input
-
-                    <select name="size" id="size">
-                        <option value="">Select Size</option>
-
-                        <option value="Micro (12oz / 350ml)"
-                            <?= ($size == 'Micro (12oz / 350ml)') ? 'selected' : '' ?>>
-                            Micro (12oz / 350ml)
-                        </option>
-
-                        <option value="Mini (15oz / 450ml)"
-                            <?= ($size == 'Mini (15oz / 450ml)') ? 'selected' : '' ?>>
-                            Mini (15oz / 450ml)
-                        </option>
-
-                        <option value="Medium (18oz / 530ml)"
-                            <?= ($size == 'Medium (18oz / 530ml)') ? 'selected' : '' ?>>
-                            Medium (18oz / 530ml)
-                        </option>
-
-                        <option value="Mega (32oz / 950ml)"
-                            <?= ($size == 'Mega (32oz / 950ml)') ? 'selected' : '' ?>>
-                            Mega (32oz / 950ml)
-                        </option>
-
-                        <option value="custom"
-                            <?= ($is_custom_size) ? 'selected' : '' ?>>
-                            Custom
-                        </option>
-                    </select>
-
-                    <!-- Custom Size -->
-                    <input
                         type="text"
-                        name="custom_size"
-                        id="custom_size"
-                        placeholder="Enter custom size..."
-                        value="<?= $is_custom_size ? htmlspecialchars($size) : '' ?>"
-                        style="display: none; margin-top: 10px;"
-                    >
                         name="custom_size"
                         id="custom_size"
                         placeholder="Enter custom size..."
@@ -512,9 +414,6 @@ include '../../_head.php';
     </form>
 </div>
 
-<<<<<<< HEAD
-<?php include '../../_foot.php'; ?>
-=======
 <script>
 const sizeSelect = document.getElementById('size');
 const customSize = document.getElementById('custom_size');
@@ -532,4 +431,3 @@ sizeSelect.addEventListener('change', checkCustomSize);
 checkCustomSize();
 </script>
 <?php include '../../_foot.php'; ?>
->>>>>>> 055c30c62a095c55984c52f24f16ca80e9aa6f8f

@@ -706,6 +706,50 @@ main > .my-orders-title {
     border-bottom-color: #222222;
 }
 
+.order-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.order-pagination[hidden] {
+    display: none;
+}
+
+.pagination-link {
+    min-width: 42px;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background-color: #ffffff;
+    color: #334155;
+    font-weight: bold;
+    font-family: inherit;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pagination-link:hover {
+    border-color: #0f2747;
+    background-color: #f1f5f9;
+    color: #0f2747;
+}
+
+.pagination-link.active {
+    border-color: #0f2747;
+    background-color: #0f2747;
+    color: #ffffff;
+}
+
+.pagination-direction {
+    min-width: 88px;
+}
+
 .order-left {
     flex: 1;
     min-width: 0;

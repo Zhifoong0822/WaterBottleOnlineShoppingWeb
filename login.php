@@ -15,24 +15,18 @@ if (is_post()) {
 
     $stmt = $_db->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
     $stmt->execute([$email]);
-    
+
     $user = $stmt->fetch(PDO::FETCH_OBJ);
 
     // Verify password and build the session using object arrow syntax
     if ($user && password_verify($password, $user->password)) {
-        session_regenerate_id(true);
+        session_regenerate_id(true);   // prevents session fixation + wipes old leftover keys tied to old session
+        $_SESSION = [];                // start clean
 
-        // Keep the session keys used by both merged codebases. Profile pages
-        // use the user object, while cart/checkout/order pages use these keys.
         $_SESSION['users'] = $user;
-        $_SESSION['user_id'] = (int) $user->user_id;
-        $_SESSION['name'] = $user->username;
-        $_SESSION['role'] = $user->role;
 
-        temp('info', "Welcome back, " . encode($_SESSION['users']->username) . "!");
-
-        // Route users according to their access roales
-        redirect($_SESSION['users']->role === 'admin' ? 'admin_orders.php' : 'products.php');
+        temp('info', "Welcome back, " . encode($user->username) . "!");
+        redirect($user->role === 'admin' ? 'admin_orders.php' : 'products.php');
         exit;
     } else {
         $_err['login'] = "Invalid email or password.";
@@ -45,14 +39,15 @@ if (is_post()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $_title ?? 'Untitled' ?></title>
-    
-    <!-- Load structural styles -->
-    <link rel="stylesheet" href="css/main.css">    
+
+    <link rel="stylesheet" href="css/main.css">
 
     <!-- ONLY load cart specific styles on the cart view page -->
     <?php if (basename($_SERVER['PHP_SELF']) == 'cart_view.php'): ?>
         <link rel="stylesheet" href="css/cart.css">
     <?php endif; ?>
+
+    <link rel="stylesheet" href="css/login.css">
 </head>
 <body>
     <!-- Flash message -->
@@ -72,9 +67,9 @@ if (is_post()) {
                     <?php if ($_SESSION['users']->role === 'admin'): ?>
                         <li><a href="admin_orders.php">Manage Orders</a></li>
                     <?php endif; ?>
-                    
+
                     <li>Hi, <?= encode($_SESSION['users']->username) ?></li>
-                    
+
                     <!-- Pushes Logout to the right -->
                     <li style="margin-left: auto;"><a href="logout.php">Logout</a></li>
                 <?php else: ?>
@@ -85,30 +80,32 @@ if (is_post()) {
         </nav>
     </header>
 
-    <main>
-        <h1><?= $_title ?? 'Untitled' ?></h1>
+    <main class="login-page">
+        <div class="login-card">
+            <h1>Login</h1>
+            <p class="login-subtitle">Please enter your e-mail and password:</p>
 
-        <form method="post" action="login.php">
-            <div>
-                <label for="email">Email</label>
-                <?php html_text('email', "required") ?>
-            </div>
+            <form method="post" action="login.php" class="login-form">
+                <div class="input-pill">
+                    <label for="email" class="visually-hidden">E-mail</label>
+                    <input type="email" id="email" name="email" placeholder="E-mail" value="<?= encode($email) ?>" required>
+                </div>
 
-            <div>
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
+                <div class="input-pill password-row">
+                    <label for="password" class="visually-hidden">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                    <a href="forgot_password.php" class="forgot-link">Forgot password?</a>
+                </div>
 
-            <?php err('login') ?>
+                <?php if (!empty($_err['login'])): ?>
+                    <div class="login-err"><?php err('login') ?></div>
+                <?php endif; ?>
 
-            <button type="submit">Login</button>
-        </form>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
 
-        <p>
-            <a href="forgot_password.php">Forgot password?</a>
-            &nbsp;|&nbsp;
-            <a href="register.php">Create account</a>
-        </p>
+            <p class="new-customer">New customer? <a href="register.php">Create an account</a></p>
+        </div>
     </main>
 
 <?php

@@ -6,7 +6,7 @@ $_title = "Welcome";
 include '_head.php';
 ?>
 
-<p>Welcome back, <?= encode($_SESSION['name']) ?>!</p>
+<p>Welcome back, <?= encode($_SESSION['users']->username) ?>!</p>
 
 <h3>Customer</h3>
 <a href="order_history.php">My Orders</a>
@@ -15,7 +15,7 @@ include '_head.php';
 
 <br><br>
 
-<?php if ($_SESSION['role'] === 'admin'): ?>
+<?php if ($_SESSION['users']->role === 'admin'): ?>
     <h3>Admin</h3>
     <a href="pages/admin/admin_products.php">Manage Products</a>
     <br>
