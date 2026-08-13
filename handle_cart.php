@@ -3,12 +3,12 @@
 require '_base.php'; 
 header("Content-Type: application/json");
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['users']->user_id)) {
     echo json_encode(['message' => 'Please log in first.']);
     exit;
 }
 
-$user_id = (int) $_SESSION['user_id'];
+$user_id = (int) $_SESSION['users']->user_id;
 $cart_id = null;
 
 // 2. Fetch or create the active user cart wrapper

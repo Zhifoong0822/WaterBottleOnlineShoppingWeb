@@ -279,7 +279,7 @@ function err($key) {
 // ============================================================================
 
 // Global user object
-$_user = $_SESSION['user'] ?? null;
+$_user = $_SESSION['users'] ?? null;
 
 function auth(...$roles) {
     global $_user;
@@ -332,12 +332,34 @@ $_genders = [
 ];
 
 // ============================================================================
+// Email Functions
+// ============================================================================
+
+// Initialize and return mail object
+function get_mail() {
+    require_once $mailer_file;
+    require_once $smtp_file;
+
+    $m = new PHPMailer(true);
+    $m->isSMTP();
+    $m->SMTPAuth = true;
+    $m->Host = $mail_config['host'];
+    $m->Port = (int)$mail_config['port'];
+    $m->Username = 'extraa0678@gmail.com';
+    $m->Password = 'dvnb rajt ulbl tymd';
+    $m->CharSet = 'utf-8';
+    $m->setFrom($m->Username, '😺 Admin');
+
+    return $m;
+}
+
+// ============================================================================
 // Access Control - require login for every page except these public ones
 // ============================================================================
 
 $_public_pages = [
     'login.php',
-    'register.php',
+    'register.php', 
     'forgot_password.php',
     'reset_password.php',
     'index.php',

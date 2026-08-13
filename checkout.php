@@ -5,10 +5,10 @@ require '_base.php';
 // 2. Supply dynamic metadata tracking to _head.php template
 $_title = "Checkout";
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
 }
-$user_id = (int) $_SESSION['user_id'];
+$user_id = (int) $_SESSION['users']->user_id;
 $cart_items = [];
 $total_amount = 0;
 $errors = [];

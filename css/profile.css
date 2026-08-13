@@ -1,4 +1,15 @@
-/* Header Banner Layout Matching Mockup Component */
+/* ============================================================================
+   PROFILE PAGE STYLES (profile.php only)
+   Loaded only on profile.php — keep selectors scoped to profile-specific
+   classes/containers so nothing leaks into the shared header (_head.php)
+   or other pages.
+   ============================================================================ */
+
+
+/* ============================================================================
+   1. HEADER BANNER (avatar, name, email at top of profile page)
+   ============================================================================ */
+
 .header-banner {
     display: flex;
     justify-content: space-between;
@@ -6,6 +17,15 @@
     padding-bottom: 30px;
     border-bottom: 1px solid #eaeaea;
     margin-bottom: 40px;
+}
+
+/* Scoped to header-banner only — was previously a bare `a:link` that
+   leaked into the shared site header and hid/recolored the Logout link.
+   Only touches links inside this banner now. */
+.header-banner a:link {
+    color: black;
+    background-color: transparent;
+    text-decoration: none;
 }
 
 .user-meta-group {
@@ -73,70 +93,84 @@
     border-radius: 50%;
 }
 
-.edit-profile-btn {
-    top: 30px;
-    right: 30px;
-    background-color: #1a365d; 
-    color: #ffffff;          
-    padding: 8px 16px;         
-    border: none;             
-    border-radius: 6px;       
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;     
-}
 
-.edit-profile-btn:hover {
-    background-color: #133932; /* Changes to your green hue on hover */
-}
+/* ============================================================================
+   2. TAB NAVIGATION (Overview / Wishlist / Settings pill buttons)
+   ============================================================================ */
 
-/* Account Overview Grid Dashboard */
-.metrics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 35px;
-}
-
-.metric-card {
-    background-color: #fff;
-    padding: 15px;
-    border: 1px solid #eaeaea;
-    border-radius: 8px;
-}
-
-.metric-card span {
-    font-size: 12px;
-    text-transform: uppercase;
-    color: #999;
-    font-weight: 600;
-}
-
-.metric-card .value {
-    font-size: 16px;
-    font-weight: bold;
-    color: #111;
-    margin-top: 5px;
-}
-
-.metric-card .value.role {
-    color: #16221f;
-    text-transform: capitalize;
-}
-
-/* Settings Form Controls */
-.profile-form {
+.nav-container {
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 6px;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-item {
+    text-decoration: none;
+    color: #2b4c65;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 12px 24px;
+    border-radius: 50px;
+    transition: all 0.2s ease;
+}
+
+.nav-item.active {
+    background-color: #00639b;
+    color: #ffffff;
+}
+
+.nav-item:not(.active):hover {
+    background-color: #f0f4f8;
+}
+
+
+/* ============================================================================
+   3. SETTINGS CARD (Profile edit form container)
+   ============================================================================ */
+
+.card-container {
+    background-color: #f4f8fa;
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 600px;
+}
+
+.personal-info-card {
+    display: flex;
+    flex-direction: column;  /* stacks rows vertically */
+    gap: 20px;                /* spacing between rows */
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    max-width: 500px;
+    font-family: sans-serif;
+    position: relative;       /* allows absolute positioning for the Edit button */
+}
+
+
+/* ============================================================================
+   4. FORM FIELDS (labels + inputs, used inside .card-container /
+      .personal-info-card)
+   NOTE: merged from two duplicate `.form-group` blocks in the original file
+   (the second block was silently overriding the first's `display: block`
+   with `flex-direction: column` — kept the flex version since it also sets
+   the label/input gap).
+   ============================================================================ */
+
+.form-group {
+    display: flex;
+    flex-direction: column;  /* stacks label on top of input */
+    gap: 8px;                 /* spacing between label and input */
 }
 
 .form-group label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #4a5568;
+    text-transform: uppercase;
 }
 
 .form-group input {
@@ -149,7 +183,52 @@
     background-color: #fff;
 }
 
-/* Footer Action Buttons Layout */
+.input-field {
+    background-color: #ffffff; /* white background to stand out against the container */
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Disabled/locked state for the name input before "Edit" is clicked */
+.profile-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0; /* gray background when locked */
+    color: #666;
+    cursor: not-allowed;
+    transition: background-color 0.3s ease;
+}
+
+/* Active/editable state, applied via JS when toggleEdit() is triggered */
+.profile-input.editable {
+    background-color: #fff9db; /* light yellow background during edit */
+    border-color: #f59f00;      /* distinct border color during edit */
+    color: #000;
+    cursor: text;
+}
+
+
+/* ============================================================================
+   5. BUTTONS (Edit/Save, form action buttons)
+   ============================================================================ */
+
+.edit-profile-btn {
+    background-color: #1a365d;
+    color: #ffffff;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.edit-profile-btn:hover {
+    background-color: #133932; /* changes to green hue on hover */
+}
+
 .button-group {
     margin-top: 10px;
     display: flex;
@@ -192,100 +271,40 @@
     background-color: #f5f5f5;
 }
 
-a:link {
-  color: White;
-  background-color: transparent;
-  text-decoration: none;
+
+/* ============================================================================
+   6. ACCOUNT OVERVIEW METRICS GRID (Overview tab cards)
+   ============================================================================ */
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 35px;
 }
 
-/* Main capsule container */
-.nav-container {
-    display: flex;
-    align-items: center;
-    background-color: #ffffff;
-    padding: 6px;
-    border-radius: 50px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-/* Navigation links */
-.nav-item {
-    text-decoration: none;
-    color: #2b4c65;
-    font-weight: 600;
-    font-size: 15px;
-    padding: 12px 24px;
-    border-radius: 50px;
-    transition: all 0.2s ease;
-}
-
-/* Active pill style */
-.nav-item.active {
-    background-color: #00639b;
-    color: #ffffff;
-}
-
-/* Subtle hover effect for inactive items */
-.nav-item:not(.active):hover {
-    background-color: #f0f4f8;
-}
-
-/* Card container using flexbox column layout */
-.personal-info-card {
-  display: flex;
-  flex-direction: column; /* Stacks items vertically */
-  gap: 20px;               /* Adds equal spacing between rows */
-  padding: 30px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  max-width: 500px;
-  font-family: sans-serif;
-  position: relative;     /* Allows absolute positioning for the Edit button */
-}
-
-/* Individual form rows stacking label and field */
-.form-group {
-  display: flex;
-  flex-direction: column; /* Stacks label on top of input */
-  gap: 8px;                /* Spacing between label and input */
-}
-
-/* Label styling */
-.form-group label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #4a5568;
-  text-transform: uppercase;
-}
-
-.card-container {
-    background-color: #f4f8fa; 
-    padding: 40px; 
-    border-radius: 16px; 
-    max-width: 600px; 
-}
-
-.input-field {
-    background-color: #ffffff; /* White background to stand out against the container */
-    padding: 16px;
+.metric-card {
+    background-color: #fff;
+    padding: 15px;
+    border: 1px solid #eaeaea;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
 }
 
-
-.profile-input{
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc; 
-    background-color: #f0f0f0; /* Gray background when locked */
-    color: #666; 
-    cursor: not-allowed;
-    transition: background-color 0.3s ease; 
+.metric-card span {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #999;
+    font-weight: 600;
 }
 
-/* 2. Active style: Changes color when editing */
-.profile-input.editable { 
-    background-color: #fff9db; /* Light yellow background during edit */ 
-    border-color: #f59f00; /* Distinct border color during edit */ 
-    color: #000; cursor: text; 
-} 
+.metric-card .value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #111;
+    margin-top: 5px;
+}
+
+.metric-card .value.role {
+    color: #16221f;
+    text-transform: capitalize;
+}

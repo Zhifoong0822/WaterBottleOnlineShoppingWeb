@@ -4,10 +4,10 @@ require_once "_base.php";
 
 $_title = "Order Details";
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
 }
-$user_id = (int) $_SESSION['user_id'];
+$user_id = (int) $_SESSION['users']->user_id;
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");

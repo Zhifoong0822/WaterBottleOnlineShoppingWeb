@@ -4,15 +4,15 @@ require_once "_base.php";
 
 $_title = "Order Feedback";
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
 }
 
-if ($_SESSION['role'] !== 'member') {
+if ($_SESSION['users']->role !== 'member') {
     redirect('admin_orders.php');
 }
 
-$user_id = (int) $_SESSION['user_id']; //set user_id in the current session
+$user_id = (int) $_SESSION['users']->user_id; //set user_id in the current session
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");
