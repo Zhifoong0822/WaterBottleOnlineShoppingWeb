@@ -26,14 +26,17 @@
                 <ul class="nav-list">
                     <!-- Left Navigation Group -->
                     <div class="nav-group">
-                        <li><a href="products.php" class="nav-link">Products</a></li>
+                        <?php if (($_SESSION['role'] ?? '') !== 'admin'): ?>
+                            <li><a href="products.php" class="nav-link">Products</a></li>
 
-                        <?php if (isset($_SESSION['user_id'])): ?>
-                            <li><a href="cart_view.php" class="nav-link">View Cart</a></li>
-                            <li><a href="order_history.php" class="nav-link">My Orders</a></li>
-                            <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
-                                <li><a href="admin_orders.php" class="nav-link">Manage Orders</a></li>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                                <li><a href="cart_view.php" class="nav-link">View Cart</a></li>
+                                <li><a href="order_history.php" class="nav-link">My Orders</a></li>
                             <?php endif; ?>
+
+                        <?php else: ?>
+                            <li><a href="/pages/admin/admin_products.php" class="nav-link">Manage Products</a></li>
+                            <li><a href="/admin_orders.php" class="nav-link">Manage Orders</a></li>
                         <?php endif; ?>
                     </div>
 
@@ -41,8 +44,8 @@
                     <div class="nav-group">
                         <?php if (isset($_SESSION['users']->user_id)): ?>
                             <li class="user-greeting">
-                            <a href="profile.php" class="user-name">
-                                <img src="D:\web assm\WaterBottleOnlineShoppingWeb\img\user-icon.png" alt="User Profile" class="nav-user-icon">
+                            <a href="/profile.php" class="user-name">
+                                <img src="/img/user-icon.png" alt="User Profile" class="nav-user-icon" style="width: 35px; height: 35px; margin-top: 10px;">
                             </a>
                             </li>
                             <li><a href="logout.php" class="nav-link nav-link-btn">Logout</a></li>
