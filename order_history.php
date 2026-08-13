@@ -6,9 +6,9 @@ $_title = "My Orders";
 $_page_title_class = "my-orders-title";
 
 if (!isset($_SESSION['users']->user_id)) {
-    redirect('login.php');
+    redirect('login.php');  //refresh to login page
 }
-$user_id = (int) $_SESSION['users']->user_id;
+$user_id = (int) $_SESSION['users']->user_id;  //get user_id from session & store in variable 
 
 $status_filter = get("status", "all");
 $page = get("page", "1");
@@ -47,8 +47,7 @@ if (is_post() && post("action") === "confirm_received") {
 
     $sql = "UPDATE orders
             SET status = 'completed',
-                /* record exact date&time for completed_at when cust clicks Order Received */
-                completed_at = NOW() 
+                completed_at = NOW()  /* record exact date&time for completed_at when cust clicks Order Received */
             WHERE order_id = :order_id
               AND user_id = :user_id
               AND status = 'shipped'";
@@ -309,7 +308,7 @@ require "_head.php";
 
             <div class="order-items-list">
 
-        <?php foreach ($order["items"] as $item): ?>
+        <?php foreach ($order["items"] as $item_index => $item): ?>
 
             <?php
             $productName = $item["product_name"] ?: "Unknown Product";
@@ -320,7 +319,10 @@ require "_head.php";
             $quantity = (int) $item["quantity"];
             ?>
 
-            <div class="order-item-preview">
+            <div
+                class="order-item-preview<?= $item_index >= 2 ? ' additional-order-item' : '' ?>"
+                <?= $item_index >= 2 ? 'hidden' : '' ?>
+            >
 
                 <img
                     class="order-image"
@@ -349,6 +351,16 @@ require "_head.php";
             </div>
 
         <?php endforeach; ?>
+
+        <?php if (count($order["items"]) > 2): ?>
+            <button
+                type="button"
+                class="view-more-products"
+                aria-expanded="false"
+            >
+                View More
+            </button>
+        <?php endif; ?>
 
         <div class="order-meta-section">
 
@@ -572,11 +584,28 @@ require "_head.php";
 </section>
 
 <script>
+// View More
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.view-more-products').forEach((button) => {
+        button.addEventListener('click', () => {
+            const orderItemsList = button.closest('.order-items-list');
+            const additionalItems = orderItemsList.querySelectorAll('.additional-order-item');
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            additionalItems.forEach((item) => {
+                item.hidden = isExpanded;
+            });
+
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            button.textContent = isExpanded ? 'View More' : 'View Less';
+        });
+    });
+
     const popover = document.getElementById('rating-popover');
     const closeButton = popover.querySelector('.rating-popover-close');
     const closePopover = () => { popover.hidden = true; };
 
+    // View Rating Button
     document.querySelectorAll('.view-rating-button').forEach((button) => {
         button.addEventListener('click', () => {
             const rating = Number(button.dataset.rating);

@@ -768,6 +768,10 @@ main > .my-orders-title {
     gap: 18px;
 }
 
+.order-item-preview[hidden] {
+    display: none;
+}
+
 .order-item-preview:not(:last-of-type) {
     padding-bottom: 16px;
     border-bottom: 1px solid #eeeeee;
@@ -775,6 +779,29 @@ main > .my-orders-title {
 
 .order-meta-section {
     margin-top: 4px;
+}
+
+.view-more-products {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #1e5a96;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.view-more-products:hover {
+    color: #0f2747;
+    text-decoration: underline;
+}
+
+.view-more-products:focus-visible {
+    outline: 2px solid #1e5a96;
+    outline-offset: 3px;
+    border-radius: 2px;
 }
 
 /* ==========================================================================
