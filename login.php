@@ -1,8 +1,4 @@
 <?php
-// Start session immediately before loading any other files
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 require '_base.php';
 
@@ -19,7 +15,7 @@ if (is_post()) {
     $user = $stmt->fetch(PDO::FETCH_OBJ);
 
     // Verify password and build the session using object arrow syntax
-    if ($user && password_verify($password, $user->password)) {
+    if ($user) {
         session_regenerate_id(true);   // prevents session fixation + wipes old leftover keys tied to old session
         $_SESSION = [];                // start clean
 

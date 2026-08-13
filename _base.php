@@ -7,17 +7,6 @@
 date_default_timezone_set('Asia/Kuala_Lumpur');
 session_start();
 
-// Compatibility for sessions created before the merge. The profile module
-// stores a user object, while the shop modules use individual session keys.
-if (!isset($_SESSION['user_id']) && isset($_SESSION['users']) && is_object($_SESSION['users'])) {
-    $session_user = $_SESSION['users'];
-    if (isset($session_user->user_id)) {
-        $_SESSION['user_id'] = (int) $session_user->user_id;
-        $_SESSION['name'] = $session_user->username ?? '';
-        $_SESSION['role'] = $session_user->role ?? 'member';
-    }
-}
-
 // ============================================================================
 // General Page Functions
 // ============================================================================
@@ -385,7 +374,7 @@ $_public_pages = [
 
 $_current_page = basename($_SERVER['PHP_SELF']);
 
-if (!isset($_SESSION['user_id']) && !in_array($_current_page, $_public_pages)) {
+if (!isset($_SESSION['users']) && !in_array($_current_page, $_public_pages)) {
     temp('info', 'Please login to continue.');
     redirect('login.php');
 }
