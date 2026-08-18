@@ -3,6 +3,8 @@
 require '_base.php';
 
 $_title = "Login";
+$_displayTitle = false;
+$pageClass = "login-page";
 
 $email = post('email', '');
 
@@ -28,9 +30,9 @@ if (is_post()) {
         $_err['login'] = "Invalid email or password.";
     }
 }
+require '_head.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -45,65 +47,57 @@ if (is_post()) {
 
     <link rel="stylesheet" href="css/login.css">
 </head>
+
 <body>
     <!-- Flash message -->
     <div id="info"><?= temp('info') ?></div>
 
-    <header>
-        <h1>Water Bottle Shop</h1>
-        <nav>
-            <!-- Flexbox navigation line layout -->
-            <ul style="display: flex; align-items: center; list-style: none; margin: 0; padding: 0; gap: 20px;">
-                <li><a href="products.php">Products</a></li>
+    <div class="login-card">
+        <h1>Login</h1>
+        <p class="login-subtitle">Please enter your e-mail and password:</p>
 
-                <?php if (isset($_SESSION['users'])): ?>
-                    <li><a href="cart_view.php">View Cart</a></li>
-                    <li><a href="order_history.php">My Orders</a></li>
+        <form method="post" action="login.php" class="login-form">
+            <div class="input-pill">
+                <label for="email" class="visually-hidden"></label>
+                <input type="email" id="email" name="email" placeholder="E-mail" value="<?= encode($email) ?>" required>
+            </div>
 
-                    <?php if ($_SESSION['users']->role === 'admin'): ?>
-                        <li><a href="admin_orders.php">Manage Orders</a></li>
-                    <?php endif; ?>
+            <div class="input-pill password-row" style="display: flex;">
+                <label for="password" class="visually-hidden"></label>
+                <input type="password" id="password" name="password" placeholder="Password" required>
+                <button type="button" id="togglePassword" class="toggle-password-btn" aria-label="Show password">👁</button>
+            </div>
 
-                    <li>Hi, <?= encode($_SESSION['users']->username) ?></li>
+            <a href="forgot_password.php" class="pass-forgot-link">Forgot password?</a>
 
-                    <!-- Pushes Logout to the right -->
-                    <li style="margin-left: auto;"><a href="logout.php">Logout</a></li>
-                <?php else: ?>
-                    <!-- Pushes Login to the right -->
-                    <li style="margin-left: auto;"><a href="login.php">Login</a></li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-    </header>
 
-    <main class="login-page">
-        <div class="login-card">
-            <h1>Login</h1>
-            <p class="login-subtitle">Please enter your e-mail and password:</p>
+            <?php if (!empty($_err['login'])): ?>
+                <div class="login-err"><?php err('login') ?></div>
+            <?php endif; ?>
 
-            <form method="post" action="login.php" class="login-form">
-                <div class="input-pill">
-                    <label for="email" class="visually-hidden">E-mail</label>
-                    <input type="email" id="email" name="email" placeholder="E-mail" value="<?= encode($email) ?>" required>
-                </div>
+            <button type="submit" class="login-btn">Login</button>
+        </form>
 
-                <div class="input-pill password-row">
-                    <label for="password" class="visually-hidden">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Password" required>
-                    <a href="forgot_password.php" class="forgot-link">Forgot password?</a>
-                </div>
-
-                <?php if (!empty($_err['login'])): ?>
-                    <div class="login-err"><?php err('login') ?></div>
-                <?php endif; ?>
-
-                <button type="submit" class="login-btn">Login</button>
-            </form>
-
-            <p class="new-customer">New customer? <a href="register.php">Create an account</a></p>
-        </div>
-    </main>
+        <p class="new-customer">New customer? <a href="/register.php">Create an account</a></p>
+    </div>
 
 <?php
 include '_foot.php';
 ?>
+
+<script>
+    $(document).ready(function() {
+        $('#togglePassword').on('click', function() {
+            const passwordInput = $('#password');
+            
+            // Check current attribute type
+            if (passwordInput.attr('type') === 'password') {
+                passwordInput.attr('type', 'text');
+                $(this).attr('aria-label', 'Hide password');
+            } else {
+                passwordInput.attr('type', 'password');
+                $(this).attr('aria-label', 'Show password');
+            }
+        });
+    });
+</script>

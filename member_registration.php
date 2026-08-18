@@ -96,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkEmail'])) {
 
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/login.css">
 
 <div class="admin-container" style="width: 42%;">
     <div class="view-card">
@@ -128,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkEmail'])) {
 
             <!-- Details -->
             <div class="edit-content" style="gap: 15px;">
-                <div class="form-group">
+                <div class="input-pill">
                     <label>Username</label>
                     <input
                         id="usernameTxt"

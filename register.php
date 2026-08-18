@@ -2,6 +2,8 @@
 require '_base.php';
 
 $_title = "Create Account";
+$_displayTitle = false;
+$pageClass = "reg-page";
 
 $name = post('name', '');
 $email = post('email', '');
@@ -48,40 +50,53 @@ if (is_post()) {
     }
 }
 
-include '_head.php';
+require '_head.php';
 ?>
 
-<form method="post" action="register.php">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $_title ?? 'Untitled' ?></title>
 
-    <div>
-        <label for="name">Full Name</label>
-        <?php html_text('name', "required") ?>
-        <?php err('name') ?>
-    </div>
+    <link rel="stylesheet" href="css/main.css">
 
-    <div>
-        <label for="email">Email</label>
-        <?php html_text('email', "required") ?>
-        <?php err('email') ?>
-    </div>
+    <!-- ONLY load cart specific styles on the cart view page -->
+    <?php if (basename($_SERVER['PHP_SELF']) == 'cart_view.php'): ?>
+        <link rel="stylesheet" href="css/cart.css">
+    <?php endif; ?>
 
-    <div>
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-        <?php err('password') ?>
-    </div>
+    <link rel="stylesheet" href="css/login.css">
+</head>
 
-    <div>
-        <label for="confirm_password">Confirm Password</label>
-        <input type="password" id="confirm_password" name="confirm_password" required>
-        <?php err('confirm_password') ?>
-    </div>
+<link rel="stylesheet" href="css/login.css">
 
-    <button type="submit">Create Account</button>
+<div class="reg-card">
+    <h1>Create Account</h1>
+    <p class="login-subtitle">Please enter your details:</p>
 
-</form>
+    <form method="post" action="register.php" class="reg-form">
 
-<p><a href="login.php">Already have an account? Login</a></p>
+        <div class ="reginput-pill">
+            <input type="name" id="name" name="name" placeholder="Full Name" value="<?= encode($name) ?>" required>
+        </div>
+
+        <div class ="reginput-pill">
+            <input type="email" id="email" name="email" placeholder="Email" value="<?= encode($email) ?>" required>
+        </div>
+
+        <div class ="reginput-pill">
+            <input type="password" id="password" name="password" placeholder="Password" required>
+        </div>
+
+        <div class ="reginput-pill">
+            <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" required>
+        </div>
+
+        <button type="submit" class="reg-btn">Create Account</button>
+    </form>
+
+    <p class="existing-customer">Already have an account? <a href="/login.php">Login</a></p>
+</div>
 
 <?php
 include '_foot.php';

@@ -32,10 +32,11 @@
                                 <li><a href="/admin_orders.php" class="nav-link">Manage Orders</a></li>
                                 <li><a href="/pages/admin/member_listing.php" class="nav-link">Member Listing</a></li>
 
-                            <?php else: ?>
-                                <li><a href="products.php" class="nav-link">Products</a></li>
-                                <li><a href="cart_view.php" class="nav-link">View Cart</a></li>
-                                <li><a href="order_history.php" class="nav-link">My Orders</a></li>
+                        <?php if (isset($_SESSION['users']->user_id)): ?>
+                            <li><a href="cart_view.php" class="nav-link">View Cart</a></li>
+                            <li><a href="order_history.php" class="nav-link">My Orders</a></li>
+                            <?php if (($_SESSION['users']->role ?? '') === 'admin'): ?>
+                                <li><a href="admin_orders.php" class="nav-link">Manage Orders</a></li>
                             <?php endif; ?>
                         <?php endif; ?>
                     </div>
@@ -58,8 +59,10 @@
         </div>
     </header>
 
-    <main>
-        <h1><?= $_title ?? 'Untitled' ?></h1>
+    <main<?= !empty($pageClass) ? ' class="' . $pageClass . '"' : '' ?>>
+        <?php if ($_displayTitle != false): ?>
+            <h1><?= $_title ?? 'Untitled' ?></h1>
+        <?php endif; ?>
 
 <?php
 $current_page = basename($_SERVER["PHP_SELF"]);
