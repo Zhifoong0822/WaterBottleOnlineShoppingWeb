@@ -21,6 +21,23 @@ if (!$product) {
     exit;
 }
 
+// Load every gallery image. The fallback keeps older databases working until
+// the new product_images table is imported.
+$product_images = [];
+try {
+    $images_stmt = $_db->prepare(
+        'SELECT image_url FROM product_images WHERE product_id = ? ORDER BY sort_order, image_id'
+    );
+    $images_stmt->execute([$product_id]);
+    $product_images = $images_stmt->fetchAll();
+} catch (PDOException $e) {
+    // The primary image below is still shown if the gallery migration is absent.
+}
+
+if (!$product_images) {
+    $product_images = [(object) ['image_url' => $product->image_url]];
+}
+
 // Fetch all size variants and their individual stocks for this product
 $stmt_var = $_db->prepare("SELECT size, stock FROM product_variants WHERE product_id = ?");
 $stmt_var->execute([$product_id]);
@@ -41,14 +58,25 @@ $sizes_list = [
 ];
 ?>
 
-<div class="product-detail-container" style="max-width: 900px; margin: 40px auto; padding: 0 20px; display: flex; gap: 40px;">
-    <!-- Left Side: Image -->
-    <div style="flex: 1;">
-        <img src="<?= encode($product->image_url) ?>" alt="<?= encode($product->name) ?>" style="width: 100%; max-height: 450px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
+<div class="product-detail-container">
+    <!-- Gallery -->
+    <div class="product-gallery">
+        <div class="product-gallery-main">
+            <img id="product-main-image" src="<?= encode($product_images[0]->image_url) ?>" alt="<?= encode($product->name) ?>">
+        </div>
+        <?php if (count($product_images) > 1): ?>
+            <div class="product-gallery-thumbnails" aria-label="Product image gallery">
+                <?php foreach ($product_images as $index => $image): ?>
+                    <button type="button" class="product-thumbnail <?= $index === 0 ? 'is-active' : '' ?>" data-image="<?= encode($image->image_url) ?>" aria-label="View image <?= $index + 1 ?>">
+                        <img src="<?= encode($image->image_url) ?>" alt="<?= encode($product->name) ?> view <?= $index + 1 ?>">
+                    </button>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Right Side: Meta Details -->
-    <div style="flex: 1.2; display: flex; flex-direction: column; gap: 15px;">
+    <div class="product-details-panel" style="flex: 1.2; display: flex; flex-direction: column; gap: 15px;">
         <h2><?= encode($product->name) ?></h2>
         <p style="color: #666; line-height: 1.6;"><?= encode($product->description) ?></p>
         
@@ -124,6 +152,15 @@ document.addEventListener("DOMContentLoaded", function() {
     const submitBtn = document.getElementById("submit-btn");
     const chips = document.querySelectorAll(".size-chip");
     const form = document.getElementById("add-to-cart-form");
+
+    const mainImage = document.getElementById("product-main-image");
+    document.querySelectorAll(".product-thumbnail").forEach((thumbnail) => {
+        thumbnail.addEventListener("click", () => {
+            mainImage.src = thumbnail.dataset.image;
+            document.querySelectorAll(".product-thumbnail").forEach((item) => item.classList.remove("is-active"));
+            thumbnail.classList.add("is-active");
+        });
+    });
 
     function handleChipChange(chip, input) {
         if (input.checked && !input.disabled) {

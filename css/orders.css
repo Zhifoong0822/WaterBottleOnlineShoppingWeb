@@ -7,6 +7,10 @@
     gap: 18px;
 }
 
+main > .my-orders-title {
+    font-size: 2rem;
+}
+
 .order-card {
     width: 100%;
     max-width: 100%;
@@ -61,6 +65,12 @@
     font-size: 15px;
 }
 
+.product-variation {
+    margin: 4px 0 6px;
+    color: #777777;
+    font-size: 14px;
+}
+
 .order-meta {
     margin: 0 0 14px;
     color: #777777;
@@ -73,7 +83,7 @@
 
     padding: 8px 13px;
 
-    background-color: #222222;
+    background-color: #0f2747;
     color: #ffffff;
 
     text-decoration: none;
@@ -83,7 +93,7 @@
 }
 
 .view-details:hover {
-    background-color: #555555;
+    background-color: #1e3a5f;
 }
 
 .order-right {
@@ -128,6 +138,19 @@
 .status-cancelled {
     background-color: #f8d7da;
     color: #721c24;
+}
+
+.order-status-line {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.refund-success-message {
+    color: #64748b;
+    font-size: 14px;
+    font-style: italic;
 }
 
 .amount-section {
@@ -296,7 +319,7 @@
 
 .card-header {
     padding: 22px 25px;
-    background-color: #222222;
+    background-color: #0f2747;
     color: #ffffff;
 }
 
@@ -373,9 +396,16 @@
 
 .page-header {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
 }
 
 .page-header h2 {
@@ -406,6 +436,22 @@
 .table-tools {
     padding: 20px;
     border-bottom: 1px solid #eeeeee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-field-label {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.search-field-select {
+    padding: 11px 36px 11px 14px;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    background-color: #ffffff;
+    font-size: 15px;
 }
 
 .search-box {
@@ -422,6 +468,11 @@
     border-color: #333333;
 }
 
+.search-field-select:focus {
+    outline: none;
+    border-color: #333333;
+}
+
 .table-wrapper {
     overflow-x: auto;
 }
@@ -434,7 +485,7 @@
 
 .admin-order-table th {
     padding: 16px;
-    background-color: #222222;
+    background-color: #0f2747;
     color: #ffffff;
     text-align: left;
 }
@@ -457,13 +508,13 @@
     display: inline-block;
     padding: 8px 14px;
     border-radius: 7px;
-    background-color: #222222;
+    background-color: #0f2747;
     color: #ffffff;
     text-decoration: none;
 }
 
 .view-button:hover {
-    background-color: #555555;
+    background-color: #1e3a5f;
 }
 
 .no-orders {
@@ -487,6 +538,16 @@
     .page-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 16px;
+    }
+
+    .table-tools {
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        max-width: none;
+        flex-basis: 100%;
     }
 }
 
@@ -523,7 +584,7 @@
 
 .card-header {
     padding: 22px 25px;
-    background-color: #222222;
+    background-color: #0f2747;
     color: #ffffff;
 }
 
@@ -554,6 +615,7 @@
 
 .form-section h3 {
     margin-top: 0;
+    font-size: 1.5rem;
 }
 
 .form-section label {
@@ -570,6 +632,12 @@
     border-radius: 8px;
     background-color: #ffffff;
     font-size: 15px;
+}
+
+.form-section select:disabled {
+    background-color: #f1f5f9;
+    color: #64748b;
+    cursor: not-allowed;
 }
 
 .button-group {
@@ -638,6 +706,50 @@
     border-bottom-color: #222222;
 }
 
+.order-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.order-pagination[hidden] {
+    display: none;
+}
+
+.pagination-link {
+    min-width: 42px;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background-color: #ffffff;
+    color: #334155;
+    font-weight: bold;
+    font-family: inherit;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pagination-link:hover {
+    border-color: #0f2747;
+    background-color: #f1f5f9;
+    color: #0f2747;
+}
+
+.pagination-link.active {
+    border-color: #0f2747;
+    background-color: #0f2747;
+    color: #ffffff;
+}
+
+.pagination-direction {
+    min-width: 88px;
+}
+
 .order-left {
     flex: 1;
     min-width: 0;
@@ -656,6 +768,10 @@
     gap: 18px;
 }
 
+.order-item-preview[hidden] {
+    display: none;
+}
+
 .order-item-preview:not(:last-of-type) {
     padding-bottom: 16px;
     border-bottom: 1px solid #eeeeee;
@@ -663,6 +779,29 @@
 
 .order-meta-section {
     margin-top: 4px;
+}
+
+.view-more-products {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #1e5a96;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.view-more-products:hover {
+    color: #0f2747;
+    text-decoration: underline;
+}
+
+.view-more-products:focus-visible {
+    outline: 2px solid #1e5a96;
+    outline-offset: 3px;
+    border-radius: 2px;
 }
 
 /* ==========================================================================
@@ -785,9 +924,11 @@
 
 .submit-feedback-button,
 .feedback-back-button {
-    padding: 11px 18px;
+    padding: 10px 18px;
     border-radius: 7px;
     font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
 }
 
 .submit-feedback-button {
@@ -805,7 +946,6 @@
     display: inline-block;
     background-color: #e9ecef;
     color: #222222;
-    text-decoration: none;
 }
 
 .feedback-back-button:hover {
@@ -826,4 +966,133 @@
     font-size: 14px;
     font-weight: bold;
     cursor: not-allowed;
+}
+
+/* Compact in-page view of feedback that has already been submitted. */
+.view-rating-button {
+    margin-top: 18px;
+    padding: 9px 15px;
+    border: 1px solid #0284c7;
+    border-radius: 7px;
+    background: #f0f9ff;
+    color: #0369a1;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.view-rating-button:hover { background: #0284c7; color: #fff; }
+
+.rating-popover {
+    position: fixed;
+    z-index: 250;
+    width: min(340px, calc(100vw - 32px));
+    padding: 20px;
+    border: 1px solid #bae6fd;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 16px 38px rgba(15, 23, 42, .20);
+    text-align: left;
+}
+
+.rating-popover[hidden] { display: none; }
+.rating-popover-close { position: absolute; top: 8px; right: 11px; border: 0; background: transparent; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
+.rating-popover-eyebrow { margin: 0 28px 8px 0; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.rating-popover h2 { margin: 0; color: #0f172a; font-size: 21px; }
+#rating-popover-stars { color: #f59e0b; letter-spacing: 1px; }
+.rating-popover-feedback { margin: 14px 0 0; color: #334155; line-height: 1.5; white-space: pre-wrap; }
+.rating-popover-date { margin: 12px 0 0; color: #64748b; font-size: 12px; }
+
+.order-tracking {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr 80px 1fr;
+    align-items: start;
+
+    width: 100%;
+    max-width: 850px;
+
+    margin: 0 auto 30px;
+    padding: 25px;
+
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 14px;
+}
+
+.tracking-step {
+    text-align: center;
+}
+
+.tracking-circle {
+    width: 42px;
+    height: 42px;
+
+    margin: 0 auto 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background-color: #dddddd;
+    color: #666666;
+
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.completed-step .tracking-circle {
+    background-color: #222222;
+    color: #ffffff;
+}
+
+.completed-status-step .tracking-circle {
+    background-color: #16a34a;
+}
+
+.cancelled-status-step .tracking-circle {
+    background-color: #dc2626;
+}
+
+/* Hide legacy step-number text retained in the admin timeline markup. */
+.admin-tracking-icon {
+    font-size: 0;
+}
+
+.admin-tracking-icon i {
+    font-size: 16px;
+}
+
+.tracking-line {
+    height: 4px;
+    margin-top: 19px;
+
+    background-color: #dddddd;
+}
+
+.active-line {
+    background-color: #222222;
+}
+
+.tracking-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.tracking-info strong {
+    font-size: 16px;
+    color: #222222;
+}
+
+.tracking-info span {
+    font-size: 13px;
+    color: #666666;
+}
+
+.tracking-pending {
+    color: #999999 !important;
 }

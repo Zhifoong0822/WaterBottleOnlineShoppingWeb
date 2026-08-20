@@ -79,14 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($updated_profilepic) {
             $stmt = $_db->prepare(
-                "UPDATE users 
+                "UPDATE users
                  SET username = ?, email = ?, profilepic = ?
                  WHERE user_id = ?"
             );
             $stmt->execute([$updated_name, $updated_email, $updated_profilepic, $user_id]);
         } else {
             $stmt = $_db->prepare(
-                "UPDATE users 
+                "UPDATE users
                  SET username = ?, email = ?
                  WHERE user_id = ?"
             );
@@ -362,7 +362,7 @@ include '_head.php';
             <div class="avatar-badge">
             <?php if (!empty($_SESSION['users']->profilepic)): ?>
                 <img 
-                    src="<?= encode($_SESSION['users']->profilepic) ?>" 
+                    src="<?= encode($_SESSION['users']->profilepic) ?>"
                     alt="Profile Picture"
                     class="profile-image">
 

@@ -3,6 +3,7 @@
 require_once "_base.php";
 
 $_title = "Order Details";
+$_hide_page_title = true;
 
 if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
@@ -31,6 +32,9 @@ try {
                 order_id,
                 user_id,
                 order_date,
+                shipped_at,
+                completed_at,
+                cancelled_at,
                 total_amount,
                 subtotal_amount,
                 points_used,
@@ -70,12 +74,191 @@ require "_head.php";
 ?>
 
 <div class="order-detail-container">
+<div class="order-tracking">
+
+<!-- Order Placed -->
+<div class="tracking-step completed-step">
+
+    <div class="tracking-circle">
+        <i class="fa-solid fa-receipt"></i>
+    </div>
+
+    <div class="tracking-info">
+        <strong>Order Placed</strong>
+
+        <span>
+            <?= date(
+                "d M Y",
+                strtotime($order["order_date"])
+            ) ?>
+        </span>
+
+        <span>
+            <?= date(
+                "h:i A",
+                strtotime($order["order_date"])
+            ) ?>
+        </span>
+    </div>
+
+</div>
+
+
+<?php if ($status !== "cancelled"): ?>
+
+    <!-- Line to Shipped -->
+    <div class="tracking-line
+        <?= !empty($order["shipped_at"]) ? "active-line" : "" ?>">
+    </div>
+
+
+    <!-- Shipped -->
+    <div class="tracking-step
+        <?= !empty($order["shipped_at"]) ? "completed-step" : "" ?>">
+
+        <div class="tracking-circle">
+            <i class="fa-solid fa-truck"></i>
+        </div>
+
+        <div class="tracking-info">
+
+            <strong>Shipped</strong>
+
+            <?php if (!empty($order["shipped_at"])): ?>
+
+                <span>
+                    <?= date(
+                        "d M Y",
+                        strtotime($order["shipped_at"])
+                    ) ?>
+                </span>
+
+                <span>
+                    <?= date(
+                        "h:i A",
+                        strtotime($order["shipped_at"])
+                    ) ?>
+                </span>
+
+            <?php else: ?>
+
+                <span class="tracking-pending">
+                    Pending
+                </span>
+
+            <?php endif; ?>
+
+        </div>
+
+    </div>
+
+
+    <!-- Line to Completed -->
+    <div class="tracking-line
+        <?= !empty($order["completed_at"]) ? "active-line" : "" ?>">
+    </div>
+
+<?php else: ?>
+
+    <!-- Direct line to Cancelled -->
+    <div class="tracking-line active-line"></div>
+
+<?php endif; ?>
+
+
+<!-- Final Step -->
+<div class="tracking-step
+    <?= (!empty($order["completed_at"]) ||
+         !empty($order["cancelled_at"]))
+        ? "completed-step"
+        : "" ?>
+    <?= ($status !== "cancelled" && !empty($order["completed_at"]))
+        ? "completed-status-step"
+        : "" ?>
+    <?= ($status === "cancelled" && !empty($order["cancelled_at"]))
+        ? "cancelled-status-step"
+        : "" ?>">
+
+        <div class="tracking-circle">
+
+        <?php if ($status === "cancelled"): ?>
+
+            <i class="fa-solid fa-xmark"></i>
+
+        <?php else: ?>
+
+            <i class="fa-solid fa-star"></i>
+
+        <?php endif; ?>
+
+</div>
+
+    <div class="tracking-info">
+
+        <?php if ($status === "cancelled"): ?>
+
+            <strong>Cancelled</strong>
+
+            <?php if (!empty($order["cancelled_at"])): ?>
+
+                <span>
+                    <?= date(
+                        "d M Y",
+                        strtotime($order["cancelled_at"])
+                    ) ?>
+                </span>
+
+                <span>
+                    <?= date(
+                        "h:i A",
+                        strtotime($order["cancelled_at"])
+                    ) ?>
+                </span>
+
+            <?php endif; ?>
+
+
+        <?php else: ?>
+
+            <strong>Completed</strong>
+
+            <?php if (!empty($order["completed_at"])): ?>
+
+                <span>
+                    <?= date(
+                        "d M Y",
+                        strtotime($order["completed_at"])
+                    ) ?>
+                </span>
+
+                <span>
+                    <?= date(
+                        "h:i A",
+                        strtotime($order["completed_at"])
+                    ) ?>
+                </span>
+
+            <?php else: ?>
+
+                <span class="tracking-pending">
+                    Pending
+                </span>
+
+            <?php endif; ?>
+
+        <?php endif; ?>
+
+    </div>
+
+</div>
+
+</div>
 
     <div class="detail-card">
 
         <div class="card-header">
             <h2>
-                Order #<?= encode($order["order_id"]) ?>
+                Order Details
             </h2>
         </div>
 

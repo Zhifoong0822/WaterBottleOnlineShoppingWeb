@@ -1,5 +1,6 @@
 <?php
 require_once '../../_base.php';
+require_admin('../../products.php');
 
 $_title = 'View Product';
 
