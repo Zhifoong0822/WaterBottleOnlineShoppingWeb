@@ -196,6 +196,25 @@ CREATE TABLE `user_addresses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
+-- 10. Admin create new admin role
+-- =========================================================
+CREATE TABLE IF NOT EXISTS roles (
+  `role_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `role_name` VARCHAR(50) NOT NULL UNIQUE,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================================================
+-- 11. Different role will access to different page
+-- =========================================================
+CREATE TABLE IF NOT EXISTS role_permissions (
+  `role_id` INT NOT NULL,
+  `page_slug` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (role_id, page_slug),
+  FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE CASCADE
+);
+-- =========================================================
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
 INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`, `reward_points`) VALUES

@@ -1,4 +1,9 @@
 <?php
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require '_base.php';
 
 if (!isset($_SESSION['users'])) {
@@ -156,6 +161,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: profile.php");
         exit;
     }
+
+    // =====================================================
+    // 3. CREATE / UPDATE A ROLE (admin only)
+    // =====================================================
+    if ($form_type === 'create_role') {
+
+        if ($_SESSION['users']->role !== 'admin') {
+            redirect('profile.php');
+            exit;
+        }
+
+        // Only these two role names are selectable from the dropdown
+        $allowed_role_names = ['Supervisor', 'Staff'];
+
+        // ASSUMPTION: adjust these slugs/labels to match your real page filenames
+        $available_pages = [
+            'admin_products.php' => 'Manage Products',
+            'admin_orders.php'   => 'Manage Orders',
+            'admin_members.php'  => 'Member Listing',
+            'cart_view.php'      => 'View Cart',
+            'order_history.php'  => 'My Orders',
+        ];
+
+        $role_name    = $_POST['role_name'] ?? '';
+        $selected_pages = $_POST['pages'] ?? [];
+
+        // Only accept page slugs we actually recognize
+        $selected_pages = array_values(array_intersect($selected_pages, array_keys($available_pages)));
+
+        if (!in_array($role_name, $allowed_role_names, true)) {
+            temp('role_error', 'Please choose a valid role.');
+        } else {
+            // Does this role already exist? If so, update its permissions instead of erroring.
+            $stmt = $_db->prepare("SELECT role_id FROM roles WHERE role_name = ?");
+            $stmt->execute([$role_name]);
+            $existing = $stmt->fetch(PDO::FETCH_OBJ);
+
+            if ($existing) {
+                $role_id = $existing->role_id;
+            } else {
+                $stmt = $_db->prepare("INSERT INTO roles (role_name) VALUES (?)");
+                $stmt->execute([$role_name]);
+                $role_id = $_db->lastInsertId();
+            }
+
+            // Replace this role's permission set with whatever was just checked
+            $stmt = $_db->prepare("DELETE FROM role_permissions WHERE role_id = ?");
+            $stmt->execute([$role_id]);
+
+            if (!empty($selected_pages)) {
+                $stmt = $_db->prepare("INSERT INTO role_permissions (role_id, page_slug) VALUES (?, ?)");
+                foreach ($selected_pages as $page_slug) {
+                    $stmt->execute([$role_id, $page_slug]);
+                }
+            }
+
+            temp('role_success', "\"$role_name\" role saved with " . count($selected_pages) . " page(s) of access.");
+        }
+
+        header("Location: profile.php?tab=roles");
+        exit;
+    }
+
+    // =====================================================
+    // 4. DELETE A ROLE (admin only)
+    // =====================================================
+    if ($form_type === 'delete_role') {
+
+        if ($_SESSION['users']->role !== 'admin') {
+            redirect('profile.php');
+            exit;
+        }
+
+        $role_id = (int) ($_POST['role_id'] ?? 0);
+
+        $stmt = $_db->prepare("SELECT role_name FROM roles WHERE role_id = ?");
+        $stmt->execute([$role_id]);
+        $role_row = $stmt->fetch(PDO::FETCH_OBJ);
+
+        if (!$role_row) {
+            temp('role_error', 'Role not found.');
+        } else {
+            $stmt = $_db->prepare("SELECT COUNT(*) FROM users WHERE role = ?");
+            $stmt->execute([$role_row->role_name]);
+            $in_use = (int) $stmt->fetchColumn();
+
+            if ($in_use > 0) {
+                temp('role_error', "Can't delete \"{$role_row->role_name}\" — $in_use staff member(s) still have this role. Reassign them first.");
+            } else {
+                $stmt = $_db->prepare("DELETE FROM roles WHERE role_id = ?");
+                $stmt->execute([$role_id]);
+                temp('role_success', "Role \"{$role_row->role_name}\" deleted.");
+            }
+        }
+
+        header("Location: profile.php?tab=roles");
+        exit;
+    }
 }
 
 // Fetch current user details
@@ -178,6 +281,16 @@ function safe_scalar($db, $sql, $params = []) {
     }
 }
 
+function safe_rows($db, $sql, $params = []) {
+    try {
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    } catch (Exception $e) {
+        return [];
+    }
+}
+
 $is_admin = ($_SESSION['users']->role === 'admin');
 
 if ($is_admin) {
@@ -186,16 +299,62 @@ if ($is_admin) {
     $overview_pending_orders = safe_scalar($_db, "SELECT COUNT(*) FROM orders WHERE status = 'pending'");
     $overview_total_revenue  = safe_scalar($_db, "SELECT SUM(total) FROM orders WHERE status != 'cancelled'");
     $overview_total_users    = safe_scalar($_db, "SELECT COUNT(*) FROM users WHERE role = 'member'");
+    $overview_recent_orders  = safe_rows($_db, "
+        SELECT o.order_id, u.username, o.total, o.status, o.created_at
+        FROM orders o
+        JOIN users u ON u.user_id = o.user_id
+        ORDER BY o.created_at DESC
+        LIMIT 8
+    ");
 } else {
     // Personal stats for a regular member
     $overview_my_orders = safe_scalar($_db, "SELECT COUNT(*) FROM orders WHERE user_id = ?", [$user_id]);
     $overview_my_spend  = safe_scalar($_db, "SELECT SUM(total) FROM orders WHERE user_id = ? AND status != 'cancelled'", [$user_id]);
 }
 
+// --- ROLES TAB DATA (admin only) ---
+if ($is_admin) {
+    // ASSUMPTION: same page list as in the create_role handler above — keep these in sync
+    $available_pages = [
+        'admin_products.php' => 'Manage Products',
+        'admin_orders.php'   => 'Manage Orders',
+        'admin_members.php'  => 'Member Listing',
+        'cart_view.php'      => 'View Cart',
+        'order_history.php'  => 'My Orders',
+    ];
+
+    $roles = safe_rows($_db, "
+        SELECT r.role_id, r.role_name, r.created_at,
+               (SELECT COUNT(*) FROM users u WHERE u.role = r.role_name) AS staff_count
+        FROM roles r
+        ORDER BY r.role_name ASC
+    ");
+
+    // Attach each role's granted pages
+    foreach ($roles as $role) {
+        $perm_rows = safe_rows($_db, "SELECT page_slug FROM role_permissions WHERE role_id = ?", [$role->role_id]);
+        $role->pages = array_map(fn($r) => $r->page_slug, $perm_rows);
+    }
+
+    // If ?edit_role=Supervisor (or Staff) is set, prefill the form with that role's current permissions
+    $edit_role_name = $_GET['edit_role'] ?? '';
+    $edit_role_pages = [];
+    if (in_array($edit_role_name, ['Supervisor', 'Staff'], true)) {
+        foreach ($roles as $role) {
+            if ($role->role_name === $edit_role_name) {
+                $edit_role_pages = $role->pages;
+                break;
+            }
+        }
+    }
+}
+
 include '_head.php';
 ?>
 <link rel="stylesheet" href="css/profile.css">
-<link rel="stylesheet" href="css/admim.css">
+<link rel="stylesheet" href="css/admin_dashboard.css">
+
+<main>
 
     <!-- Mockup Header Section Matching Image Component -->
     <div class="header-banner">
@@ -219,59 +378,182 @@ include '_head.php';
     </div>
 
 <nav class="nav-container">
-  <button onclick="switchTab('overview')">Overview</button>
-  <button onclick="switchTab('wishlist')">Wishlist</button>
-  <button onclick="switchTab('settings')">Settings</button>
+  <button type="button" class="nav-item" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+  <?php if ($is_admin): ?>
+      <button type="button" class="nav-item" data-tab="roles" onclick="switchTab('roles')">Roles</button>
+  <?php else: ?>
+      <button type="button" class="nav-item" data-tab="wishlist" onclick="switchTab('wishlist')">Wishlist</button>
+  <?php endif; ?>
+  <button type="button" class="nav-item" data-tab="settings" onclick="switchTab('settings')">Settings</button>
 </nav>
 
 <!-- Overview Tab Content -->
 <div id="overview" class="tab-content">
     <?php if ($is_admin): ?>
         <h2>Store Overview</h2>
-        <div class="overview-stats">
-            <div class="overview-card">
-                <span class="overview-label">Total Orders</span>
-                <span class="overview-value"><?= $overview_total_orders !== null ? (int) $overview_total_orders : '—' ?></span>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span>Total Orders</span>
+                <div class="value"><?= $overview_total_orders !== null ? (int) $overview_total_orders : '—' ?></div>
             </div>
-            <div class="overview-card">
-                <span class="overview-label">Pending Orders</span>
-                <span class="overview-value"><?= $overview_pending_orders !== null ? (int) $overview_pending_orders : '—' ?></span>
+            <div class="metric-card">
+                <span>Pending Orders</span>
+                <div class="value"><?= $overview_pending_orders !== null ? (int) $overview_pending_orders : '—' ?></div>
             </div>
-            <div class="overview-card">
-                <span class="overview-label">Total Revenue</span>
-                <span class="overview-value">
+            <div class="metric-card">
+                <span>Total Revenue</span>
+                <div class="value">
                     <?= $overview_total_revenue !== null ? '$' . number_format((float) $overview_total_revenue, 2) : '—' ?>
-                </span>
+                </div>
             </div>
-            <div class="overview-card">
-                <span class="overview-label">Registered Customers</span>
-                <span class="overview-value"><?= $overview_total_users !== null ? (int) $overview_total_users : '—' ?></span>
+            <div class="metric-card">
+                <span>Registered Customers</span>
+                <div class="value"><?= $overview_total_users !== null ? (int) $overview_total_users : '—' ?></div>
             </div>
         </div>
         <p class="overview-link"><a href="admin_orders.php">View all orders →</a></p>
+
+        <h3 class="overview-subheading">Recent Orders</h3>
+        <?php if (empty($overview_recent_orders)): ?>
+            <p class="overview-empty">No orders yet.</p>
+        <?php else: ?>
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Customer</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($overview_recent_orders as $order): ?>
+                        <tr>
+                            <td>#<?= encode($order->order_id) ?></td>
+                            <td><?= encode($order->username) ?></td>
+                            <td>$<?= number_format((float) $order->total, 2) ?></td>
+                            <td>
+                                <span class="badge badge-<?= encode(strtolower($order->status)) ?>">
+                                    <?= encode(ucfirst($order->status)) ?>
+                                </span>
+                            </td>
+                            <td><?= encode(date('M j, Y', strtotime($order->created_at))) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     <?php else: ?>
         <h2>Your Overview</h2>
-        <div class="overview-stats">
-            <div class="overview-card">
-                <span class="overview-label">Orders Placed</span>
-                <span class="overview-value"><?= $overview_my_orders !== null ? (int) $overview_my_orders : '—' ?></span>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span>Orders Placed</span>
+                <div class="value"><?= $overview_my_orders !== null ? (int) $overview_my_orders : '—' ?></div>
             </div>
-            <div class="overview-card">
-                <span class="overview-label">Total Spent</span>
-                <span class="overview-value">
+            <div class="metric-card">
+                <span>Total Spent</span>
+                <div class="value">
                     <?= $overview_my_spend !== null ? '$' . number_format((float) $overview_my_spend, 2) : '—' ?>
-                </span>
+                </div>
+            </div>
+            <div class="metric-card">
+                <span>Account Type</span>
+                <div class="value role"><?= encode($_SESSION['users']->role) ?></div>
             </div>
         </div>
         <p class="overview-link"><a href="order_history.php">View your order history →</a></p>
     <?php endif; ?>
 </div>
 
+<?php if ($is_admin): ?>
+<!-- Roles Tab Content (admin only) -->
+<div id="roles" class="tab-content" style="display: none;">
+    <h2>Manage Roles</h2>
+
+    <form method="POST" action="" style="margin-top: 20px;">
+        <input type="hidden" name="form_type" value="create_role">
+        <div class="card-container">
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role_name" class="input-field" required>
+                    <option value="">Select a role…</option>
+                    <option value="Supervisor" <?= $edit_role_name === 'Supervisor' ? 'selected' : '' ?>>Supervisor</option>
+                    <option value="Staff" <?= $edit_role_name === 'Staff' ? 'selected' : '' ?>>Staff</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Page Access</label>
+                <?php foreach ($available_pages as $slug => $label): ?>
+                    <label class="role-checkbox-row">
+                        <input type="checkbox" name="pages[]" value="<?= encode($slug) ?>"
+                               <?= in_array($slug, $edit_role_pages, true) ? 'checked' : '' ?>>
+                        <span><?= encode($label) ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+
+            <?php if (isset($_SESSION['temp_role_error'])): ?>
+                <span class="err"><?= encode(temp('role_error')) ?></span>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['temp_role_success'])): ?>
+                <span class="success"><?= encode(temp('role_success')) ?></span>
+            <?php endif; ?>
+
+            <button type="submit" class="edit-profile-btn" style="margin-top: 12px; width: fit-content;">Save Role</button>
+        </div>
+    </form>
+
+    <h3 class="overview-subheading">Existing Roles</h3>
+    <?php if (empty($roles)): ?>
+        <p class="overview-empty">No roles configured yet. Create one above.</p>
+    <?php else: ?>
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>Role Name</th>
+                    <th>Page Access</th>
+                    <th>Staff Assigned</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($roles as $role): ?>
+                    <tr>
+                        <td><?= encode($role->role_name) ?></td>
+                        <td>
+                            <?php if (empty($role->pages)): ?>
+                                <span class="no-access">No pages granted</span>
+                            <?php else: ?>
+                                <?php foreach ($role->pages as $s): ?>
+                                    <span class="page-badge"><?= encode($available_pages[$s] ?? $s) ?></span>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </td>
+                        <td class="staff-count-cell"><?= (int) $role->staff_count ?></td>
+                        <td class="role-actions-cell">
+                            <a href="profile.php?tab=roles&edit_role=<?= urlencode($role->role_name) ?>" class="role-btn role-btn-edit">Edit</a>
+                            <form method="POST" action="" style="display:inline;"
+                                  onsubmit="return confirm('Delete the role &quot;<?= encode(addslashes($role->role_name)) ?>&quot;?');">
+                                <input type="hidden" name="form_type" value="delete_role">
+                                <input type="hidden" name="role_id" value="<?= (int) $role->role_id ?>">
+                                <button type="submit" class="role-btn role-btn-delete">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+</div>
+<?php else: ?>
 <!-- Wishlist Tab Content -->
 <div id="wishlist" class="tab-content" style="display: none;">
     <h2>Wishlist</h2>
     <p class="overview-empty">Your saved items will show up here.</p>
 </div>
+<?php endif; ?>
 
 <!-- Settings Tab Content -->
 <div id="settings" class="tab-content" style="display: none;">
@@ -283,9 +565,10 @@ include '_head.php';
         <div class="card-container">
             <div class="card-header">
                 <h4>Profile</h4>
-                <!-- Edit -->
-                <input type="file" id="profilephoto-input" name="photo" accept="image/*" disabled>
-                <button type="button" id="edit-btn" class="edit-profile-btn" onclick="toggleEdit()">Edit</button>
+                <div class="card-header-actions">
+                    <input type="file" id="profilephoto-input" name="photo" accept="image/*" disabled>
+                    <button type="button" id="edit-btn" class="edit-profile-btn" onclick="toggleEdit()">Edit</button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -412,10 +695,15 @@ function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   const targetTab = document.getElementById(tabId);
   if (targetTab) targetTab.style.display = 'block';
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabId);
+  });
 }
 
-// Show the Overview tab by default when the page loads
-switchTab('overview');
+// Show the tab requested via ?tab=, defaulting to Overview
+const initialTab = <?= json_encode(isset($_GET['tab']) ? $_GET['tab'] : 'overview') ?>;
+switchTab(initialTab);
 </script>
 
 </main>
