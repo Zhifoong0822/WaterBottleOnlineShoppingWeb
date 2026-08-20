@@ -289,7 +289,7 @@ function auth(...$roles) {
 // Use this on every admin-only route. Navigation links are not a security
 // boundary: the role must be checked again when a URL is requested directly.
 function require_admin($redirect_to = 'products.php') {
-    if (($_SESSION['role'] ?? '') === 'admin') {
+    if (($_SESSION['users']->role ?? '') === 'admin') {
         return;
     }
 
