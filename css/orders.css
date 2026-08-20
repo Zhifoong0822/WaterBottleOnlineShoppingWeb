@@ -377,6 +377,50 @@ main > .my-orders-title {
     color: #ffffff;
 }
 
+.address-change-action,
+.address-update-form {
+    padding: 24px 25px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.address-change-action p,
+.address-update-form p {
+    margin: 10px 0 0;
+    color: #666666;
+}
+
+.address-update-form h3 {
+    margin: 0;
+}
+
+.address-source-option {
+    display: block;
+    margin-top: 18px;
+    font-weight: 600;
+}
+
+.address-update-form select,
+.address-update-form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.address-update-form textarea:disabled {
+    background-color: #f5f5f5;
+}
+
+.address-update-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 18px;
+}
+
 .back-button {
     display: inline-block;
     padding: 10px 18px;

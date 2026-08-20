@@ -8,7 +8,7 @@ $search = trim(get('search', ''));
 $category_id = get('category', '');
 $sort = get('sort', 'newest');
 $page = max(1, (int) get('page', 1));
-$limit = 6;
+$limit = 3;
 
 if ($category_id !== '' && !ctype_digit($category_id)) {
     $category_id = '';
@@ -57,7 +57,9 @@ $top_selling_stmt = $_db->query(
         p.image_url,
         c.category_name,
         COALESCE(sales.units_sold, 0) AS units_sold,
-        COALESCE(stock.total_stock, 0) AS total_stock
+        COALESCE(stock.total_stock, 0) AS total_stock,
+        stock.size,
+        stock.colour
     FROM products p
     JOIN categories c ON c.category_id = p.category_id
     LEFT JOIN (
@@ -68,7 +70,7 @@ $top_selling_stmt = $_db->query(
         GROUP BY oi.product_id
     ) sales ON sales.product_id = p.product_id
     LEFT JOIN (
-        SELECT product_id, SUM(stock) AS total_stock
+        SELECT product_id, SUM(stock) AS total_stock, MIN(size) AS size, MIN(colour) AS colour
         FROM product_variants
         GROUP BY product_id
     ) stock ON stock.product_id = p.product_id
@@ -87,7 +89,9 @@ $products_stmt = $_db->prepare(
         p.image_url,
         c.category_name,
         COALESCE(sales.units_sold, 0) AS units_sold,
-        COALESCE(stock.total_stock, 0) AS total_stock
+        COALESCE(stock.total_stock, 0) AS total_stock,
+        stock.size,
+        stock.colour
     FROM products p
     JOIN categories c ON c.category_id = p.category_id
     LEFT JOIN (
@@ -98,7 +102,7 @@ $products_stmt = $_db->prepare(
         GROUP BY oi.product_id
     ) sales ON sales.product_id = p.product_id
     LEFT JOIN (
-        SELECT product_id, SUM(stock) AS total_stock
+        SELECT product_id, SUM(stock) AS total_stock, MIN(size) AS size, MIN(colour) AS colour
         FROM product_variants
         GROUP BY product_id
     ) stock ON stock.product_id = p.product_id
@@ -117,6 +121,7 @@ $products = $products_stmt->fetchAll();
 
 function product_card($product, $show_sales = false) {
     $is_sold_out = (int) $product->total_stock === 0;
+    $display_price = variant_price($product->price, $product->size ?? '');
     ?>
     <article class="product-card <?= $is_sold_out ? 'is-sold-out' : '' ?>">
         <a href="product_detail.php?id=<?= $product->product_id ?>" class="product-card-link">
@@ -125,7 +130,13 @@ function product_card($product, $show_sales = false) {
             <h3><?= encode($product->name) ?></h3>
         </a>
         <p><?= encode($product->description) ?></p>
-        <p class="product-price">RM<?= number_format((float) $product->price, 2) ?></p>
+        <?php if (!empty($product->size)): ?>
+            <p class="product-variant">Size: <?= encode($product->size) ?></p>
+        <?php endif; ?>
+        <?php if (!empty($product->colour)): ?>
+            <p class="product-variant">Colour: <?= encode($product->colour) ?></p>
+        <?php endif; ?>
+        <p class="product-price">RM<?= number_format((float) $display_price, 2) ?></p>
 
         <?php if ($show_sales): ?>
             <p class="product-sales"><?= number_format((int) $product->units_sold) ?> sold</p>
@@ -221,12 +232,18 @@ require '_head.php';
 
     <?php if ($total_pages > 1): ?>
     <nav class="pagination" aria-label="Product pages">
+        <?php if ($page > 1): ?>
+            <a href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&sort=<?= urlencode($sort) ?>&page=<?= $page - 1 ?>" aria-label="Previous page">Previous</a>
+        <?php endif; ?>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
             <a
                 href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&sort=<?= urlencode($sort) ?>&page=<?= $i ?>"
                 class="<?= $i === $page ? 'active' : '' ?>"
             ><?= $i ?></a>
         <?php endfor; ?>
+        <?php if ($page < $total_pages): ?>
+            <a href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&sort=<?= urlencode($sort) ?>&page=<?= $page + 1 ?>" aria-label="Next page">Next</a>
+        <?php endif; ?>
     </nav>
     <?php endif; ?>
 </section>

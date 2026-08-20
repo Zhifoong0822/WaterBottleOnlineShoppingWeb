@@ -63,7 +63,6 @@ if ($cart_data) {
         <div class="cart-items">
             <?php foreach ($cart_items as $item) : ?>
                 <?php 
-                // Dynamic sizing logic execution engine calculation checkpoint
                 $computed_unit_price = variant_price($item->price, $item->size);
                 $subtotal = $computed_unit_price * $item->quantity; 
                 ?>
@@ -78,14 +77,8 @@ if ($cart_data) {
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 5px 0;"><?= encode($item->name) ?></h3>
                         
-                        <!-- Added display layout element specifically calling out chosen variant metrics -->
-                        <div style="font-size: 13px; color: #495057; font-weight: bold; background: #e9ecef; display: inline-block; padding: 3px 8px; border-radius: 4px; margin-bottom: 8px;">
-                            Size Class: <?= encode($item->size) ?>
-                        </div>
-
                         <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
-                            Price: RM<?= number_format($computed_unit_price, 2) ?> 
-                            <span style="font-size:11px; color:#999;">(Base: RM<?= number_format($item->price, 2) ?>)</span>
+                            Price: RM<?= number_format($computed_unit_price, 2) ?>
                         </p>
                         
                     <div class="quantity-controls" style="display: flex; align-items: center; gap: 8px;">

@@ -140,6 +140,7 @@ CREATE TABLE `orders` (
   `recipient_name` VARCHAR(100) NOT NULL,
   `shipping_address` TEXT NOT NULL,
   `phone_number` VARCHAR(20) NOT NULL,
+  `address_updated` TINYINT(1) NOT NULL DEFAULT 0,
   `payment_method` VARCHAR(30) NOT NULL DEFAULT 'cash_on_delivery',
   `payment_reference` VARCHAR(100) DEFAULT NULL,
   `payment_status` ENUM('pending', 'paid') NOT NULL DEFAULT 'pending',
