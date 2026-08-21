@@ -592,6 +592,18 @@ require "_head.php";
 
         </div>
 
+        <div class="customer-detail-section">
+            <h3>Customer Detail</h3>
+            <a
+                class="customer-detail-link"
+                href="pages/admin/member_details.php?id=<?= urlencode(
+                    $order["user_id"]
+                ) ?>&page=1"
+            >
+                View Customer Profile
+            </a>
+        </div>
+
     </div>
 
 </section>
