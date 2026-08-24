@@ -153,7 +153,33 @@
 .colour-display{display:flex; align-items:center; gap:15px;}
 .colour-circle{width:36px; height:36px; border-radius:50%; border:2px solid #ddd; display:inline-block;}
 .colour-name{font-weight:600; color:#333;}
+/* ==========================================
+   PRODUCT VIEW IMAGE GALLERY
+========================================== */
 
+.product-gallery {position: relative;width: 330px;height: 330px;display: flex; align-items: center;justify-content: center; margin: 0 auto;}
+.gallery-main {width: 290px;height: 290px;background: #f7f7f7; border-radius: 16px;overflow: hidden;display: flex;align-items: center;justify-content: center;}
+.gallery-main img {width: 100%;height: 100%;object-fit: contain;display: block;}
+/* ==========================================
+   ARROWS
+========================================== */
+.gallery-arrow {position: absolute; width: 42px; height: 42px;border: none; border-radius: 50%; background: #222;
+    color: white;font-size: 20px; cursor: pointer; display: flex; align-items: center;justify-content: center;z-index: 2;}
+.gallery-arrow:hover {background: #444;}
+.gallery-prev {left: 0;}
+.gallery-next {right: 0;}
+/* ==========================================
+   IMAGE COUNTER
+========================================== */
+.gallery-counter {text-align: center;margin-top: 8px;font-size: 14px;color: #666;}
+/* ==========================================
+   THUMBNAILS
+========================================== */
+.gallery-thumbnails {display: flex; justify-content: center; gap: 10px; margin-top: 15px;flex-wrap: wrap;}
+.gallery-thumbnail {width: 70px; height: 70px;padding: 0; border: 2px solid #ddd; border-radius: 8px; background: #f7f7f7;overflow: hidden;cursor: pointer;}
+.gallery-thumbnail:hover {border-color: #555;}
+.gallery-thumbnail.active {border: 3px solid #222;}
+.gallery-thumbnail img {width: 100%;height: 100%; object-fit: cover;display: block;}
 /* ------------------------------------------------------
    Edit Product
 ------------------------------------------------------ */
@@ -161,13 +187,11 @@
 .edit-header{margin-bottom:30px;}
 .edit-header h2{margin:0;}
 .edit-content{ display:grid;grid-template-columns:300px 1fr; gap:45px; align-items:flex-start;}
-
 /* Left */
 .edit-image{text-align:center;}
 .edit-product-image{ width:260px; height:260px; object-fit:cover;border-radius:12px;
     border:1px solid #ddd; margin-bottom:20px;background:#fafafa;}
 .file-input{width:100%;}
-
 /* Right */
 .edit-form{display:grid; grid-template-columns:1fr 1fr; gap:22px 25px;}
 .form-group{display:flex; flex-direction:column;}
@@ -194,6 +218,65 @@ input[type="color"]{width:80px; height:50px; padding:4px;cursor:pointer; border-
     .edit-content{grid-template-columns:1fr;    }
     .edit-form{grid-template-columns:1fr;}
     .edit-image{text-align:center;}
+}
+/* ==========================================
+   PRODUCT PHOTO MANAGER (Add / Edit Product)
+========================================== */
+.photo-manager {width: 100%; max-width: 340px; margin: 0 auto; background: #fff; border: 1px solid #e5e5e5;
+    border-radius: 16px; padding: 20px; box-sizing: border-box;}
+
+.photo-manager-header {display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 16px;}
+.photo-manager-header h3 {margin: 0; font-size: 17px;}
+.photo-manager-header p {margin: 4px 0 0; font-size: 12.5px; color: #888;}
+.photo-counter {flex-shrink: 0; background: #eaf2fd; color: #1976d2; font-weight: 700; font-size: 12.5px;
+    padding: 5px 12px; border-radius: 999px;}
+
+/* Main preview frame */
+.photo-main-frame {position: relative; width: 100%; aspect-ratio: 1 / 1; background: #f7f7f7; border: 1px solid #eee;
+    border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;}
+.photo-main-frame img {width: 100%; height: 100%; object-fit: contain; display: block;}
+.photo-main-badge {position: absolute; top: 10px; left: 10px; background: #222; color: #fff; font-size: 11.5px;
+    font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px;}
+
+/* Thumbnail grid */
+.photo-grid {display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;}
+.photo-tile {position: relative; aspect-ratio: 1 / 1; border: 2px solid #e2e2e2; border-radius: 10px;
+    overflow: hidden; cursor: pointer; background: #f7f7f7; transition: border-color .15s ease, transform .15s ease;}
+.photo-tile:hover {border-color: #bbb;}
+.photo-tile img {width: 100%; height: 100%; object-fit: cover; display: block;}
+.photo-tile.is-main {border-color: #222;}
+.photo-tile.is-selected {border-color: #1976d2; box-shadow: 0 0 0 3px rgba(25,118,210,.15);}
+
+.photo-tile-label {position: absolute; top: 5px; left: 5px; background: #1976d2; color: #fff; font-size: 9.5px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 3px 7px; border-radius: 5px;}
+
+.photo-tile-add {display: flex; align-items: center; justify-content: center; border-style: dashed;
+    color: #999; font-size: 26px; font-weight: 300; background: #fafafa;}
+.photo-tile-add:hover {border-color: #999; color: #555;}
+
+/* Selected tile actions */
+.photo-actions {display: flex; align-items: center; gap: 10px; margin-bottom: 14px;}
+.btn-photo-main, .btn-photo-delete {flex: 1; border: none; border-radius: 8px; padding: 10px 12px; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: .2s;}
+.btn-photo-main {background: #eaf2fd; color: #1976d2;}
+.btn-photo-main:hover {background: #d9e9fc;}
+.btn-photo-delete {background: #fdeaea; color: #c62828;}
+.btn-photo-delete:hover {background: #fbdcdc;}
+
+/* Dropzone */
+.photo-dropzone {display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    gap: 6px; border: 2px dashed #d9d9d9; border-radius: 12px; padding: 22px 14px; cursor: pointer;
+    transition: border-color .2s ease, background .2s ease;}
+.photo-dropzone:hover, .photo-dropzone.is-dragover {border-color: #1976d2; background: #f6faff;}
+.photo-dropzone-icon {width: 34px; height: 34px; border-radius: 50%; background: #eaf2fd; color: #1976d2;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 2px;}
+.photo-dropzone-text {font-size: 14px; font-weight: 600; color: #333;}
+.photo-dropzone-sub {font-size: 12px; color: #999;}
+
+.file-input {display: none;}
+
+@media (max-width: 900px) {
+    .photo-manager {max-width: 100%;}
 }
 /* ------------------------------------------------------
    Dashboard
