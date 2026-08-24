@@ -39,6 +39,20 @@ if (!$product) {
     header('Location: admin_products.php');
     exit;
 }
+/* ==========================================
+   Load Product Images
+========================================== */
+
+$image_stmt = $_db->prepare("
+    SELECT image_id, image_url
+    FROM product_images
+    WHERE product_id = ?
+    ORDER BY image_id ASC
+");
+
+$image_stmt->execute([$product_id]);
+
+$additional_images = $image_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include '../../_head.php';
 ?>
@@ -54,20 +68,84 @@ include '../../_head.php';
         <div class="view-content">
             <div class="view-image">
                 <?php
-                $imagePath = $product['image_url'];
+                /* ==========================================
+                view Images
+                Main image + additional images
+                ========================================== */
+                $product_images = [];
 
-                if (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://')) {
-                    $imageSrc = $imagePath;
-                } else {
-                    $imageSrc = '../../' . ltrim($imagePath, '/');
+                // Main product image
+                if (!empty($product['image_url'])) {
+                    $product_images[] = $product['image_url'];
+                }
+                // Additional product images
+                foreach ($additional_images as $img) {
+                    $product_images[] = $img['image_url'];
                 }
                 ?>
+                <!-- Main Image -->
+                <div class="product-gallery">
 
-                <img
-                    src="<?= htmlspecialchars($imageSrc) ?>"
-                    alt="<?= htmlspecialchars($product['name']) ?>"
-                    class="view-product-image"
-                >
+                    <button
+                        type="button"
+                        class="gallery-arrow gallery-prev"
+                        id="prevImage">
+                        &#10094;
+                    </button>
+
+                    <div class="gallery-main">
+                        <img
+                            id="mainProductImage"
+                            src="<?= htmlspecialchars(
+                                str_starts_with($product_images[0], 'http://') ||
+                                str_starts_with($product_images[0], 'https://')
+                                    ? $product_images[0]
+                                    : '../../' . ltrim($product_images[0], '/')
+                            ) ?>"
+                            alt="<?= htmlspecialchars($product['name']) ?>"
+                        >
+                    </div>
+                    <button
+                        type="button"
+                        class="gallery-arrow gallery-next"
+                        id="nextImage">
+                        &#10095;
+                    </button>
+                </div>
+                <!-- Image Counter -->
+                <div
+                    class="gallery-counter"
+                    id="imageCounter">
+                    1 / <?= count($product_images) ?>
+                </div>
+                <!-- Thumbnails -->
+                <div class="gallery-thumbnails">
+                    <?php foreach ($product_images as $index => $imagePath): ?>
+                        <?php
+                        if (
+                            str_starts_with($imagePath, 'http://') ||
+                            str_starts_with($imagePath, 'https://')
+                        ) {
+                            $imageSrc = $imagePath;
+                        } else {
+                            $imageSrc = '../../' . ltrim($imagePath, '/');
+                        }
+                        ?>
+                        <button
+                            type="button"
+                            class="gallery-thumbnail <?= $index === 0 ? 'active' : '' ?>"
+                            data-index="<?= $index ?>"
+                            data-image="<?= htmlspecialchars($imageSrc) ?>"
+                        >
+
+                            <img
+                                src="<?= htmlspecialchars($imageSrc) ?>"
+                                alt="<?= htmlspecialchars($product['name']) ?> image <?= $index + 1 ?>"
+                            >
+
+                        </button>
+                    <?php endforeach; ?>
+                </div>
             </div>
             <div class="view-details">
                 <div class="detail-row">
@@ -139,5 +217,163 @@ include '../../_head.php';
         </div>
     </div>
 </div>
+<script>
+const productImages = <?= json_encode(
+    array_map(function($imagePath) {
 
+        if (
+            str_starts_with($imagePath, 'http://') ||
+            str_starts_with($imagePath, 'https://')
+        ) {
+            return $imagePath;
+        }
+
+        return '../../' . ltrim($imagePath, '/');
+
+    }, $product_images)
+) ?>;
+
+let currentImage = 0;
+
+const mainImage =
+    document.getElementById('mainProductImage');
+
+const counter =
+    document.getElementById('imageCounter');
+
+const thumbnails =
+    document.querySelectorAll('.gallery-thumbnail');
+
+const prevButton =
+    document.getElementById('prevImage');
+
+const nextButton =
+    document.getElementById('nextImage');
+
+
+function showImage(index) {
+
+    if (productImages.length === 0) {
+        return;
+    }
+
+    /*
+    Keep index inside valid range
+    */
+
+    if (index < 0) {
+        index = productImages.length - 1;
+    }
+
+    if (index >= productImages.length) {
+        index = 0;
+    }
+
+    currentImage = index;
+
+
+    /*
+    Update main image
+    */
+
+    mainImage.src =
+        productImages[currentImage];
+
+
+    /*
+    Update counter
+    */
+
+    counter.textContent =
+        (currentImage + 1)
+        + ' / '
+        + productImages.length;
+
+
+    /*
+    Update active thumbnail
+    */
+
+    thumbnails.forEach(function(thumbnail, i) {
+
+        thumbnail.classList.toggle(
+            'active',
+            i === currentImage
+        );
+
+    });
+
+}
+
+
+/*
+Previous image
+*/
+
+prevButton.addEventListener(
+    'click',
+    function() {
+
+        showImage(currentImage - 1);
+
+    }
+);
+
+
+/*
+Next image
+*/
+
+nextButton.addEventListener(
+    'click',
+    function() {
+
+        showImage(currentImage + 1);
+
+    }
+);
+
+
+/*
+Click thumbnail
+*/
+
+thumbnails.forEach(function(thumbnail) {
+
+    thumbnail.addEventListener(
+        'click',
+        function() {
+
+            const index =
+                parseInt(
+                    this.dataset.index
+                );
+
+            showImage(index);
+
+        }
+    );
+
+});
+
+
+/*
+Keyboard navigation
+*/
+
+document.addEventListener(
+    'keydown',
+    function(event) {
+
+        if (event.key === 'ArrowLeft') {
+            showImage(currentImage - 1);
+        }
+
+        if (event.key === 'ArrowRight') {
+            showImage(currentImage + 1);
+        }
+
+    }
+);
+</script>
 <?php include '../../_foot.php'; ?>
