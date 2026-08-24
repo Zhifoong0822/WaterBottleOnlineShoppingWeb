@@ -3,15 +3,26 @@
 require_once "_base.php";
 
 $_title = "My Orders";
+$_page_title_class = "my-orders-title";
 
 if (!isset($_SESSION['users']->user_id)) {
-    redirect('login.php');
+    redirect('login.php');  //refresh to login page
 }
-$user_id = (int) $_SESSION['users']->user_id;
+$user_id = (int) $_SESSION['users']->user_id;  //get user_id from session & store in variable 
 
-$status_filter = get("status", "pending");
+$status_filter = get("status", "all");
+$page = get("page", "1");
+
+if (!ctype_digit($page) || (int) $page < 1) {
+    $page = 1;
+} else {
+    $page = (int) $page;
+}
+
+$orders_per_page = 8;
 
 $allowed_statuses = [
+    "all",
     "pending",
     "shipped",
     "completed",
@@ -19,7 +30,7 @@ $allowed_statuses = [
 ];
 
 if (!in_array($status_filter, $allowed_statuses, true)) {
-    $status_filter = "pending";
+    $status_filter = "all";
 }
 
 // Customer clicks Order Received button
@@ -35,7 +46,8 @@ if (is_post() && post("action") === "confirm_received") {
     $received_order_id = (int) $received_order_id;
 
     $sql = "UPDATE orders
-            SET status = 'completed'
+            SET status = 'completed',
+                completed_at = NOW()  /* record exact date&time for completed_at when cust clicks Order Received */
             WHERE order_id = :order_id
               AND user_id = :user_id
               AND status = 'shipped'";
@@ -89,8 +101,10 @@ if (is_post() && post("action") === "cancel_order") {
 
         $stmt_cancel = $_db->prepare("
             UPDATE orders
-            SET status = 'cancelled'
+            SET status = 'cancelled',
+                cancelled_at = NOW()  
             WHERE order_id = :order_id
+                AND status = 'pending'
         ");
         $stmt_cancel->execute(["order_id" => $cancel_order_id]);
 
@@ -134,12 +148,31 @@ $sql = "SELECT
                   AND f.user_id = o.user_id
             ) AS feedback_submitted,
 
+            (
+                SELECT f.rating FROM order_feedback AS f
+                WHERE f.order_id = o.order_id AND f.user_id = o.user_id
+                LIMIT 1
+            ) AS feedback_rating,
+
+            (
+                SELECT f.feedback FROM order_feedback AS f
+                WHERE f.order_id = o.order_id AND f.user_id = o.user_id
+                LIMIT 1
+            ) AS feedback_text,
+
+            (
+                SELECT f.updated_at FROM order_feedback AS f
+                WHERE f.order_id = o.order_id AND f.user_id = o.user_id
+                LIMIT 1
+            ) AS feedback_updated_at,
+
             oi.order_item_id,
             oi.product_id,
             oi.quantity,
             oi.price AS item_price,
             p.name AS product_name,
-            p.image_url
+            p.image_url,
+            oi.size AS size
 
         FROM orders AS o
 
@@ -149,19 +182,28 @@ $sql = "SELECT
         LEFT JOIN products AS p
             ON oi.product_id = p.product_id
 
-        WHERE o.user_id = :user_id
-          AND o.status = :status
+        WHERE o.user_id = :user_id";
 
-        ORDER BY
+if ($status_filter !== "all") {
+    $sql .= " AND o.status = :status";
+}
+
+$sql .= " ORDER BY
             o.order_date DESC,
             o.order_id DESC,
             oi.order_item_id ASC";
 
-$stmt = $_db->prepare($sql);
-$stmt->execute([
-    "user_id" => $user_id,
-    "status" => $status_filter
-]);
+            $stmt = $_db->prepare($sql);
+
+            $params = [
+                "user_id" => $user_id
+            ];
+            
+            if ($status_filter !== "all") {
+                $params["status"] = $status_filter;
+            }
+            
+            $stmt->execute($params);
 
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -177,6 +219,9 @@ foreach ($rows as $row) {
             "status" => $row["status"],
             "total_amount" => $row["total_amount"],
             "feedback_submitted" => (bool) $row["feedback_submitted"],
+            "feedback_rating" => $row["feedback_rating"],
+            "feedback_text" => $row["feedback_text"],
+            "feedback_updated_at" => $row["feedback_updated_at"],
             "items" => []
         ];
     }
@@ -186,16 +231,38 @@ foreach ($rows as $row) {
             "product_name" => $row["product_name"],
             "image_url" => $row["image_url"],
             "quantity" => $row["quantity"],
-            "item_price" => $row["item_price"]
+            "item_price" => $row["item_price"],
+            "size" => $row["size"]
         ];
     }
 }
+
+$total_orders = count($orders);
+$total_pages = max(1, (int) ceil($total_orders / $orders_per_page));
+
+if ($page > $total_pages) {
+    $page = $total_pages;
+}
+
+$orders = array_slice(
+    $orders,
+    ($page - 1) * $orders_per_page,
+    $orders_per_page,
+    true
+);
 
 require "_head.php";
 
 ?>
 
 <nav class="order-tabs">
+
+    <a
+        href="order_history.php?status=all"
+        class="<?= $status_filter === "all" ? "active" : "" ?>"
+    >
+        All
+    </a>
 
     <a
         href="order_history.php?status=pending"
@@ -241,7 +308,7 @@ require "_head.php";
 
             <div class="order-items-list">
 
-        <?php foreach ($order["items"] as $item): ?>
+        <?php foreach ($order["items"] as $item_index => $item): ?>
 
             <?php
             $productName = $item["product_name"] ?: "Unknown Product";
@@ -252,7 +319,10 @@ require "_head.php";
             $quantity = (int) $item["quantity"];
             ?>
 
-            <div class="order-item-preview">
+            <div
+                class="order-item-preview<?= $item_index >= 2 ? ' additional-order-item' : '' ?>"
+                <?= $item_index >= 2 ? 'hidden' : '' ?>
+            >
 
                 <img
                     class="order-image"
@@ -262,19 +332,35 @@ require "_head.php";
 
                 <div class="order-info">
 
-                    <h2>
-                        <?= encode($productName) ?>
-                    </h2>
+    <h2>
+        <?= encode($productName) ?>
+    </h2>
 
-                    <p class="quantity">
-                        x<?= $quantity ?>
-                    </p>
+    <?php if (!empty($item["size"])): ?>
+        <p class="product-variation">
+            Size: <?= encode($item["size"]) ?>
+        </p>
+    <?php endif; ?>
 
-                </div>
+    <p class="quantity">
+        x<?= $quantity ?>
+    </p>
+
+</div>
 
             </div>
 
         <?php endforeach; ?>
+
+        <?php if (count($order["items"]) > 2): ?>
+            <button
+                type="button"
+                class="view-more-products"
+                aria-expanded="false"
+            >
+                View More
+            </button>
+        <?php endif; ?>
 
         <div class="order-meta-section">
 
@@ -316,9 +402,17 @@ require "_head.php";
 
     <div class="order-right">
 
-    <span class="status status-<?= encode($order["status"]) ?>">
-        <?= ucfirst(encode($order["status"])) ?>
-    </span>
+    <div class="order-status-line">
+        <?php if ($order["status"] === "cancelled"): ?>
+            <span class="refund-success-message">
+                Refund has been returned successfully.
+            </span>
+        <?php endif; ?>
+
+        <span class="status status-<?= encode($order["status"]) ?>">
+            <?= ucfirst(encode($order["status"])) ?>
+        </span>
+    </div>
 
     <div class="amount-section">
 
@@ -403,9 +497,16 @@ require "_head.php";
 
 <?php if ($order["feedback_submitted"]): ?>
 
-    <span class="rating-submitted">
-        Rating Submitted
-    </span>
+    <button
+        type="button"
+        class="view-rating-button"
+        data-order-id="<?= encode($order["order_id"]) ?>"
+        data-rating="<?= encode($order["feedback_rating"]) ?>"
+        data-feedback="<?= encode($order["feedback_text"] ?? '') ?>"
+        data-updated-at="<?= encode($order["feedback_updated_at"] ?? '') ?>"
+    >
+        View Rating
+    </button>
 
 <?php else: ?>
 
@@ -437,5 +538,97 @@ require "_head.php";
     <?php endif; ?>
 
 </section>
+
+<?php if ($total_pages > 1): ?>
+
+    <nav class="order-pagination" aria-label="Order history pages">
+        <?php if ($page > 1): ?>
+            <a
+                class="pagination-link pagination-direction"
+                href="order_history.php?status=<?= urlencode($status_filter) ?>&amp;page=<?= $page - 1 ?>"
+                rel="prev"
+            >
+                Previous
+            </a>
+        <?php endif; ?>
+
+        <?php for ($page_number = 1; $page_number <= $total_pages; $page_number++): ?>
+            <a
+                class="pagination-link <?= $page_number === $page ? "active" : "" ?>"
+                href="order_history.php?status=<?= urlencode($status_filter) ?>&amp;page=<?= $page_number ?>"
+                <?= $page_number === $page ? 'aria-current="page"' : '' ?>
+            >
+                <?= $page_number ?>
+            </a>
+        <?php endfor; ?>
+
+        <?php if ($page < $total_pages): ?>
+            <a
+                class="pagination-link pagination-direction"
+                href="order_history.php?status=<?= urlencode($status_filter) ?>&amp;page=<?= $page + 1 ?>"
+                rel="next"
+            >
+                Next
+            </a>
+        <?php endif; ?>
+    </nav>
+
+<?php endif; ?>
+
+<section id="rating-popover" class="rating-popover" hidden role="dialog" aria-modal="false" aria-labelledby="rating-popover-title">
+    <button type="button" class="rating-popover-close" aria-label="Close rating">&times;</button>
+    <p class="rating-popover-eyebrow">Your Rating</p>
+    <h2 id="rating-popover-title"><span id="rating-popover-stars"></span> <span id="rating-popover-score"></span></h2>
+    <p id="rating-popover-feedback" class="rating-popover-feedback"></p>
+    <p id="rating-popover-date" class="rating-popover-date"></p>
+</section>
+
+<script>
+// View More
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.view-more-products').forEach((button) => {
+        button.addEventListener('click', () => {
+            const orderItemsList = button.closest('.order-items-list');
+            const additionalItems = orderItemsList.querySelectorAll('.additional-order-item');
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+            additionalItems.forEach((item) => {
+                item.hidden = isExpanded;
+            });
+
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            button.textContent = isExpanded ? 'View More' : 'View Less';
+        });
+    });
+
+    const popover = document.getElementById('rating-popover');
+    const closeButton = popover.querySelector('.rating-popover-close');
+    const closePopover = () => { popover.hidden = true; };
+
+    // View Rating Button
+    document.querySelectorAll('.view-rating-button').forEach((button) => {
+        button.addEventListener('click', () => {
+            const rating = Number(button.dataset.rating);
+            document.getElementById('rating-popover-stars').textContent = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+            document.getElementById('rating-popover-score').textContent = `${rating}/5`;
+            document.getElementById('rating-popover-feedback').textContent = button.dataset.feedback || 'No written feedback was added.';
+            document.getElementById('rating-popover-date').textContent = button.dataset.updatedAt ? `Submitted ${button.dataset.updatedAt}` : '';
+            popover.hidden = false;
+            const buttonRect = button.getBoundingClientRect();
+            const popoverWidth = popover.offsetWidth;
+            popover.style.left = `${Math.max(16, Math.min(buttonRect.right - popoverWidth, window.innerWidth - popoverWidth - 16))}px`;
+            popover.style.top = `${Math.max(16, Math.min(buttonRect.top - popover.offsetHeight - 12, window.innerHeight - popover.offsetHeight - 16))}px`;
+        });
+    });
+
+    closeButton.addEventListener('click', closePopover);
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePopover(); });
+    document.addEventListener('click', (event) => {
+        if (!popover.hidden && !popover.contains(event.target) && !event.target.closest('.view-rating-button')) {
+            closePopover();
+        }
+    });
+});
+</script>
 
 <?php require "_foot.php"; ?>

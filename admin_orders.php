@@ -1,8 +1,10 @@
 <?php
 
 require_once "_base.php";
+require_admin('products.php');
 
 $_title = "Manage Orders";
+$_hide_page_title = true;
 
 try {
     $sql = "SELECT
@@ -32,6 +34,8 @@ require "_head.php";
 
     <div class="page-header">
 
+        <h1>Manage Orders</h1>
+
         <div class="order-count">
             Total Orders: <?= $total_orders ?>
         </div>
@@ -42,11 +46,21 @@ require "_head.php";
 
         <div class="table-tools">
 
+            <label class="search-field-label" for="orderSearchField">
+                Search by
+            </label>
+
+            <select id="orderSearchField" class="search-field-select">
+                <option value="order-id">Order ID</option>
+                <option value="user-id">User ID</option>
+                <option value="status">Order Status</option>
+            </select>
+
             <input
                 type="text"
                 id="orderSearch"
                 class="search-box"
-                placeholder="Search by order ID, user ID or status"
+                placeholder="Enter order ID"
             >
 
         </div>
@@ -76,7 +90,11 @@ require "_head.php";
                         $status = strtolower($order["status"]);
                         ?>
 
-                        <tr>
+                        <tr
+                            data-order-id="<?= encode($order["order_id"]) ?>"
+                            data-user-id="<?= encode($order["user_id"]) ?>"
+                            data-status="<?= encode($status) ?>"
+                        >
 
                             <td class="order-id">
                                 #<?= encode($order["order_id"]) ?>
@@ -139,6 +157,13 @@ require "_head.php";
 
     </div>
 
+    <nav
+        id="adminOrderPagination"
+        class="order-pagination"
+        aria-label="Manage orders pages"
+        hidden
+    ></nav>
+
     <a class="back-link" href="index.php">
         ← Back to Home
     </a>
@@ -147,16 +172,115 @@ require "_head.php";
 
 <script>
 const searchInput = document.getElementById("orderSearch");
+const searchField = document.getElementById("orderSearchField");
+const searchPlaceholders = {
+    "order-id": "Enter order ID",
+    "user-id": "Enter user ID",
+    "status": "Enter order status"
+};
+const searchDataKeys = {
+    "order-id": "orderId",
+    "user-id": "userId",
+    "status": "status"
+};
+const pagination = document.getElementById("adminOrderPagination");
+const ordersPerPage = 12;
+let currentPage = 1;
 
-searchInput.addEventListener("keyup", function () {
-    const filter = searchInput.value.toLowerCase();
-    const rows = document.querySelectorAll("#orderTable tbody tr");
+function getFilteredRows() {
+    const filter = searchInput.value.trim().toLowerCase().replace(/^#/, "");
+    const field = searchField.value;
 
-    rows.forEach(function (row) {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+    return Array.from(
+        document.querySelectorAll("#orderTable tbody tr[data-order-id]")
+    ).filter(function (row) {
+        const value = row.dataset[searchDataKeys[field]].toLowerCase();
+        return value.includes(filter);
     });
+}
+
+function createPageButton(label, page, options = {}) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "pagination-link";
+    button.textContent = label;
+
+    if (options.direction) {
+        button.classList.add("pagination-direction");
+    }
+
+    if (options.active) {
+        button.classList.add("active");
+        button.setAttribute("aria-current", "page");
+    }
+
+    button.addEventListener("click", function () {
+        currentPage = page;
+        renderOrders();
+    });
+
+    return button;
+}
+
+function renderPagination(totalPages) {
+    pagination.replaceChildren();
+    pagination.hidden = totalPages <= 1;
+
+    if (totalPages <= 1) {
+        return;
+    }
+
+    if (currentPage > 1) {
+        pagination.appendChild(
+            createPageButton("Previous", currentPage - 1, { direction: true })
+        );
+    }
+
+    for (let page = 1; page <= totalPages; page += 1) {
+        pagination.appendChild(
+            createPageButton(String(page), page, { active: page === currentPage })
+        );
+    }
+
+    if (currentPage < totalPages) {
+        pagination.appendChild(
+            createPageButton("Next", currentPage + 1, { direction: true })
+        );
+    }
+}
+
+function renderOrders() {
+    const allRows = document.querySelectorAll("#orderTable tbody tr[data-order-id]");
+    const filteredRows = getFilteredRows();
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / ordersPerPage));
+
+    currentPage = Math.min(currentPage, totalPages);
+    const firstRow = (currentPage - 1) * ordersPerPage;
+    const visibleRows = new Set(
+        filteredRows.slice(firstRow, firstRow + ordersPerPage)
+    );
+
+    allRows.forEach(function (row) {
+        row.hidden = !visibleRows.has(row);
+    });
+
+    renderPagination(totalPages);
+}
+
+function filterOrders() {
+    currentPage = 1;
+    renderOrders();
+}
+
+searchInput.addEventListener("input", filterOrders);
+
+searchField.addEventListener("change", function () {
+    searchInput.placeholder = searchPlaceholders[searchField.value];
+    filterOrders();
+    searchInput.focus();
 });
+
+renderOrders();
 </script>
 
 <?php require "_foot.php"; ?>

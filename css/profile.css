@@ -295,3 +295,254 @@
     color: #16221f;
     text-transform: capitalize;
 }
+
+.page-header,
+.page-title {
+    display: none !important;
+}
+ 
+/* .nav-item was designed for <a> tags (text-decoration, no border/background
+   reset). Applied to <button> elements, browsers add their own default
+   border/background/font — this strips that so the pill styling shows
+   through cleanly. */
+.nav-container button.nav-item {
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-family: inherit;
+}
+ 
+.nav-container button.nav-item.active {
+    background-color: #00639b;
+}
+/* Fix checkbox/label misalignment on the role-permission checkboxes.
+   .form-group input {width:100%; padding; border} was designed for text
+   inputs and was leaking onto <input type="checkbox">, stretching them
+   into invisible full-width boxes and separating them from their label. */
+.form-group input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    border: none;
+    flex-shrink: 0;
+}
+
+.role-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+    font-weight: normal;
+    text-transform: none;
+    cursor: pointer;
+}
+
+
+/* ============================================================================
+   7. OVERVIEW / ROLES TAB — SUPPORTING ELEMENTS
+   (dash-table, status/page badges, empty states — used on Overview & Roles)
+   ============================================================================ */
+
+.overview-empty {
+    color: #999;
+    font-size: 14px;
+}
+
+.overview-subheading {
+    margin: 28px 0 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #16221f;
+}
+
+.overview-link {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+.overview-link a {
+    color: #00639b;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.overview-link a:hover {
+    text-decoration: underline;
+}
+
+/* Generic data table used for Recent Orders + Existing Roles */
+.dash-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    background-color: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.dash-table th {
+    text-align: left;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #4a5568;
+    background-color: #f4f8fa;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.dash-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    color: #16221f;
+    vertical-align: middle;
+}
+
+.dash-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.dash-table tbody tr:hover {
+    background-color: #fafbfc;
+}
+
+/* Order status badges (Recent Orders, admin overview) */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-pending {
+    background-color: #fdf0d5;
+    color: #8a5a00;
+}
+
+.badge-completed {
+    background-color: #e3f0e6;
+    color: #1e6b34;
+}
+
+.badge-cancelled {
+    background-color: #fbe1e1;
+    color: #a02020;
+}
+
+/* Page-access badges (Roles tab) */
+.page-badge {
+    display: inline-block;
+    background-color: #f1ede4;
+    color: #16221f;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 2px 4px 2px 0;
+}
+
+.no-access {
+    color: #999;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.staff-count-cell {
+    text-align: center;
+}
+
+.role-actions-cell {
+    white-space: nowrap;
+}
+
+/* Edit / Delete buttons on the roles table */
+.role-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+.role-btn-edit {
+    background-color: #eef4fa;
+    color: #00639b;
+}
+
+.role-btn-edit:hover {
+    background-color: #dbeaf5;
+}
+
+.role-btn-delete {
+    background-color: #fbe1e1;
+    color: #a02020;
+}
+
+.role-btn-delete:hover {
+    background-color: #f6cccc;
+}
+
+
+/* ============================================================================
+   8. SETTINGS TAB — CARD HEADER LAYOUT
+   (Profile / Password card title + actions row, was completely unstyled)
+   ============================================================================ */
+
+.card-container {
+    margin-bottom: 24px;
+}
+
+.card-container:last-child {
+    margin-bottom: 0;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.card-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #16221f;
+}
+
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-header input[type="file"] {
+    font-size: 13px;
+    color: #4a5568;
+    max-width: 220px;
+}
+
+.card-header input[type="file"]::file-selector-button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #16221f;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.card-header input[type="file"]:disabled::file-selector-button {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
