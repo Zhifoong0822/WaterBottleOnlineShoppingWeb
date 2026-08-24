@@ -19,7 +19,7 @@ $cart_items = [];
 $search = req('search'); 
 
 
-// Query matching the class-assigned database layer
+//Find the cart belonging to this user
 $stmt_cart = $_db->prepare("SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1");
 $stmt_cart->execute([$user_id]);
 $cart_data = $stmt_cart->fetch(); 
@@ -27,11 +27,12 @@ $cart_data = $stmt_cart->fetch();
 if ($cart_data) {
     $cart_id = $cart_data->cart_id;
 
-    // FIXED: Joined product_variants using product_id AND size to fetch exact variant stock
+    // Each product has one configured size/colour variant.
     $stmt_items = $_db->prepare("
         SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, 
                p.name, p.price, p.image_url, 
-               COALESCE(pv.stock, 0) AS stock 
+               COALESCE(pv.stock, 0) AS stock,
+               COALESCE(pv.colour, 'Not specified') AS colour
         FROM cart_items ci
         JOIN products p ON ci.product_id = p.product_id
         LEFT JOIN product_variants pv ON ci.product_id = pv.product_id AND ci.size = pv.size
@@ -63,8 +64,8 @@ if ($cart_data) {
         <div class="cart-items">
             <?php foreach ($cart_items as $item) : ?>
                 <?php 
-                $computed_unit_price = variant_price($item->price, $item->size);
-                $subtotal = $computed_unit_price * $item->quantity; 
+                $unit_price = (float) $item->price;
+                $subtotal = $unit_price * $item->quantity;
                 ?>
                 <div class="cart-item-card" style="display: flex; align-items: center; gap: 20px; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                     
@@ -76,9 +77,13 @@ if ($cart_data) {
                     
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 5px 0;"><?= encode($item->name) ?></h3>
+
+                        <p style="margin: 0 0 6px 0; color: #666; font-size: 14px;">
+                            Size: <?= encode($item->size) ?> &middot; Colour: <?= encode($item->colour) ?>
+                        </p>
                         
                         <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">
-                            Price: RM<?= number_format($computed_unit_price, 2) ?>
+                            Price: RM<?= number_format($unit_price, 2) ?>
                         </p>
                         
                     <div class="quantity-controls" style="display: flex; align-items: center; gap: 8px;">
