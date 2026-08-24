@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS `order_items`;
 DROP TABLE IF EXISTS `orders`;
 DROP TABLE IF EXISTS `cart_items`;
 DROP TABLE IF EXISTS `carts`;
+DROP TABLE IF EXISTS `product_images`;
 DROP TABLE IF EXISTS `product_variants`;  
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `categories`;
@@ -41,6 +42,20 @@ CREATE TABLE `products` (
     REFERENCES `categories`(`category_id`) 
     ON DELETE RESTRICT 
     ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================================================
+-- 2b. Additional product-gallery images
+-- =========================================================
+CREATE TABLE `product_images` (
+  `image_id` INT(11) NOT NULL AUTO_INCREMENT,
+  `product_id` INT(11) NOT NULL,
+  `image_url` VARCHAR(255) NOT NULL,
+  `sort_order` INT(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`image_id`),
+  CONSTRAINT `fk_product_image_product` FOREIGN KEY (`product_id`)
+    REFERENCES `products`(`product_id`)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
@@ -113,6 +128,9 @@ CREATE TABLE `orders` (
   `order_id` INT(11) NOT NULL AUTO_INCREMENT,
   `user_id` INT(11) NOT NULL,
   `order_date` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `shipped_at` TIMESTAMP NULL DEFAULT NULL,
+  `completed_at` TIMESTAMP NULL DEFAULT NULL,
+  `cancelled_at` TIMESTAMP NULL DEFAULT NULL,
   `total_amount` DECIMAL(10, 2) NOT NULL,
   `subtotal_amount` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
   `points_used` INT UNSIGNED NOT NULL DEFAULT 0,
@@ -122,6 +140,7 @@ CREATE TABLE `orders` (
   `recipient_name` VARCHAR(100) NOT NULL,
   `shipping_address` TEXT NOT NULL,
   `phone_number` VARCHAR(20) NOT NULL,
+  `address_updated` TINYINT(1) NOT NULL DEFAULT 0,
   `payment_method` VARCHAR(30) NOT NULL DEFAULT 'cash_on_delivery',
   `payment_reference` VARCHAR(100) DEFAULT NULL,
   `payment_status` ENUM('pending', 'paid') NOT NULL DEFAULT 'pending',
@@ -196,26 +215,29 @@ CREATE TABLE `user_addresses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- 10. Additional table for product images (one-to-many relationship)
+-- 10. Admin create new admin role
 -- =========================================================
-CREATE TABLE product_images (
-    image_id INT(11) NOT NULL AUTO_INCREMENT,
-    product_id INT(11) NOT NULL,
-    image_url VARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS roles (
+  `role_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `role_name` VARCHAR(50) NOT NULL UNIQUE,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-    PRIMARY KEY (image_id),
-
-    CONSTRAINT fk_product_images_product
-        FOREIGN KEY (product_id)
-        REFERENCES products(product_id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- =========================================================
+-- 11. Different role will access to different page
+-- =========================================================
+CREATE TABLE IF NOT EXISTS role_permissions (
+  `role_id` INT NOT NULL,
+  `page_slug` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (role_id, page_slug),
+  FOREIGN KEY (role_id) REFERENCES roles(role_id) ON DELETE CASCADE
+);
 -- =========================================================
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
 INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`, `reward_points`) VALUES
-(1, 'member1', 'member1@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'member', NULL, 0),
-(2, 'admin', 'admin@example.com', '$2y$10$Qws0vG.ePjJm4X5Z0F6Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym.G7Ym', 'admin', NULL, 0),
+(1, 'daniel', 'daniel@example.com', '$2y$10$3ovrxmv7E7.IvYUnOUJ5teH/nkI6Rg.3eKhVXhMPsIerWwD0tHt6q', 'admin', NULL, 0),
 (3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', NULL, 500),
 (4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 250),
 (5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 0),
@@ -235,44 +257,42 @@ INSERT INTO `categories` (`category_name`) VALUES
 
 -- Curated product catalogue - fictional product names and locally generated images.
 INSERT INTO `products` (`product_id`, `category_id`, `name`, `description`, `price`, `image_url`) VALUES
-(1, 1, 'Nova Everyday Bottle 530ml', 'A lightweight insulated bottle for daily commutes, classes and desk hydration.', 79.00, 'img/products/bottle-coral.png'),
-(2, 1, 'Nova Active Bottle 750ml', 'A larger leakproof bottle designed for gym sessions and long days out.', 89.00, 'img/products/bottle-coral.png'),
-(3, 1, 'Nova Explorer Bottle 1L', 'High-capacity stainless-steel bottle that keeps drinks cold for outdoor days.', 109.00, 'img/products/bottle-coral.png'),
-(4, 2, 'Halo Straw Tumbler 590ml', 'A double-wall tumbler with reusable straw for iced drinks and everyday sipping.', 69.00, 'img/products/tumbler-sage.png'),
-(5, 2, 'Halo Coffee Tumbler 450ml', 'A compact insulated tumbler with a secure lid for coffee, tea and cocoa.', 65.00, 'img/products/tumbler-sage.png'),
-(6, 2, 'Halo Carry Tumbler 900ml', 'A large handled tumbler made for all-day hydration at work or travel.', 85.00, 'img/products/tumbler-sage.png'),
-(7, 3, 'Little Sip Bottle 350ml', 'A child-friendly bottle with an easy flip straw and comfortable carry loop.', 45.00, 'img/products/kids-bottle.png'),
-(8, 3, 'Little Sip Dino Bottle 420ml', 'A playful school bottle with a spill-resistant straw lid for younger children.', 49.00, 'img/products/kids-bottle.png'),
-(9, 3, 'Little Sip School Bottle 500ml', 'A durable everyday bottle sized for school bags and after-class activities.', 55.00, 'img/products/kids-bottle.png'),
-(10, 4, 'Silicone Bottle Boot', 'A protective silicone base that helps reduce dents and adds grip.', 15.00, 'img/products/accessory-kit.png'),
-(11, 4, 'Bottle Cleaning Kit', 'A practical three-piece brush set for bottles, lids and reusable straws.', 22.00, 'img/products/accessory-kit.png'),
-(12, 4, 'Adjustable Carry Strap', 'A comfortable woven strap with a clip for hands-free bottle carrying.', 18.00, 'img/products/accessory-kit.png');
+(1, 1, 'Nova Everyday Bottle 530ml', 'A lightweight insulated bottle for daily commutes, classes and desk hydration.', 79.00, 'img/products/nova-everyday-coral.png'),
+(2, 1, 'Nova Active Bottle 750ml', 'A larger leakproof bottle designed for gym sessions and long days out.', 89.00, 'img/products/nova-active-navy.png'),
+(4, 2, 'Halo Straw Tumbler 590ml', 'A double-wall tumbler with reusable straw for iced drinks and everyday sipping.', 69.00, 'img/products/halo-straw-sage.png'),
+(5, 2, 'Halo Coffee Tumbler 450ml', 'A compact insulated tumbler with a secure lid for coffee, tea and cocoa.', 65.00, 'img/products/halo-coffee-terracotta.png'),
+(7, 3, 'Little Sip Bottle 350ml', 'A child-friendly bottle with an easy flip straw and comfortable carry loop.', 45.00, 'img/products/little-sip-yellow.png'),
+(10, 4, 'Silicone Bottle Boot', 'A protective silicone base that helps reduce dents and adds grip.', 15.00, 'img/products/silicone-boot-charcoal.png');
+
+-- Each product has a primary card image plus an alternative gallery angle.
+INSERT INTO `product_images` (`product_id`, `image_url`, `sort_order`) VALUES
+(1, 'img/products/nova-everyday-coral.png', 1),
+(1, 'img/products/nova-everyday-coral-side.png', 2),
+(2, 'img/products/nova-active-navy.png', 1),
+(2, 'img/products/nova-active-navy-side.png', 2),
+(4, 'img/products/halo-straw-sage.png', 1),
+(4, 'img/products/halo-straw-sage-side.png', 2),
+(5, 'img/products/halo-coffee-terracotta.png', 1),
+(5, 'img/products/halo-coffee-terracotta-side.png', 2),
+(7, 'img/products/little-sip-yellow.png', 1),
+(7, 'img/products/little-sip-yellow-side.png', 2),
+(10, 'img/products/silicone-boot-charcoal.png', 1),
+(10, 'img/products/silicone-boot-charcoal-side.png', 2);
 
 INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
-(1, 'Micro (12oz / 350ml)', 'Coral Pink', 18),
 (1, 'Medium (18oz / 530ml)', 'Coral Pink', 27),
-(1, 'Mega (32oz / 950ml)', 'Coral Pink', 8),
-(2, 'Medium (18oz / 530ml)', 'Coral Pink', 20),
 (2, 'Mega (32oz / 950ml)', 'Coral Pink', 12),
-(3, 'Mega (32oz / 950ml)', 'Coral Pink', 15),
 (4, 'Medium (18oz / 530ml)', 'Sage Green', 17),
-(4, 'Mega (32oz / 950ml)', 'Sage Green', 10),
-(5, 'Micro (12oz / 350ml)', 'Sage Green', 18),
 (5, 'Medium (18oz / 530ml)', 'Sage Green', 14),
-(6, 'Mega (32oz / 950ml)', 'Sage Green', 16),
 (7, 'Micro (12oz / 350ml)', 'Sunny Yellow', 25),
-(8, 'Micro (12oz / 350ml)', 'Sky Blue', 16),
-(9, 'Mini (15oz / 450ml)', 'Sky Blue', 20),
-(10, 'Medium (18oz / 530ml)', 'Charcoal', 40),
-(11, 'Medium (18oz / 530ml)', 'Natural', 35),
-(12, 'Medium (18oz / 530ml)', 'Sand', 30);
+(10, 'Medium (18oz / 530ml)', 'Charcoal', 40);
 
 -- Demo orders make the Top Selling section meaningful immediately after import.
-INSERT INTO `orders` (`order_id`, `user_id`, `order_date`, `total_amount`, `subtotal_amount`, `points_used`, `points_discount`, `points_earned`, `status`, `recipient_name`, `shipping_address`, `phone_number`, `payment_method`, `payment_reference`, `payment_status`) VALUES
-(1, 3, '2026-07-20 10:15:00', 189.60, 189.60, 0, 0.00, 180, 'completed', 'John Tan', '123, Jalan Sultan Ismail, Kuala Lumpur', '012-3456789', 'online_banking', 'DEMO-JOHN-001', 'paid'),
-(2, 4, '2026-07-22 14:30:00', 165.60, 165.60, 0, 0.00, 160, 'shipped', 'Jane Lee', '88, Jalan Ampang, Kuala Lumpur', '013-9876543', 'ewallet', 'DEMO-JANE-002', 'paid'),
-(3, 3, '2026-07-25 09:45:00', 177.60, 177.60, 0, 0.00, 170, 'completed', 'John Tan', '123, Jalan Sultan Ismail, Kuala Lumpur', '012-3456789', 'credit_debit_card', 'DEMO-4321', 'paid'),
-(4, 4, '2026-07-29 16:00:00', 124.60, 124.60, 0, 0.00, 120, 'pending', 'Jane Lee', '88, Jalan Ampang, Kuala Lumpur', '013-9876543', 'cash_on_delivery', NULL, 'pending');
+INSERT INTO `orders` (`order_id`, `user_id`, `order_date`, `shipped_at`, `completed_at`, `cancelled_at`, `total_amount`, `subtotal_amount`, `points_used`, `points_discount`, `points_earned`, `status`, `recipient_name`, `shipping_address`, `phone_number`, `payment_method`, `payment_reference`, `payment_status`) VALUES
+(1, 3, '2026-07-20 10:15:00', '2026-07-21 11:20:00', '2026-07-23 15:40:00', NULL, 189.60, 189.60, 0, 0.00, 180, 'completed', 'John Tan', '123, Jalan Sultan Ismail, Kuala Lumpur', '012-3456789', 'online_banking', 'DEMO-JOHN-001', 'paid'),
+(2, 4, '2026-07-22 14:30:00', '2026-07-23 10:15:00', NULL, NULL, 165.60, 165.60, 0, 0.00, 160, 'shipped', 'Jane Lee', '88, Jalan Ampang, Kuala Lumpur', '013-9876543', 'ewallet', 'DEMO-JANE-002', 'paid'),
+(3, 3, '2026-07-25 09:45:00', '2026-07-26 13:10:00', '2026-07-28 16:35:00', NULL, 177.60, 177.60, 0, 0.00, 170, 'completed', 'John Tan', '123, Jalan Sultan Ismail, Kuala Lumpur', '012-3456789', 'credit_debit_card', 'DEMO-4321', 'paid'),
+(4, 4, '2026-07-29 16:00:00', NULL, NULL, NULL, 124.60, 124.60, 0, 0.00, 120, 'pending', 'Jane Lee', '88, Jalan Ampang, Kuala Lumpur', '013-9876543', 'cash_on_delivery', NULL, 'pending');
 
 INSERT INTO `order_items` (`order_id`, `product_id`, `size`, `quantity`, `price`) VALUES
 (1, 1, 'Medium (18oz / 530ml)', 2, 94.80),
