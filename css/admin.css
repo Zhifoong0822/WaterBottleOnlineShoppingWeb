@@ -23,7 +23,7 @@
 .sort-link{color:white;text-decoration:none;display:flex;justify-content:center;align-items:center;gap:6px;font-weight:600;}
 .sort-link:hover{color:#7d7d7d;}
 .product-card {background: #fff; border-radius: 14px; box-shadow: 0 5px 18px rgba(0,0,0,.08); overflow: hidden;}
-.product-card:hover {transform: none;box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);}
+.product-card:hover {transform: none;box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);border-color: #e5e5e5;}
 .product-card img{height:100px;}
 
 /* =====================================================
@@ -77,6 +77,7 @@
    Image
 ===================================================== */
 .product-image {width: 70px; height: 70px; object-fit: cover; border-radius: 8px;}
+.product-image.is-archived {opacity: .7;}
 
 /* =====================================================
    Price
@@ -104,6 +105,8 @@
 .btn-edit:hover {background: #0b5ed7;}
 .btn-delete {background: #dc3545;}
 .btn-delete:hover {background: #bb2d3b;}
+.btn-restore {background: #1e7a34;}
+.btn-restore:hover {background: #17612a;}
 /* =====================================================
    Empty Message
 ===================================================== */
@@ -565,3 +568,32 @@ input:invalid,select:invalid,textarea:invalid{border-color:#dc3545;}
     opacity: 0.6;
     font-size: 0.95rem;
 }
+
+/* =====================================================
+   Active / Archived Tabs - Admin Products Page
+===================================================== */
+.view-tabs {display: flex; gap: 4px; padding: 18px 20px 0; border-bottom: 1px solid #e5e5e5;}
+.view-tab {display: inline-flex;align-items: center; gap: 8px; padding: 10px 16px;border-radius: 8px 8px 0 0; text-decoration: none;color: #777;font-weight: 600;
+    font-size: 14px;border: 1px solid transparent; border-bottom: none;transition: color .2s ease, background .2s ease;}
+.view-tab:hover {color: #222;}
+.view-tab.is-active {color: #222; background: #fff; border-color: #e5e5e5; position: relative; top: 1px;}
+.view-tab-count {background: #f0f0f0; color: #666; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px;}
+.view-tab.is-active .view-tab-count {background: #eaf2fd; color: #1976d2;}
+
+/* =====================================================
+   Batch Selection (Product Table Checkbox Column
+   + Selection Bar) - Admin Products Page
+===================================================== */
+.product-table th.checkbox-col,
+.product-table td.checkbox-col {width: 44px; text-align: center; padding: 16px 8px;}
+.product-table td.checkbox-col input[type="checkbox"],
+.product-table th.checkbox-col input[type="checkbox"] {width: 17px; height: 17px; cursor: pointer; accent-color: #1976d2;}
+.product-table tbody tr.row-selected {background: #eaf2fd;}
+.product-table tbody tr.row-selected:hover {background: #eaf2fd;}
+.selection-bar {display: none; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 20px; background: #eaf2fd; border-bottom: 1px solid #d9e9fc;}
+.selection-bar.is-active {display: flex;}
+.selection-bar span {font-weight: 600; color: #1976d2; font-size: 14px;}
+.selection-actions {display: flex; align-items: center; gap: 10px;}
+.selection-actions .btn-view,
+.selection-actions .btn-delete,
+.selection-actions .btn-restore {border: none; cursor: pointer; padding: 9px 16px; font-size: 13px;}
