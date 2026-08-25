@@ -3,17 +3,22 @@ require_once '../../_base.php';
 
 $_title = 'Add Product';
 
+
 /* ==========================================
    Load Categories
 ========================================== */
+
 $categories = $_db->query("
     SELECT *
     FROM categories
     ORDER BY category_name
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+
 /* ==========================================
    Variables
 ========================================== */
+
 $name = '';
 $category = '';
 $new_category = '';
@@ -23,485 +28,1931 @@ $custom_size = '';
 $colour = '';
 $stock = '';
 $description = '';
-$image_url = '';
 
 $error = [];
+
+
+/* ==========================================
+   Standard Sizes
+========================================== */
+
+$standard_sizes = [
+    'Micro (12oz / 350ml)',
+    'Mini (15oz / 450ml)',
+    'Medium (18oz / 530ml)',
+    'Mega (32oz / 950ml)'
+];
+
+
 /* ==========================================
    Form Submitted
 ========================================== */
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-    $name = trim($_POST['name']);
-    $category = $_POST['category'];
-    $new_category = trim($_POST['new_category']);
+    $name =
+        trim($_POST['name'] ?? '');
 
-    $price = trim($_POST['price']);
+    $category =
+        $_POST['category'] ?? '';
 
-    $size = $_POST['size'];
-    $custom_size = trim($_POST['custom_size']);
+    $new_category =
+        trim($_POST['new_category'] ?? '');
 
-    $colour = trim($_POST['colour']);
+    $price =
+        trim($_POST['price'] ?? '');
 
-    $stock = trim($_POST['stock']);
+    $size =
+        $_POST['size'] ?? '';
 
-    $description = trim($_POST['description']);
+    $custom_size =
+        trim($_POST['custom_size'] ?? '');
 
-    $image_url = '';
+    $colour =
+        trim($_POST['colour'] ?? '');
+
+    $stock =
+        trim($_POST['stock'] ?? '');
+
+    $description =
+        trim($_POST['description'] ?? '');
+
+
     /* ==========================================
        Validation
     ========================================== */
-    if ($name == '')
-        $error['name'] = 'Product name is required.';
 
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $image = $_FILES['image'];
-        $allowed_types = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!in_array($image['type'], $allowed_types)) {
-            $error['image'] = 'Only JPG, PNG and WEBP images are allowed.';
-        }
-    } else {
-        $error['image'] = 'Product image is required.';
+    if ($name == '') {
+
+        $error['name'] =
+            'Product name is required.';
     }
 
-    if ($category == '')
-        $error['category'] = 'Please select a category.';
 
-    if ($category == 'new' && $new_category == '')
-        $error['new_category'] = 'Please enter the new category.';
+    /* ==========================================
+       Multiple Image Validation
+    ========================================== */
 
-    if ($price == '')
-        $error['price'] = 'Price is required.';
-    elseif (!is_numeric($price) || $price < 0)
-        $error['price'] = 'Invalid price.';
+    if (
+        !isset($_FILES['images']) ||
+        empty($_FILES['images']['name'][0])
+    ) {
 
-    if ($stock == '')
-        $error['stock'] = 'Stock is required.';
-    elseif (!is_numeric($stock) || $stock < 0)
-        $error['stock'] = 'Invalid stock.';
+        $error['image'] =
+            'At least one product image is required.';
 
-    if ($size == '')
-        $error['size'] = 'Please select a size.';
+    } else {
 
-    if ($size == 'custom' && $custom_size == '')
-        $error['custom_size'] = 'Please enter custom size.';
+        $allowed_types = [
+            'image/jpeg',
+            'image/png',
+            'image/webp'
+        ];
 
-    if ($colour == '')
-        $error['colour'] = 'Colour is required.';
+        $image_count =
+            count($_FILES['images']['name']);
+
+
+        /* Maximum 5 images */
+
+        if ($image_count > 5) {
+
+            $error['image'] =
+                'You can upload a maximum of 5 images.';
+
+        } else {
+
+            for (
+                $i = 0;
+                $i < $image_count;
+                $i++
+            ) {
+
+                if (
+                    $_FILES['images']['error'][$i]
+                    !== UPLOAD_ERR_OK
+                ) {
+
+                    $error['image'] =
+                        'One or more images failed to upload.';
+
+                    break;
+                }
+
+
+                if (
+                    !in_array(
+                        $_FILES['images']['type'][$i],
+                        $allowed_types
+                    )
+                ) {
+
+                    $error['image'] =
+                        'Only JPG, PNG and WEBP images are allowed.';
+
+                    break;
+                }
+            }
+        }
+    }
+
+
+    /* ==========================================
+       Category Validation
+    ========================================== */
+
+    if ($category == '') {
+
+        $error['category'] =
+            'Please select a category.';
+    }
+
+
+    if (
+        $category == 'new' &&
+        $new_category == ''
+    ) {
+
+        $error['new_category'] =
+            'Please enter the new category.';
+    }
+
+
+    /* ==========================================
+       Price Validation
+    ========================================== */
+
+    if ($price == '') {
+
+        $error['price'] =
+            'Price is required.';
+
+    } elseif (
+        !is_numeric($price) ||
+        $price < 0
+    ) {
+
+        $error['price'] =
+            'Invalid price.';
+    }
+
+
+    /* ==========================================
+       Stock Validation
+    ========================================== */
+
+    if ($stock == '') {
+
+        $error['stock'] =
+            'Stock is required.';
+
+    } elseif (
+        !is_numeric($stock) ||
+        $stock < 0
+    ) {
+
+        $error['stock'] =
+            'Invalid stock.';
+    }
+
+
+    /* ==========================================
+       Size Validation
+    ========================================== */
+
+    if ($size == '') {
+
+        $error['size'] =
+            'Please select a size.';
+    }
+
+
+    if (
+        $size == 'custom' &&
+        $custom_size == ''
+    ) {
+
+        $error['custom_size'] =
+            'Please enter custom size.';
+    }
+
+
+    /* ==========================================
+       Colour Validation
+    ========================================== */
+
+    if ($colour == '') {
+
+        $error['colour'] =
+            'Colour is required.';
+    }
+
+
     /* ==========================================
        Save Product
     ========================================== */
+
     if (empty($error)) {
-        /*
-        ------------------------------------------
-        New Category
-        ------------------------------------------
-        */
-        if ($category == 'new') {
-            // Check whether category already exists
-            $stmt = $_db->prepare("
-                SELECT category_id
-                FROM categories
-                WHERE category_name = ?
-            ");
 
-            $stmt->execute([$new_category]);
+        $uploaded_files = [];
 
-            $existing_category = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($existing_category) {
+        try {
 
-                // Use existing category
-                $category = $existing_category['category_id'];
+            $_db->beginTransaction();
 
-            } else {
 
-                // Create new category
+            /* ------------------------------------------
+               New Category
+            ------------------------------------------ */
+
+            if ($category == 'new') {
+
                 $stmt = $_db->prepare("
-                    INSERT INTO categories(category_name)
-                    VALUES(?)
+                    SELECT category_id
+                    FROM categories
+                    WHERE category_name = ?
                 ");
 
-                $stmt->execute([$new_category]);
+                $stmt->execute([
+                    $new_category
+                ]);
 
-                $category = $_db->lastInsertId();
+                $existing_category =
+                    $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+                if ($existing_category) {
+
+                    $category =
+                        $existing_category['category_id'];
+
+                } else {
+
+                    $stmt = $_db->prepare("
+                        INSERT INTO categories
+                        (category_name)
+                        VALUES (?)
+                    ");
+
+                    $stmt->execute([
+                        $new_category
+                    ]);
+
+                    $category =
+                        $_db->lastInsertId();
+                }
             }
-        }
-        /*
-        ------------------------------------------
-        Custom Size
-        ------------------------------------------
-        */
 
-        if ($size == 'custom') {
 
-            $size = $custom_size;
+            /* ------------------------------------------
+               Custom Size
+            ------------------------------------------ */
 
-        }
-        /*
-        ------------------------------------------
-        Insert Product
-        ------------------------------------------
-        */
+            if ($size == 'custom') {
 
-        if (empty($error)) {
+                $size = $custom_size;
+            }
 
-            $folder = '../../img/products/';
+
+            /* ------------------------------------------
+               Upload Images
+            ------------------------------------------ */
+
+            $folder =
+                '../../img/products/';
+
 
             if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
+
+                mkdir(
+                    $folder,
+                    0777,
+                    true
+                );
             }
 
-            $filename = time() . '_' . basename($_FILES['image']['name']);
 
-            $target = $folder . $filename;
+            $uploaded_images = [];
 
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
 
-                $image_url = 'img/products/' . $filename;
+            foreach (
+                $_FILES['images']['name']
+                as $i => $original_name
+            ) {
 
-            } else {
+                $filename =
+                    time()
+                    . '_'
+                    . $i
+                    . '_'
+                    . basename($original_name);
 
-                $error['image'] = 'Failed to upload image.';
+
+                $target =
+                    $folder . $filename;
+
+
+                if (
+                    move_uploaded_file(
+                        $_FILES['images']['tmp_name'][$i],
+                        $target
+                    )
+                ) {
+
+                    $image_url =
+                        'img/products/'
+                        . $filename;
+
+
+                    $uploaded_images[] =
+                        $image_url;
+
+
+                    $uploaded_files[] =
+                        $target;
+
+                } else {
+
+                    throw new Exception(
+                        'Failed to upload one or more images.'
+                    );
+                }
             }
+
+
+            /* ------------------------------------------
+               First Image = Main Product Image
+            ------------------------------------------ */
+
+            $main_image =
+                $uploaded_images[0];
+
+
+            /* ------------------------------------------
+               Insert Product
+            ------------------------------------------ */
+
+            $stmt = $_db->prepare("
+                INSERT INTO products
+                (
+                    category_id,
+                    name,
+                    description,
+                    price,
+                    image_url
+                )
+                VALUES
+                (
+                    ?, ?, ?, ?, ?
+                )
+            ");
+
+
+            $stmt->execute([
+                $category,
+                $name,
+                $description,
+                $price,
+                $main_image
+            ]);
+
+
+            $product_id =
+                $_db->lastInsertId();
+
+
+            /* ------------------------------------------
+               Insert Additional Product Images
+            ------------------------------------------ */
+
+            if (
+                count($uploaded_images) > 1
+            ) {
+
+                $insert_image =
+                    $_db->prepare("
+                        INSERT INTO product_images
+                        (
+                            product_id,
+                            image_url
+                        )
+                        VALUES
+                        (
+                            ?, ?
+                        )
+                    ");
+
+
+                /*
+                Skip image 0 because it is
+                the main product image.
+                */
+
+                for (
+                    $i = 1;
+                    $i < count($uploaded_images);
+                    $i++
+                ) {
+
+                    $insert_image->execute([
+                        $product_id,
+                        $uploaded_images[$i]
+                    ]);
+                }
+            }
+
+
+            /* ------------------------------------------
+               Insert Variant
+            ------------------------------------------ */
+
+            $stmt = $_db->prepare("
+                INSERT INTO product_variants
+                (
+                    product_id,
+                    size,
+                    colour,
+                    stock
+                )
+                VALUES
+                (
+                    ?, ?, ?, ?
+                )
+            ");
+
+
+            $stmt->execute([
+                $product_id,
+                $size,
+                $colour,
+                $stock
+            ]);
+
+
+            /* ------------------------------------------
+               Commit
+            ------------------------------------------ */
+
+            $_db->commit();
+
+
+            header(
+                "Location: admin_products.php"
+            );
+
+            exit;
+
+
+        } catch (Exception $e) {
+
+            if (
+                $_db->inTransaction()
+            ) {
+
+                $_db->rollBack();
+            }
+
+
+            /*
+            Delete uploaded files if
+            database operation failed.
+            */
+
+            foreach (
+                $uploaded_files
+                as $file
+            ) {
+
+                if (
+                    file_exists($file)
+                ) {
+
+                    unlink($file);
+                }
+            }
+
+
+            $error['database'] =
+                'Unable to add the product. Please try again.';
         }
-        $stmt = $_db->prepare("
-            INSERT INTO products
-            (
-                category_id,
-                name,
-                description,
-                price,
-                image_url
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?
-            )
-        ");
-
-        $stmt->execute([
-            $category,
-            $name,
-            $description,
-            $price,
-            $image_url
-        ]);
-
-        $product_id = $_db->lastInsertId();
-
-        /*
-        ------------------------------------------
-        Insert Variant
-        ------------------------------------------
-        */
-
-        $stmt = $_db->prepare("
-            INSERT INTO product_variants
-            (
-                product_id,
-                size,
-                colour,
-                stock
-            )
-            VALUES
-            (
-                ?, ?, ?, ?
-            )
-        ");
-
-        $stmt->execute([
-            $product_id,
-            $size,
-            $colour,
-            $stock
-        ]);
-        /*
-        ------------------------------------------
-        Redirect
-        ------------------------------------------
-        */
-        header("Location: admin_products.php");
-        exit;
     }
 }
+
+
 include '../../_head.php';
 ?>
-<link rel="stylesheet" href="../../css/main.css">
-<link rel="stylesheet" href="../../css/admin.css">
+
+<link
+    rel="stylesheet"
+    href="../../css/main.css">
+
+<link
+    rel="stylesheet"
+    href="../../css/admin.css">
+
 
 <div class="admin-container">
 
     <div class="edit-card">
 
         <div class="edit-header">
-            <!-- <h2>Add a Bottle</h2> -->
+
+            <h2>Add Product</h2>
+
         </div>
 
-        <?php if (!empty($error)): ?>
+
+        <?php if (!empty($error['database'])): ?>
 
             <div class="error-message">
-                Please correct the highlighted fields.
+
+                <?= htmlspecialchars(
+                    $error['database']
+                ) ?>
+
             </div>
 
         <?php endif; ?>
 
-        <form method="post" enctype="multipart/form-data">
+
+        <?php if (!empty($error)): ?>
+
+            <div class="error-message">
+
+                Please correct the highlighted fields.
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <form
+            method="post"
+            enctype="multipart/form-data"
+            class="add-product-form"
+        >
+
             <div class="edit-content">
-                <!-- Left Side -->
+
+
+                <!-- ======================================
+                     LEFT SIDE - PHOTO MANAGER
+                ======================================= -->
+
                 <div class="edit-image">
-                    <label for="imageInput" class="image-upload-label">
-                        <img
-                            id="imagePreview"
-                            src="https://placehold.co/300x300?text=Choose+Image"
-                            class="edit-product-image"
-                            alt="Product Image"
+
+                    <div class="photo-manager">
+
+
+                        <!-- Header -->
+
+                        <div class="photo-manager-header">
+
+                            <div>
+
+                                <h3>
+                                    Product Photos
+                                </h3>
+
+                                <p>
+                                    Add product images
+                                </p>
+
+                            </div>
+
+                            <span
+                                class="photo-counter"
+                                id="photoCounter"
+                            >
+                                0/5
+                            </span>
+
+                        </div>
+
+
+                        <!-- Main Preview -->
+
+                        <div class="photo-main-frame">
+
+                            <span
+                                class="photo-main-badge"
+                                id="mainFrameBadge"
+                            >
+                                Choose Image
+                            </span>
+
+                            <img
+                                id="editMainPreview"
+                                src="https://placehold.co/400x400?text=Choose+Image"
+                                alt="Product Image Preview"
+                            >
+
+                        </div>
+
+
+                        <!-- Thumbnail Grid -->
+
+                        <div
+                            class="photo-grid"
+                            id="photoGrid"
                         >
-                    </label>
-                    <input
-                        type="file"
-                        id="imageInput"
-                        name="image"
-                        class="file-input"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-                    <?php if(isset($error['image'])): ?>
-                        <span class="error">
-                            <?= $error['image'] ?>
-                        </span>
-                    <?php endif; ?>
+
+                            <!-- New images are inserted here -->
+
+                            <div
+                                class="photo-tile photo-tile-add"
+                                id="addPhotoTile"
+                            >
+
+                                <span>+</span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Selected Image Actions -->
+
+                        <div
+                            class="photo-actions"
+                            id="photoActions"
+                            style="display:none;"
+                        >
+
+                            <button
+                                type="button"
+                                class="btn-photo-main"
+                                id="setMainBtn"
+                            >
+                                Set as Main
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn-photo-delete"
+                                id="deletePhotoBtn"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+
+                        <!-- Drag & Drop -->
+
+                        <label
+                            for="imageInput"
+                            class="photo-dropzone"
+                            id="photoDropzone"
+                        >
+
+                            <div class="photo-dropzone-icon">
+                                &#8593;
+                            </div>
+
+                            <div class="photo-dropzone-text">
+                                Drag &amp; drop or click to upload
+                            </div>
+
+                            <div class="photo-dropzone-sub">
+                                JPG, PNG, WebP up to 5MB &middot;
+                                Max 5 images
+                            </div>
+
+                        </label>
+
+
+                        <input
+                            type="file"
+                            id="imageInput"
+                            name="images[]"
+                            class="file-input"
+                            accept="image/jpeg,image/png,image/webp"
+                            multiple
+                        >
+
+
+                        <?php if (isset($error['image'])): ?>
+
+                            <span class="error">
+
+                                <?= htmlspecialchars(
+                                    $error['image']
+                                ) ?>
+
+                            </span>
+
+                        <?php endif; ?>
+
+
+                    </div>
+
                 </div>
 
-                <!-- Right Side -->
+
+                <!-- ======================================
+                     RIGHT SIDE - FORM
+                ======================================= -->
+
                 <div class="edit-form">
+
+
                     <!-- Product Name -->
+
                     <div class="form-group">
-                        <label>Product Name *</label>
+
+                        <label>
+                            Product Name *
+                        </label>
+
                         <input
                             type="text"
                             name="name"
-                            value="<?= htmlspecialchars($name) ?>"
+                            value="<?= htmlspecialchars(
+                                $name
+                            ) ?>"
                         >
-                        <?php if(isset($error['name'])): ?>
-                            <span class="error">
-                                <?= $error['name'] ?>
-                            </span>
-                        <?php endif; ?>
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['name'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
 
+
                     <!-- Category -->
+
                     <div class="form-group">
-                        <label>Category *</label>
+
+                        <label>
+                            Category *
+                        </label>
+
                         <select
                             name="category"
                             id="category"
                         >
-                            <option value="">Select Category</option>
-                            <?php foreach($categories as $cat): ?>
+
+                            <option value="">
+                                Select Category
+                            </option>
+
+                            <?php foreach (
+                                $categories
+                                as $cat
+                            ): ?>
+
                                 <option
                                     value="<?= $cat['category_id'] ?>"
-                                    <?= ($category == $cat['category_id']) ? 'selected' : '' ?>
+                                    <?= (
+                                        $category
+                                        ==
+                                        $cat['category_id']
+                                    )
+                                    ? 'selected'
+                                    : ''
+                                    ?>
                                 >
-                                    <?= htmlspecialchars($cat['category_name']) ?>
+
+                                    <?= htmlspecialchars(
+                                        $cat['category_name']
+                                    ) ?>
+
                                 </option>
+
                             <?php endforeach; ?>
+
+
                             <option
                                 value="new"
-                                <?= ($category == 'new') ? 'selected' : '' ?>
+                                <?= (
+                                    $category == 'new'
+                                )
+                                ? 'selected'
+                                : ''
+                                ?>
                             >
+
                                 + New Category
+
                             </option>
+
                         </select>
 
-                        <?php if(isset($error['category'])): ?>
-                            <span class="error">
-                                <?= $error['category'] ?>
-                            </span>
-                        <?php endif; ?>
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['category'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
 
+
                     <!-- New Category -->
+
                     <div
                         class="form-group full-width"
                         id="newCategoryBox"
-                        style="<?= ($category == 'new') ? '' : 'display:none;' ?>"
+                        style="<?= (
+                            $category == 'new'
+                        )
+                        ? ''
+                        : 'display:none;'
+                        ?>"
                     >
-                        <label>New Category</label>
+
+                        <label>
+                            New Category
+                        </label>
+
                         <input
                             type="text"
                             name="new_category"
-                            value="<?= htmlspecialchars($new_category) ?>"
+                            value="<?= htmlspecialchars(
+                                $new_category
+                            ) ?>"
                         >
-                        <?php if(isset($error['new_category'])): ?>
-                            <span class="error">
-                                <?= $error['new_category'] ?>
-                            </span>
-                        <?php endif; ?>
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['new_category'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
 
+
                     <!-- Price -->
+
                     <div class="form-group">
-                        <label>Price (RM) *</label>
+
+                        <label>
+                            Price (RM) *
+                        </label>
+
                         <input
                             type="number"
                             step="0.01"
                             min="0"
                             name="price"
-                            value="<?= htmlspecialchars($price) ?>"
+                            value="<?= htmlspecialchars(
+                                $price
+                            ) ?>"
                         >
-                        <?php if(isset($error['price'])): ?>
-                            <span class="error">
-                                <?= $error['price'] ?>
-                            </span>
-                        <?php endif; ?>
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['price'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
 
+
                     <!-- Stock -->
+
                     <div class="form-group">
-                        <label>Stock *</label>
+
+                        <label>
+                            Stock *
+                        </label>
+
                         <input
                             type="number"
                             min="0"
                             name="stock"
-                            value="<?= htmlspecialchars($stock) ?>"
+                            value="<?= htmlspecialchars(
+                                $stock
+                            ) ?>"
                         >
-                        <?php if(isset($error['stock'])): ?>
-                            <span class="error">
-                                <?= $error['stock'] ?>
-                            </span>
-                        <?php endif; ?>
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['stock'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
 
+
                     <!-- Size -->
+
                     <div class="form-group">
-                        <label>Size *</label>
+
+                        <label>
+                            Size *
+                        </label>
+
                         <select
                             name="size"
                             id="size"
                         >
-                            <option value="">Select Size</option>
-                            <option value="Micro (12oz / 350ml)"
-                                <?= ($size == 'Micro (12oz / 350ml)') ? 'selected' : '' ?>>
-                                Micro (12oz / 350ml)
+
+                            <option value="">
+                                Select Size
                             </option>
 
-                            <option value="Mini (15oz / 450ml)"
-                                <?= ($size == 'Mini (15oz / 450ml)') ? 'selected' : '' ?>>
-                                Mini (15oz / 450ml)
+
+                            <?php foreach (
+                                $standard_sizes
+                                as $standard_size
+                            ): ?>
+
+                                <option
+                                    value="<?= htmlspecialchars(
+                                        $standard_size
+                                    ) ?>"
+                                    <?= (
+                                        $size
+                                        ==
+                                        $standard_size
+                                    )
+                                    ? 'selected'
+                                    : ''
+                                    ?>
+                                >
+
+                                    <?= htmlspecialchars(
+                                        $standard_size
+                                    ) ?>
+
+                                </option>
+
+                            <?php endforeach; ?>
+
+
+                            <option
+                                value="custom"
+                                <?= (
+                                    $size == 'custom'
+                                )
+                                ? 'selected'
+                                : ''
+                                ?>
+                            >
+
+                                Custom
+
                             </option>
 
-                            <option value="Medium (18oz / 530ml)"
-                                <?= ($size == 'Medium (18oz / 530ml)') ? 'selected' : '' ?>>
-                                Medium (18oz / 530ml)
-                            </option>
-
-                            <option value="Mega (32oz / 950ml)"
-                                <?= ($size == 'Mega (32oz / 950ml)') ? 'selected' : '' ?>>
-                                Mega (32oz / 950ml)
-                            </option>
-                            <option value="custom" <?= ($size=='custom')?'selected':'' ?>>Custom</option>
                         </select>
 
-                        <?php if(isset($error['size'])): ?>
-                            <span class="error">
-                                <?= $error['size'] ?>
-                            </span>
-                        <?php endif; ?>
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['size'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
 
-                    <!-- Colour -->
-                    <div class="form-group">
-                        <label>Colour *</label>
-                        <input
-                            type="text"
-                            name="colour"
-                            value="<?= htmlspecialchars($colour) ?>"
-                        >
-                        <?php if(isset($error['colour'])): ?>
-
-                            <span class="error">
-                                <?= $error['colour'] ?>
-                            </span>
-
-                        <?php endif; ?>
-                    </div>
 
                     <!-- Custom Size -->
+
                     <div
                         class="form-group full-width"
                         id="customSizeBox"
-                        style="<?= ($size == 'custom') ? '' : 'display:none;' ?>"
+                        style="<?= (
+                            $size == 'custom'
+                        )
+                        ? ''
+                        : 'display:none;'
+                        ?>"
                     >
-                        <label>Custom Size</label>
+
+                        <label>
+                            Custom Size
+                        </label>
+
                         <input
                             type="text"
                             name="custom_size"
-                            value="<?= htmlspecialchars($custom_size) ?>"
+                            value="<?= htmlspecialchars(
+                                $custom_size
+                            ) ?>"
+                            placeholder="Enter custom size..."
                         >
-                        <?php if(isset($error['custom_size'])): ?>
 
-                            <span class="error">
-                                <?= $error['custom_size'] ?>
-                            </span>
+                        <small class="error">
 
-                        <?php endif; ?>
+                            <?= htmlspecialchars(
+                                $error['custom_size'] ?? ''
+                            ) ?>
+
+                        </small>
+
                     </div>
+
+
+                    <!-- Colour -->
+
+                    <div class="form-group">
+
+                        <label>
+                            Colour *
+                        </label>
+
+                        <input
+                            type="text"
+                            name="colour"
+                            value="<?= htmlspecialchars(
+                                $colour
+                            ) ?>"
+                        >
+
+                        <small class="error">
+
+                            <?= htmlspecialchars(
+                                $error['colour'] ?? ''
+                            ) ?>
+
+                        </small>
+
+                    </div>
+
 
                     <!-- Description -->
+
                     <div class="form-group full-width">
-                        <label>Description</label>
+
+                        <label>
+                            Description
+                        </label>
+
                         <textarea
                             name="description"
-                        ><?= htmlspecialchars($description) ?></textarea>
+                            rows="6"
+                        ><?= htmlspecialchars(
+                            $description
+                        ) ?></textarea>
+
                     </div>
+
+
                 </div>
+
             </div>
+
+
+            <!-- ======================================
+                 FOOTER
+            ======================================= -->
+
             <div class="edit-footer">
+
                 <a
                     href="admin_products.php"
                     class="btn-view"
                 >
+
                     Cancel
+
                 </a>
+
+
                 <button
                     type="submit"
                     class="btn-edit"
                 >
+
                     Add Product
+
                 </button>
+
             </div>
+
         </form>
+
     </div>
+
 </div>
+
+
 <script>
 
-document.getElementById("category").addEventListener("change", function(){
+/* ==================================================
+   CATEGORY
+================================================== */
 
-    document.getElementById("newCategoryBox").style.display =
-        this.value == "new"
-        ? "block"
-        : "none";
+const category =
+    document.getElementById(
+        'category'
+    );
 
-});
+const newCategoryBox =
+    document.getElementById(
+        'newCategoryBox'
+    );
 
-document.getElementById("size").addEventListener("change", function(){
 
-    document.getElementById("customSizeBox").style.display =
-        this.value == "custom"
-        ? "block"
-        : "none";
+category.addEventListener(
+    'change',
+    function () {
 
-});
-document.getElementById("imageInput").addEventListener("change", function(){
-
-    const file = this.files[0];
-
-    if (file) {
-
-        document.getElementById("imagePreview").src =
-            URL.createObjectURL(file);
+        newCategoryBox.style.display =
+            this.value === 'new'
+                ? 'block'
+                : 'none';
 
     }
+);
 
-});
+
+/* ==================================================
+   SIZE
+================================================== */
+
+const size =
+    document.getElementById(
+        'size'
+    );
+
+const customSizeBox =
+    document.getElementById(
+        'customSizeBox'
+    );
+
+
+size.addEventListener(
+    'change',
+    function () {
+
+        customSizeBox.style.display =
+            this.value === 'custom'
+                ? 'block'
+                : 'none';
+
+    }
+);
+
+
+/* ==================================================
+   PHOTO MANAGER
+================================================== */
+
+const imageInput =
+    document.getElementById(
+        'imageInput'
+    );
+
+const photoGrid =
+    document.getElementById(
+        'photoGrid'
+    );
+
+const addPhotoTile =
+    document.getElementById(
+        'addPhotoTile'
+    );
+
+const editMainPreview =
+    document.getElementById(
+        'editMainPreview'
+    );
+
+const mainFrameBadge =
+    document.getElementById(
+        'mainFrameBadge'
+    );
+
+const photoActions =
+    document.getElementById(
+        'photoActions'
+    );
+
+const setMainBtn =
+    document.getElementById(
+        'setMainBtn'
+    );
+
+const deletePhotoBtn =
+    document.getElementById(
+        'deletePhotoBtn'
+    );
+
+const photoCounter =
+    document.getElementById(
+        'photoCounter'
+    );
+
+const photoDropzone =
+    document.getElementById(
+        'photoDropzone'
+    );
+
+
+let selectedFiles = [];
+
+let selectedTile = null;
+
+
+/* ==================================================
+   Counter
+================================================== */
+
+function updateCounter() {
+
+    const total =
+        selectedFiles.length;
+
+
+    photoCounter.textContent =
+        total + '/5';
+
+
+    if (total >= 5) {
+
+        addPhotoTile.style.display =
+            'none';
+
+    } else {
+
+        addPhotoTile.style.display =
+            'flex';
+    }
+}
+
+
+/* ==================================================
+   Update File Input
+================================================== */
+
+function updateFileInput() {
+
+    const dataTransfer =
+        new DataTransfer();
+
+
+    selectedFiles.forEach(
+        function (file) {
+
+            dataTransfer.items.add(
+                file
+            );
+
+        }
+    );
+
+
+    imageInput.files =
+        dataTransfer.files;
+}
+
+
+/* ==================================================
+   Clear Selection
+================================================== */
+
+function clearSelection() {
+
+    if (selectedTile) {
+
+        selectedTile.classList.remove(
+            'is-selected'
+        );
+    }
+
+
+    selectedTile =
+        null;
+
+
+    photoActions.style.display =
+        'none';
+
+
+    if (
+        selectedFiles.length > 0
+    ) {
+
+        editMainPreview.src =
+            URL.createObjectURL(
+                selectedFiles[0]
+            );
+
+        mainFrameBadge.textContent =
+            '✓ Main Image';
+
+    } else {
+
+        editMainPreview.src =
+            'https://placehold.co/400x400?text=Choose+Image';
+
+        mainFrameBadge.textContent =
+            'Choose Image';
+    }
+}
+
+
+/* ==================================================
+   Select Tile
+================================================== */
+
+function selectTile(tile) {
+
+    if (
+        tile === selectedTile
+    ) {
+
+        clearSelection();
+
+        return;
+    }
+
+
+    if (selectedTile) {
+
+        selectedTile.classList.remove(
+            'is-selected'
+        );
+    }
+
+
+    selectedTile =
+        tile;
+
+
+    tile.classList.add(
+        'is-selected'
+    );
+
+
+    const previewImg =
+        tile.querySelector(
+            'img'
+        );
+
+
+    editMainPreview.src =
+        previewImg.src;
+
+
+    const index =
+        parseInt(
+            tile.dataset.index,
+            10
+        );
+
+
+    if (index === 0) {
+
+        mainFrameBadge.textContent =
+            '✓ Main Image';
+
+        photoActions.style.display =
+            'none';
+
+    } else {
+
+        mainFrameBadge.textContent =
+            'Previewing';
+
+        photoActions.style.display =
+            'flex';
+    }
+}
+
+
+/* ==================================================
+   Render Gallery
+================================================== */
+
+function renderGallery() {
+
+    photoGrid
+        .querySelectorAll(
+            '.photo-tile[data-type="new"]'
+        )
+        .forEach(
+            function (tile) {
+
+                tile.remove();
+
+            }
+        );
+
+
+    selectedFiles.forEach(
+        function (
+            file,
+            index
+        ) {
+
+            const tile =
+                document.createElement(
+                    'div'
+                );
+
+
+            tile.className =
+                'photo-tile';
+
+
+            if (index === 0) {
+
+                tile.classList.add(
+                    'is-main'
+                );
+            }
+
+
+            tile.dataset.type =
+                'new';
+
+
+            tile.dataset.index =
+                index;
+
+
+            const img =
+                document.createElement(
+                    'img'
+                );
+
+
+            img.src =
+                URL.createObjectURL(
+                    file
+                );
+
+
+            img.alt =
+                'Product Image';
+
+
+            tile.appendChild(
+                img
+            );
+
+
+            if (index === 0) {
+
+                const label =
+                    document.createElement(
+                        'span'
+                    );
+
+
+                label.className =
+                    'photo-tile-label';
+
+
+                label.textContent =
+                    'Main';
+
+
+                tile.appendChild(
+                    label
+                );
+            }
+
+
+            photoGrid.insertBefore(
+                tile,
+                addPhotoTile
+            );
+
+        }
+    );
+
+
+    updateCounter();
+}
+
+
+/* ==================================================
+   Add Files
+================================================== */
+
+function addFiles(files) {
+
+    files.forEach(
+        function (file) {
+
+            /*
+            Only allow image files
+            */
+
+            const allowedTypes = [
+                'image/jpeg',
+                'image/png',
+                'image/webp'
+            ];
+
+
+            if (
+                !allowedTypes.includes(
+                    file.type
+                )
+            ) {
+
+                alert(
+                    'Only JPG, PNG and WebP images are allowed.'
+                );
+
+                return;
+            }
+
+
+            /*
+            Maximum 5MB
+            */
+
+            if (
+                file.size > 5 * 1024 * 1024
+            ) {
+
+                alert(
+                    file.name
+                    + ' is larger than 5MB.'
+                );
+
+                return;
+            }
+
+
+            /*
+            Prevent duplicate file
+            */
+
+            const duplicate =
+                selectedFiles.some(
+                    function (
+                        existingFile
+                    ) {
+
+                        return (
+                            existingFile.name
+                            ===
+                            file.name
+                            &&
+                            existingFile.size
+                            ===
+                            file.size
+                        );
+
+                    }
+                );
+
+
+            if (duplicate) {
+
+                return;
+            }
+
+
+            /*
+            Maximum 5 images
+            */
+
+            if (
+                selectedFiles.length >= 5
+            ) {
+
+                alert(
+                    'A product can have a maximum of 5 images.'
+                );
+
+                return;
+            }
+
+
+            selectedFiles.push(
+                file
+            );
+
+        }
+    );
+
+
+    updateFileInput();
+
+    renderGallery();
+
+
+    /*
+    Automatically preview
+    the first image
+    */
+
+    if (
+        selectedFiles.length > 0
+    ) {
+
+        editMainPreview.src =
+            URL.createObjectURL(
+                selectedFiles[0]
+            );
+
+        mainFrameBadge.textContent =
+            '✓ Main Image';
+    }
+}
+
+
+/* ==================================================
+   File Input
+================================================== */
+
+imageInput.addEventListener(
+    'change',
+    function () {
+
+        addFiles(
+            Array.from(
+                this.files
+            )
+        );
+
+    }
+);
+
+
+/* ==================================================
+   Add Photo Tile
+================================================== */
+
+addPhotoTile.addEventListener(
+    'click',
+    function () {
+
+        imageInput.click();
+
+    }
+);
+
+
+/* ==================================================
+   Select Photo
+================================================== */
+
+photoGrid.addEventListener(
+    'click',
+    function (event) {
+
+        const tile =
+            event.target.closest(
+                '.photo-tile'
+            );
+
+
+        if (
+            !tile ||
+            tile === addPhotoTile
+        ) {
+
+            return;
+        }
+
+
+        selectTile(
+            tile
+        );
+
+    }
+);
+
+
+/* ==================================================
+   Set as Main
+================================================== */
+
+setMainBtn.addEventListener(
+    'click',
+    function () {
+
+        if (
+            !selectedTile
+        ) {
+
+            return;
+        }
+
+
+        const index =
+            parseInt(
+                selectedTile.dataset.index,
+                10
+            );
+
+
+        if (
+            index === 0
+        ) {
+
+            return;
+        }
+
+
+        /*
+        Move selected image
+        to position 0.
+
+        The PHP backend already treats
+        uploaded_images[0] as the main image.
+        */
+
+        const selectedFile =
+            selectedFiles[index];
+
+
+        selectedFiles.splice(
+            index,
+            1
+        );
+
+
+        selectedFiles.unshift(
+            selectedFile
+        );
+
+
+        selectedTile =
+            null;
+
+
+        updateFileInput();
+
+        renderGallery();
+
+
+        editMainPreview.src =
+            URL.createObjectURL(
+                selectedFiles[0]
+            );
+
+
+        mainFrameBadge.textContent =
+            '✓ Main Image';
+
+
+        photoActions.style.display =
+            'none';
+
+    }
+);
+
+
+/* ==================================================
+   Delete Selected Photo
+================================================== */
+
+deletePhotoBtn.addEventListener(
+    'click',
+    function () {
+
+        if (
+            !selectedTile
+        ) {
+
+            return;
+        }
+
+
+        const index =
+            parseInt(
+                selectedTile.dataset.index,
+                10
+            );
+
+
+        /*
+        Do not allow deleting
+        the only image.
+        */
+
+        if (
+            selectedFiles.length === 1
+        ) {
+
+            alert(
+                'At least one product image is required.'
+            );
+
+            return;
+        }
+
+
+        selectedFiles.splice(
+            index,
+            1
+        );
+
+
+        selectedTile =
+            null;
+
+
+        updateFileInput();
+
+        renderGallery();
+
+        clearSelection();
+
+    }
+);
+
+
+/* ==================================================
+   Drag & Drop
+================================================== */
+
+[
+    'dragenter',
+    'dragover'
+].forEach(
+    function (eventName) {
+
+        photoDropzone.addEventListener(
+            eventName,
+            function (event) {
+
+                event.preventDefault();
+
+                photoDropzone.classList.add(
+                    'is-dragover'
+                );
+
+            }
+        );
+
+    }
+);
+
+
+[
+    'dragleave',
+    'dragend'
+].forEach(
+    function (eventName) {
+
+        photoDropzone.addEventListener(
+            eventName,
+            function () {
+
+                photoDropzone.classList.remove(
+                    'is-dragover'
+                );
+
+            }
+        );
+
+    }
+);
+
+
+photoDropzone.addEventListener(
+    'drop',
+    function (event) {
+
+        event.preventDefault();
+
+
+        photoDropzone.classList.remove(
+            'is-dragover'
+        );
+
+
+        if (
+            event.dataTransfer &&
+            event.dataTransfer.files
+        ) {
+
+            addFiles(
+                Array.from(
+                    event.dataTransfer.files
+                )
+            );
+
+        }
+
+    }
+);
+
+
+/* ==================================================
+   Initial State
+================================================== */
+
+updateCounter();
+
 </script>
+
+
 <?php include '../../_foot.php'; ?>
