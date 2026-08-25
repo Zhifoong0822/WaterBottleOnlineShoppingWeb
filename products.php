@@ -7,6 +7,10 @@ $_hide_page_title = true;
 $search = trim(get('search', ''));
 $category_id = get('category', '');
 $sort = get('sort', 'newest');
+
+$min_price = get('min_price', '');
+$max_price = get('max_price', '');
+
 $page = max(1, (int) get('page', 1));
 $limit = 3;
 
@@ -19,19 +23,27 @@ $category_id = $category_id === '' ? null : (int) $category_id;
 $sort_map = [
     'newest' => 'pv.variant_id DESC',
     'popular' => 'units_sold DESC, pv.variant_id DESC',
-    'price_low' => 'p.price ASC',
-    'price_high' => 'p.price DESC',
     'name_asc' => 'p.name ASC',
 ];
 $sql_sort = $sort_map[$sort] ?? $sort_map['newest'];
 
+//display categories for filtering
 $categories = $_db->query(
     'SELECT category_id, category_name FROM categories ORDER BY category_name'
 )->fetchAll();
 
+//filter products based on filter criteria (search, category, sort)
 $product_filter = '(p.name LIKE :search OR p.description LIKE :search)';
 if ($category_id !== null) {
     $product_filter .= ' AND p.category_id = :category_id';
+}
+
+if ($min_price !== '' && is_numeric($min_price)) {
+    $product_filter .= ' AND p.price >= :min_price';
+}
+
+if ($max_price !== '' && is_numeric($max_price)) {
+    $product_filter .= ' AND p.price <= :max_price';
 }
 
 $count_stmt = $_db->prepare(
@@ -44,11 +56,19 @@ $count_stmt->bindValue(':search', "%$search%");
 if ($category_id !== null) {
     $count_stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT);
 }
+if ($min_price !== '' && is_numeric($min_price)) {
+    $count_stmt->bindValue(':min_price', (float) $min_price);
+}
+if ($max_price !== '' && is_numeric($max_price)) {
+    $count_stmt->bindValue(':max_price', (float) $max_price);
+}
 $count_stmt->execute();
 $total_items = (int) $count_stmt->fetchColumn();
-
+// Calculate total pages based on total items and limit
 $total_pages = max(1, (int) ceil($total_items / $limit));
+//ensure the requested page does not exceed the total number of pages
 $page = min($page, $total_pages);
+//define skipping how many records to fetch for pagination
 $offset = ($page - 1) * $limit;
 
 $top_selling_stmt = $_db->query(
@@ -108,9 +128,19 @@ $products_stmt = $_db->prepare(
     LIMIT :limit OFFSET :offset"
 );
 $products_stmt->bindValue(':search', "%$search%");
+
 if ($category_id !== null) {
     $products_stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT);
 }
+
+if ($min_price !== '' && is_numeric($min_price)) {
+    $products_stmt->bindValue(':min_price', (float) $min_price);
+}
+
+if ($max_price !== '' && is_numeric($max_price)) {
+    $products_stmt->bindValue(':max_price', (float) $max_price);
+}
+
 $products_stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $products_stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $products_stmt->execute();
@@ -202,14 +232,36 @@ require '_head.php';
         <select name="sort">
             <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Newest</option>
             <option value="popular" <?= $sort === 'popular' ? 'selected' : '' ?>>Most popular</option>
-            <option value="price_low" <?= $sort === 'price_low' ? 'selected' : '' ?>>Price: low to high</option>
-            <option value="price_high" <?= $sort === 'price_high' ? 'selected' : '' ?>>Price: high to low</option>
             <option value="name_asc" <?= $sort === 'name_asc' ? 'selected' : '' ?>>Name: A to Z</option>
         </select>
 
+          <input
+                type="number"
+                name="min_price"
+                placeholder="Min price"
+                min="0"
+                step="0.01"
+                value="<?= encode($min_price) ?>"
+            >
+
+            <input
+                type="number"
+                name="max_price"
+                placeholder="Max price"
+                min="0"
+                step="0.01"
+                value="<?= encode($max_price) ?>"
+            >
+
         <button type="submit">Apply</button>
-        <?php if ($search !== '' || $category_id !== null || $sort !== 'newest'): ?>
-            <a href="products.php" class="clear-filter">Clear</a>
+        <?php if (
+            $search !== '' ||
+            $category_id !== null ||
+            $min_price !== '' ||
+            $max_price !== '' ||
+            $sort !== 'newest'
+        ): ?>            
+<a href="products.php" class="clear-filter">Clear</a>
         <?php endif; ?>
     </form>
 
@@ -234,12 +286,12 @@ require '_head.php';
         <?php endif; ?>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
             <a
-                href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&sort=<?= urlencode($sort) ?>&page=<?= $i ?>"
+                href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&min_price=<?= urlencode($min_price) ?>&max_price=<?= urlencode($max_price) ?>&sort=<?= urlencode($sort) ?>&page=<?= $i ?>"
                 class="<?= $i === $page ? 'active' : '' ?>"
             ><?= $i ?></a>
         <?php endfor; ?>
         <?php if ($page < $total_pages): ?>
-            <a href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&sort=<?= urlencode($sort) ?>&page=<?= $page + 1 ?>" aria-label="Next page">Next</a>
+            <a href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&min_price=<?= urlencode($min_price) ?>&max_price=<?= urlencode($max_price) ?>&sort=<?= urlencode($sort) ?>&page=<?= $page + 1 ?>" aria-label="Next page">Next</a>
         <?php endif; ?>
     </nav>
     <?php endif; ?>
