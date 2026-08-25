@@ -7,6 +7,12 @@
 require_once '../../_base.php';
 require_admin('../../products.php');
 
+function admin_image_src($image_url)
+{
+    return (str_starts_with($image_url, 'http://') || str_starts_with($image_url, 'https://'))
+        ? $image_url
+        : '../../' . ltrim($image_url, '/');
+}
 $_title = 'Delete Product';
 
 /*----------------------------------------------------------
@@ -169,7 +175,7 @@ include '../../_head.php';
                     <div class="delete-product-info">
                         <div class="delete-product-image">
                             <img
-                                src="../../<?= htmlspecialchars($p['image_url']) ?>"
+                                src="<?= htmlspecialchars(admin_image_src($p['image_url'])) ?>"
                                 alt="<?= htmlspecialchars($p['name']) ?>"
                                 class="delete-image"
                             >
@@ -201,7 +207,7 @@ include '../../_head.php';
                 <div class="delete-product-info">
                     <div class="delete-product-image">
                         <img
-                            src="../../<?= htmlspecialchars($product['image_url']) ?>"
+                            src="<?= htmlspecialchars(admin_image_src($product['image_url'])) ?>"
                             alt="<?= htmlspecialchars($product['name']) ?>"
                             class="delete-image"
                         >

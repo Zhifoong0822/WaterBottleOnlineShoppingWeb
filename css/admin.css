@@ -597,3 +597,32 @@ input:invalid,select:invalid,textarea:invalid{border-color:#dc3545;}
 .selection-actions .btn-view,
 .selection-actions .btn-delete,
 .selection-actions .btn-restore {border: none; cursor: pointer; padding: 9px 16px; font-size: 13px;}
+
+/* =====================================================
+   Trash (Soft-Deleted Products)
+===================================================== */
+.trash-link {background: #6c757d;}
+.trash-link:hover {background: #5a6268;}
+.btn-restore {background: #198754; padding: 8px 10px; border-radius: 7px; text-decoration: none; color: white; font-size: 12px; text-align: center; transition: .2s;}
+.btn-restore:hover {background: #157347;}
+
+/* =====================================================
+   Add Product - Tabs & Bulk CSV Upload
+===================================================== */
+.product-tabs {display: flex; gap: 24px; border-bottom: 1px solid #e5e5e5; margin-bottom: 25px;}
+.tab-button {background: none; border: none; padding: 10px 2px 14px; font-size: 15px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; transition: .2s;}
+.tab-button:hover {color: #333;}
+.tab-button.active {color: #1976d2; border-bottom-color: #1976d2;}
+.bulk-info-banner {display: flex; align-items: center; justify-content: space-between; gap: 15px; background: #eaf2fd; border: 1px solid #d9e9fc; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; color: #1976d2; font-size: 14px;}
+.csv-dropzone {display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; border: 2px dashed #d9d9d9; border-radius: 12px; padding: 45px 20px; cursor: pointer; transition: border-color .2s ease, background .2s ease; margin-bottom: 25px;}
+.csv-dropzone:hover,
+.csv-dropzone.is-dragover {border-color: #1976d2; background: #f6faff;}
+.bulk-preview-title {margin: 0 0 12px; font-size: 16px;}
+.bulk-preview-box {border: 1px solid #e5e5e5; border-radius: 10px; min-height: 120px; margin-bottom: 25px; overflow: hidden;}
+.bulk-preview-empty {padding: 45px 20px; text-align: center; color: #999; font-size: 14px;}
+.bulk-preview-table-wrapper {max-height: 320px; overflow: auto;}
+.bulk-preview-table {width: 100%; border-collapse: collapse; font-size: 13px;}
+.bulk-preview-table th {background: #222; color: white; text-align: left; padding: 10px 12px; position: sticky; top: 0;}
+.bulk-preview-table td {padding: 10px 12px; border-bottom: 1px solid #eee; white-space: nowrap;}
+.bulk-error-list {margin: 8px 0 0; padding-left: 20px;}
+.bulk-error-list li {margin-bottom: 4px;}

@@ -2,6 +2,22 @@
 require_once '../../_base.php';
 require_admin('../../products.php');
 
+function admin_image_src($image_url)
+{
+    return (str_starts_with($image_url, 'http://') || str_starts_with($image_url, 'https://'))
+        ? $image_url
+        : '../../' . ltrim($image_url, '/');
+}
+/*
+One-time flash message from a bulk CSV import on
+product_add.php - read once, then cleared.
+*/
+$bulk_import_result = null;
+
+if (isset($_SESSION['bulk_import_result'])) {
+    $bulk_import_result = $_SESSION['bulk_import_result'];
+    unset($_SESSION['bulk_import_result']);
+}
 $search = trim($_GET['search'] ?? '');
 $category = $_GET['category'] ?? '';
 $status = $_GET['status'] ?? '';
@@ -283,6 +299,28 @@ include '../../_head.php';
 
 <?php endif; ?>
 
+<?php if ($bulk_import_result): ?>
+
+    <div class="success-message">
+        <?= $bulk_import_result['imported'] ?> product<?= $bulk_import_result['imported'] == 1 ? '' : 's' ?> imported successfully.
+        <?php if (!empty($bulk_import_result['skipped'])): ?>
+            <?= count($bulk_import_result['skipped']) ?> row<?= count($bulk_import_result['skipped']) == 1 ? '' : 's' ?> skipped.
+        <?php endif; ?>
+    </div>
+
+    <?php if (!empty($bulk_import_result['skipped'])): ?>
+        <div class="error-message">
+            <strong>Skipped rows:</strong>
+            <ul class="bulk-error-list">
+                <?php foreach ($bulk_import_result['skipped'] as $skip): ?>
+                    <li><?= htmlspecialchars($skip) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
+<?php endif; ?>
+
 <link rel="stylesheet" href="../../css/main.css">
 <link rel="stylesheet" href="../../css/admin.css">
 
@@ -551,7 +589,7 @@ include '../../_head.php';
 
                                     <td>
                                         <img
-                                            src="../../<?= htmlspecialchars($product['image_url']) ?>"
+                                            src="<?= htmlspecialchars(admin_image_src($product['image_url'])) ?>"
                                             class="product-image <?= $view === 'archived' ? 'is-archived' : '' ?>"
                                             alt="<?= htmlspecialchars($product['name']) ?>"
                                         >
