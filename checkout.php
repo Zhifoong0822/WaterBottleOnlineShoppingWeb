@@ -71,20 +71,18 @@ foreach ($cart_items as $item) {
     $total_amount += $item->unit_price * $item->quantity;
 }
 
-// Each size has a separate stock record. Aggregate quantities by product and
-// size so duplicate cart rows cannot oversell that variant.
+// One product has one stock record. Aggregate quantities so checkout remains
+// correct even if older cart data contains more than one row for a product.
 $stock_requirements = [];
 foreach ($cart_items as $item) {
-    $stock_key = (int) $item->product_id . '|' . $item->size;
-    if (!isset($stock_requirements[$stock_key])) {
-        $stock_requirements[$stock_key] = [
-            'product_id' => (int) $item->product_id,
-            'size' => $item->size,
+    $product_id = (int) $item->product_id;
+    if (!isset($stock_requirements[$product_id])) {
+        $stock_requirements[$product_id] = [
             'name' => $item->name,
             'quantity' => 0,
         ];
     }
-    $stock_requirements[$stock_key]['quantity'] += (int) $item->quantity;
+    $stock_requirements[$product_id]['quantity'] += (int) $item->quantity;
 }
 
 $stmt_points = $_db->prepare("SELECT reward_points FROM users WHERE user_id = ?");
@@ -214,18 +212,18 @@ if (req('confirm_order')) {
             $amount_due = round($total_amount - $points_discount, 2);
             $points_earned = earned_reward_points($amount_due);
 
-            // Lock the selected size's inventory row before validating and
-            // deducting it.
+            // Lock the one stock record configured for each product before
+            // validating and deducting it. Size is now display/history data.
             $stmt_check = $_db->prepare("
                 SELECT pv.stock, p.name 
                 FROM product_variants pv
                 JOIN products p ON pv.product_id = p.product_id
-                WHERE pv.product_id = ? AND pv.size = ?
+                WHERE pv.product_id = ?
                 FOR UPDATE
             ");
 
-            foreach ($stock_requirements as $requirement) {
-                $stmt_check->execute([$requirement['product_id'], $requirement['size']]);
+            foreach ($stock_requirements as $product_id => $requirement) {
+                $stmt_check->execute([$product_id]);
                 $variant = $stmt_check->fetch();
                 
                 if (!$variant) {
@@ -265,11 +263,11 @@ if (req('confirm_order')) {
                 VALUES (?, ?, ?, ?, ?)
             ");
             
-            // Deduct from the selected size's stock record.
+            // Each product has one stock record.
             $stmt_deduct = $_db->prepare("
                 UPDATE product_variants 
                 SET stock = stock - ? 
-                WHERE product_id = ? AND size = ?
+                WHERE product_id = ?
             ");
             
             foreach ($cart_items as $item) {
@@ -277,12 +275,9 @@ if (req('confirm_order')) {
                 $stmt_order_item->execute([$order_id, $item->product_id, $item->size, $item->quantity, $item->unit_price]);
             }
 
-            foreach ($stock_requirements as $requirement) {
-                $stmt_deduct->execute([
-                    $requirement['quantity'],
-                    $requirement['product_id'],
-                    $requirement['size'],
-                ]);
+            foreach ($stock_requirements as $product_id => $requirement) {
+                // Deduct the combined quantity from the product's one stock row.
+                $stmt_deduct->execute([$requirement['quantity'], $product_id]);
             }
 
             // D. Delete ONLY the checked items out of the cart
@@ -398,7 +393,6 @@ include '_head.php';
                 <div id="payment-reference-block" style="margin-top: 12px;">
                     <label for="payment_reference" style="display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold;">Demo Payment Reference</label>
                     <input id="payment_reference" type="text" name="payment_reference" maxlength="100" value="<?= encode(post('payment_reference')) ?>" placeholder="Example: DEMO-123456 or card last 4 digits" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                    <small style="display: block; margin-top: 5px; color: #666;">Demo only. Do not enter real card or bank-account details.</small>
                     <span style="color: red; font-size: 12px;"><?= $errors['payment_reference'] ?? '' ?></span>
                 </div>
             </div>
