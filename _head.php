@@ -56,7 +56,7 @@
                         <?php if (isset($_SESSION['users'])): ?>
 
                             <!-- Admin Navigation -->
-                            <?php if (($_SESSION['users']->role ?? '') === 'admin'): ?>
+                            <?php if (($_SESSION['users']->role ?? '') === 'admin') : ?>
 
                                 <li>
                                     <a href="/pages/admin/admin_products.php" class="nav-link">
@@ -80,7 +80,7 @@
 
 
                             <!-- Logged-in User Navigation -->
-                            <?php if (isset($_SESSION['users']->user_id)): ?>
+                            <?php if (($_SESSION['users']->role ?? '') !== 'admin') : ?>
                                 <li>
                                     <a href="/products.php" class="nav-link">
                                         Products
