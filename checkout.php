@@ -64,10 +64,27 @@ if (count($cart_items) !== count($selected_items)) {
     redirect('cart_view.php');
 }
 
-// Calculate totals using dynamic sizing calculation method
+// Product prices are final prices set by the administrator. Size and colour
+// are fixed product details and do not change the amount charged.
 foreach ($cart_items as $item) {
-    $item->computed_price = variant_price($item->price, $item->size);
-    $total_amount += $item->computed_price * $item->quantity;
+    $item->unit_price = (float) $item->price;
+    $total_amount += $item->unit_price * $item->quantity;
+}
+
+// Each size has a separate stock record. Aggregate quantities by product and
+// size so duplicate cart rows cannot oversell that variant.
+$stock_requirements = [];
+foreach ($cart_items as $item) {
+    $stock_key = (int) $item->product_id . '|' . $item->size;
+    if (!isset($stock_requirements[$stock_key])) {
+        $stock_requirements[$stock_key] = [
+            'product_id' => (int) $item->product_id,
+            'size' => $item->size,
+            'name' => $item->name,
+            'quantity' => 0,
+        ];
+    }
+    $stock_requirements[$stock_key]['quantity'] += (int) $item->quantity;
 }
 
 $stmt_points = $_db->prepare("SELECT reward_points FROM users WHERE user_id = ?");
@@ -78,6 +95,7 @@ $maximum_points_for_order = min(
     maximum_redeemable_points($total_amount)
 );
 
+//get user input for points to use and validate it
 $points_input = post('points_to_use', '0');
 $display_points_to_use = ctype_digit($points_input) ? (int) $points_input : 0;
 $display_points_to_use = min($display_points_to_use, $maximum_points_for_order);
@@ -85,6 +103,7 @@ $display_points_discount = points_to_ringgit($display_points_to_use);
 $display_amount_due = $total_amount - $display_points_discount;
 
 // 5. Finalize the Order Form Action processing
+//when user cick place order button, condition bcm true.
 if (req('confirm_order')) {
     $address_type = req('address_type'); // 'saved' or 'new'
     $name = '';
@@ -95,8 +114,10 @@ if (req('confirm_order')) {
     $points_to_use = 0;
 
     if (!array_key_exists($payment_method, $payment_methods)) {
+        //only allow valid payment methods from the predefined list
         $errors['payment_method'] = 'Please select a payment method.';
     } elseif ($payment_method !== 'cash_on_delivery' && $payment_reference === '') {
+        //if user select online payment method, they must enter a demo payment reference
         $errors['payment_reference'] = 'Enter a demo payment reference.';
     } elseif (strlen($payment_reference) > 100) {
         $errors['payment_reference'] = 'Payment reference must not exceed 100 characters.';
@@ -104,6 +125,7 @@ if (req('confirm_order')) {
 
     $payment_status = $payment_method === 'cash_on_delivery' ? 'pending' : 'paid';
 
+    //validate reward points input, must be a whole number and not exceed the maximum allowed for this order
     if (!ctype_digit($points_input)) {
         $errors['points_to_use'] = 'Points used must be a whole number.';
     } else {
@@ -119,7 +141,7 @@ if (req('confirm_order')) {
         if (empty($address_id)) {
             $errors['address_id'] = 'Please select a saved address option profile.';
         } else {
-            // Retrieve data fields out of lookup profile records directly
+            // Retrieve the addresss list that belongs to the current user.
             $stmt_lookup = $_db->prepare("SELECT * FROM user_addresses WHERE address_id = ? AND user_id = ?");
             $stmt_lookup->execute([$address_id, $user_id]);
             $addr_profile = $stmt_lookup->fetch();
@@ -132,6 +154,7 @@ if (req('confirm_order')) {
                 $errors['address_id'] = 'Selected address configuration context was invalid.';
             }
         }
+        //  if user choose new address
     } elseif ($address_type === 'new') {
         // Fallback validation routes handling customized manual form additions
         $name = trim(req('name'));
@@ -191,7 +214,8 @@ if (req('confirm_order')) {
             $amount_due = round($total_amount - $points_discount, 2);
             $points_earned = earned_reward_points($amount_due);
 
-            // 1. FIRST CHECK STOCK: Check specific size variant stock in product_variants
+            // Lock the selected size's inventory row before validating and
+            // deducting it.
             $stmt_check = $_db->prepare("
                 SELECT pv.stock, p.name 
                 FROM product_variants pv
@@ -200,16 +224,16 @@ if (req('confirm_order')) {
                 FOR UPDATE
             ");
 
-            foreach ($cart_items as $item) {
-                $stmt_check->execute([$item->product_id, $item->size]);
+            foreach ($stock_requirements as $requirement) {
+                $stmt_check->execute([$requirement['product_id'], $requirement['size']]);
                 $variant = $stmt_check->fetch();
                 
                 if (!$variant) {
-                    throw new Exception("Sorry, the selected size option ('" . encode($item->size) . "') is no longer available.");
+                    throw new Exception("Sorry, '" . encode($requirement['name']) . "' is no longer available.");
                 }
 
-                if ($variant->stock < $item->quantity) {
-                    throw new Exception("Sorry, '" . encode($variant->name) . "' (" . encode($item->size) . ") only has {$variant->stock} items left in stock. Please edit your cart selection.");
+                if ($variant->stock < $requirement['quantity']) {
+                    throw new Exception("Sorry, '" . encode($variant->name) . "' only has {$variant->stock} items left in stock. Please edit your cart selection.");
                 }
             }
 
@@ -241,7 +265,7 @@ if (req('confirm_order')) {
                 VALUES (?, ?, ?, ?, ?)
             ");
             
-            // FIXED: Deducts stock from product_variants table by matching product_id AND size
+            // Deduct from the selected size's stock record.
             $stmt_deduct = $_db->prepare("
                 UPDATE product_variants 
                 SET stock = stock - ? 
@@ -250,10 +274,15 @@ if (req('confirm_order')) {
             
             foreach ($cart_items as $item) {
                 // Record item variant configuration details inside static historical ledger orders 
-                $stmt_order_item->execute([$order_id, $item->product_id, $item->size, $item->quantity, $item->computed_price]);
-                
-                // Deduct physical stock from target size variant inventory
-                $stmt_deduct->execute([$item->quantity, $item->product_id, $item->size]);
+                $stmt_order_item->execute([$order_id, $item->product_id, $item->size, $item->quantity, $item->unit_price]);
+            }
+
+            foreach ($stock_requirements as $requirement) {
+                $stmt_deduct->execute([
+                    $requirement['quantity'],
+                    $requirement['product_id'],
+                    $requirement['size'],
+                ]);
             }
 
             // D. Delete ONLY the checked items out of the cart
@@ -300,10 +329,10 @@ include '_head.php';
                 <li style="margin-bottom: 12px; font-size: 14px;">
                     <div style="display: flex; justify-content: space-between; font-weight: bold;">
                         <span><?= encode($item->name) ?> (x<?= $item->quantity ?>)</span>
-                        <span>RM<?= number_format($item->computed_price * $item->quantity, 2) ?></span>
+                        <span>RM<?= number_format($item->unit_price * $item->quantity, 2) ?></span>
                     </div>
                     <div style="font-size: 12px; color: #666; font-style: italic;">
-                        Size: <?= encode($item->size) ?> (RM<?= number_format($item->computed_price, 2) ?> each)
+                        Size: <?= encode($item->size) ?> (RM<?= number_format($item->unit_price, 2) ?> each)
                     </div>
                 </li>
             <?php endforeach; ?>

@@ -43,7 +43,11 @@ try {
                 status,
                 payment_method,
                 payment_reference,
-                payment_status
+                payment_status,
+                recipient_name,
+                phone_number,
+                shipping_address,
+                address_updated
             FROM orders
             WHERE order_id = :order_id
             AND user_id = :user_id";
@@ -68,6 +72,78 @@ try {
 $status = strtolower($order["status"]);
 $payment_method = ucwords(str_replace('_', ' ', $order["payment_method"]));
 $payment_status = ucfirst($order["payment_status"]);
+$can_update_address = $status === 'pending' && !(bool) $order['address_updated'];
+$show_address_editor = $can_update_address && get('edit_address') === '1';
+
+if (is_post() && post('action') === 'update_address') {
+    $address_source = post('address_source', 'saved');
+    $return_url = 'order_detail.php?id=' . urlencode($order_id);
+    $shipping_address = '';
+    $recipient_name = $order['recipient_name'];
+    $phone_number = $order['phone_number'];
+
+    if (!$can_update_address) {
+        temp('info', 'The delivery address can only be changed once before the order is processed.');
+    } else {
+        if ($address_source === 'saved') {
+            $address_id = post('address_id', '');
+            $saved_address_stmt = $_db->prepare(
+                'SELECT recipient_name, phone_number, address_text FROM user_addresses WHERE address_id = ? AND user_id = ?'
+            );
+            $saved_address_stmt->execute([(int) $address_id, $user_id]);
+            $saved_address = $saved_address_stmt->fetch();
+
+            if (!$saved_address) {
+                temp('info', 'Please choose one of your saved addresses.');
+                $return_url .= '&edit_address=1';
+            } else {
+                $shipping_address = $saved_address->address_text;
+                $recipient_name = $saved_address->recipient_name;
+                $phone_number = $saved_address->phone_number;
+            }
+        } elseif ($address_source === 'manual') {
+            $shipping_address = trim(post('shipping_address', ''));
+
+            if ($shipping_address === '') {
+                temp('info', 'Please enter a delivery address.');
+                $return_url .= '&edit_address=1';
+            } elseif (strlen($shipping_address) > 1000) {
+                temp('info', 'The delivery address must not exceed 1,000 characters.');
+                $return_url .= '&edit_address=1';
+            }
+        } else {
+            temp('info', 'Choose a saved address or enter one manually.');
+            $return_url .= '&edit_address=1';
+        }
+
+        if ($shipping_address !== '') {
+            $update_stmt = $_db->prepare(
+                "UPDATE orders
+                 SET recipient_name = ?, phone_number = ?, shipping_address = ?, address_updated = 1
+                 WHERE order_id = ? AND user_id = ? AND status = 'pending' AND address_updated = 0"
+            );
+            $update_stmt->execute([$recipient_name, $phone_number, $shipping_address, $order_id, $user_id]);
+
+            temp(
+                'info',
+                $update_stmt->rowCount() === 1
+                    ? 'Your delivery address has been updated.'
+                    : 'The delivery address could not be updated because the order has already been processed.'
+            );
+        }
+    }
+
+    redirect($return_url);
+}
+
+$saved_addresses = [];
+if ($show_address_editor) {
+    $saved_addresses_stmt = $_db->prepare(
+        'SELECT address_id, address_label, recipient_name, phone_number, address_text FROM user_addresses WHERE user_id = ? ORDER BY address_label, address_id'
+    );
+    $saved_addresses_stmt->execute([$user_id]);
+    $saved_addresses = $saved_addresses_stmt->fetchAll();
+}
 
 require "_head.php";
 
@@ -342,7 +418,60 @@ require "_head.php";
             </tr>
             <?php endif; ?>
 
+            <tr>
+                <th>Delivery To</th>
+                <td>
+                    <?= encode($order['recipient_name']) ?><br>
+                    <?= encode($order['phone_number']) ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th>Delivery Address</th>
+                <td><?= nl2br(encode($order['shipping_address'])) ?></td>
+            </tr>
+
         </table>
+
+        <?php if ($can_update_address && !$show_address_editor): ?>
+            <div class="address-change-action">
+                <a class="receipt-button" href="order_detail.php?id=<?= urlencode($order_id) ?>&edit_address=1">Change Delivery Address</a>
+                <p>You can make one change before this order is processed.</p>
+            </div>
+        <?php elseif ($show_address_editor): ?>
+            <form method="post" class="address-update-form">
+                <input type="hidden" name="action" value="update_address">
+                <h3>Change Delivery Address</h3>
+                <p>Choose a saved address, or enter a new one. This can only be done once.</p>
+
+                <?php if ($saved_addresses): ?>
+                    <label class="address-source-option">
+                        <input type="radio" name="address_source" value="saved" checked>
+                        Use a saved address
+                    </label>
+                    <select id="saved-address-select" name="address_id" required>
+                        <?php foreach ($saved_addresses as $address): ?>
+                            <option value="<?= (int) $address->address_id ?>">
+                                [<?= encode($address->address_label) ?>] <?= encode($address->recipient_name) ?> — <?= encode($address->address_text) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
+
+                <label class="address-source-option">
+                    <input type="radio" name="address_source" value="manual" <?= $saved_addresses ? '' : 'checked' ?>>
+                    Enter a new address
+                </label>
+                <textarea id="shipping_address" name="shipping_address" rows="4" maxlength="1000" <?= $saved_addresses ? 'disabled' : 'required' ?>><?= encode($order['shipping_address']) ?></textarea>
+
+                <div class="address-update-actions">
+                    <button type="submit" class="receipt-button">Save Delivery Address</button>
+                    <a class="back-button" href="order_detail.php?id=<?= urlencode($order_id) ?>">Cancel</a>
+                </div>
+            </form>
+        <?php elseif ((bool) $order['address_updated']): ?>
+            <p class="address-update-note">The one-time delivery address change has already been used.</p>
+        <?php endif; ?>
 
         <div class="button-area">
 
@@ -360,5 +489,24 @@ require "_head.php";
     </div>
 
 </div>
+
+<?php if ($show_address_editor): ?>
+<script>
+document.querySelectorAll('input[name="address_source"]').forEach(function (option) {
+    option.addEventListener('change', function () {
+        const useSaved = this.value === 'saved' && this.checked;
+        const savedSelect = document.getElementById('saved-address-select');
+        const manualAddress = document.getElementById('shipping_address');
+
+        if (savedSelect) {
+            savedSelect.disabled = !useSaved;
+            savedSelect.required = useSaved;
+        }
+        manualAddress.disabled = useSaved;
+        manualAddress.required = !useSaved;
+    });
+});
+</script>
+<?php endif; ?>
 
 <?php require "_foot.php"; ?>

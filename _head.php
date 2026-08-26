@@ -43,8 +43,7 @@
     <header class="site-header">
         <div class="header-container">
 
-            <!-- <a href="/index.php" class="logo-link"> -->
-            <a href="/products.php" class="logo-link">
+            <a href="/products.php" class="logo-link" aria-label="SippyGo products">
                 <h1>Sippy<span>Go</span></h1>
             </a>
 
@@ -77,16 +76,28 @@
                                     </a>
                                 </li>
 
-                            <?php elseif (isset($_SESSION['users']->user_id)): ?>
-                                <!-- Logged-in User Navigation -->
+                            <?php endif; ?>
+
+
+                            <!-- Logged-in User Navigation -->
+                            <?php if (isset($_SESSION['users']->user_id)): ?>
+
+                                <?php if (($_SESSION['users']->role ?? '') !== 'admin'): ?>
+                                    <li>
+                                        <a href="/products.php" class="nav-link">
+                                            Products
+                                        </a>
+                                    </li>
+                                <?php endif; ?>
+
                                 <li>
-                                    <a href="cart_view.php" class="nav-link">
+                                    <a href="/cart_view.php" class="nav-link">
                                         View Cart
                                     </a>
                                 </li>
 
                                 <li>
-                                    <a href="order_history.php" class="nav-link">
+                                    <a href="/order_history.php" class="nav-link">
                                         My Orders
                                     </a>
                                 </li>
