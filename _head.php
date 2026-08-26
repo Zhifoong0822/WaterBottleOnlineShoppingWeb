@@ -43,7 +43,8 @@
     <header class="site-header">
         <div class="header-container">
 
-            <a href="index.php" class="logo-link">
+            <!-- <a href="/index.php" class="logo-link"> -->
+            <a href="/products.php" class="logo-link">
                 <h1>Sippy<span>Go</span></h1>
             </a>
 
@@ -76,12 +77,8 @@
                                     </a>
                                 </li>
 
-                            <?php endif; ?>
-
-
-                            <!-- Logged-in User Navigation -->
-                            <?php if (isset($_SESSION['users']->user_id)): ?>
-
+                            <?php elseif (isset($_SESSION['users']->user_id)): ?>
+                                <!-- Logged-in User Navigation -->
                                 <li>
                                     <a href="cart_view.php" class="nav-link">
                                         View Cart
@@ -93,9 +90,13 @@
                                         My Orders
                                     </a>
                                 </li>
-
                             <?php endif; ?>
 
+                            <li>
+                                <a href="/live_chat.php" class="nav-link">
+                                    Chat Support
+                                </a>
+                            </li>
                         <?php endif; ?>
 
                     </div>
