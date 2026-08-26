@@ -1,8 +1,114 @@
 <?php
 // Core Components
 require_once '../../_base.php';
-require_admin('../../products.php');
+require_admin('/products.php');
 $_title = 'Member Listing';
+
+if (is_post() && isset($_FILES['csv_file'])) {
+    $csvFile = $_FILES['csv_file'];
+
+    if ($csvFile['error'] !== UPLOAD_ERR_OK) {
+        die('CSV upload failed.');
+    }
+
+    $handle = fopen($csvFile['tmp_name'], 'r');
+
+    if (!$handle) {
+        die('Unable to open CSV file.');
+    }
+
+    // Read header
+    $header = fgetcsv($handle, 0, ',', '"', '\\');
+
+    $expectedHeader = ['username', 'email', 'password'];
+
+    if ($header !== $expectedHeader) {
+        fclose($handle);
+        die('Invalid CSV format.');
+    }
+
+    $insertSQL = "
+        INSERT INTO users
+            (username, email, password, role, profilepic, reward_points)
+        VALUES
+            (:username, :email, :password, 'member', NULL, 0)
+    ";
+
+    $stmt = $_db->prepare($insertSQL);
+
+    $imported = 0;
+    $skipped = 0;
+    $errors = [];
+
+    $rowNumber = 1;
+
+    while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+        $rowNumber++;
+
+        if (count($row) < 3) {
+            $skipped++;
+            $errors[] = "Row {$rowNumber}: Invalid number of columns.";
+            continue;
+        }
+
+        $username = trim($row[0]);
+        $email    = trim($row[1]);
+        $password = $row[2];
+
+        if ($username === '' || $email === '' || $password === '') {
+            $skipped++;
+            $errors[] = "Row {$rowNumber}: Username, email and password are required.";
+            continue;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $skipped++;
+            $errors[] = "Row {$rowNumber}: Invalid email address.";
+            continue;
+        }
+
+        // Check duplicate username/email
+        $check = $_db->prepare("
+            SELECT user_id
+            FROM users
+            WHERE username = :username
+               OR email = :email
+            LIMIT 1
+        ");
+
+        $check->execute([
+            ':username' => $username,
+            ':email'    => $email
+        ]);
+
+        if ($check->fetch()) {
+            $skipped++;
+            $errors[] = "Row {$rowNumber}: Username or email already exists.";
+            continue;
+        }
+
+        try {
+            $stmt->execute([
+                ':username' => $username,
+                ':email'    => $email,
+                ':password' => password_hash($password, PASSWORD_DEFAULT)
+            ]);
+
+            $imported++;
+        } catch (PDOException $e) {
+            $skipped++;
+            $errors[] = "Row {$rowNumber}: Unable to import member.";
+        }
+    }
+
+    fclose($handle);
+
+    temp('info', "Import completed! Imported: {$imported}, Skipped: {$skipped}.");
+
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
 include '../../_head.php';
 
 // Define user fields
@@ -81,6 +187,20 @@ $members = $_db->query("{$selectSQL} {$baseSQL} {$orderSQL} {$paginationSQL}")->
             <button id="searchBtn" class="add-button">
                 Search
             </button>
+
+            <form id="importForm" method="post" enctype="multipart/form-data">
+                <input
+                    type="file"
+                    name="csv_file"
+                    id="csvFile"
+                    accept=".csv,text/csv"
+                    hidden
+                >
+
+                <button id="ImportBtn" type="button" class="receipt-button">
+                    Import Members
+                </button>
+            </form>
         </div>
 
         <!-- Table -->
@@ -216,6 +336,17 @@ $(function () {
     $("[data-page]").on("click", function () {
         const page = $(this).data("page");
         redirectPage(null, null, null, page);
+    });
+
+    // Handle import button
+    $("#ImportBtn").on("click", function () {
+        $("#csvFile").click();
+    });
+
+    $("#csvFile").on("change", function () {
+        if (this.files.length > 0) {
+            $("#importForm").submit();
+        }
     });
 });
 </script>
