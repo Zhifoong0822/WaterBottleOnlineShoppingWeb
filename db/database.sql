@@ -293,7 +293,7 @@ INSERT INTO `products` (`product_id`, `category_id`, `name`, `description`, `pri
 (4, 2, 'Halo Straw Tumbler 590ml', 'A double-wall tumbler with reusable straw for iced drinks and everyday sipping.', 69.00, 'img/products/halo-straw-sage.png',NULL),
 (5, 2, 'Halo Coffee Tumbler 450ml', 'A compact insulated tumbler with a secure lid for coffee, tea and cocoa.', 65.00, 'img/products/halo-coffee-terracotta.png',NULL),
 (7, 3, 'Little Sip Bottle 350ml', 'A child-friendly bottle with an easy flip straw and comfortable carry loop.', 45.00, 'img/products/little-sip-yellow.png',NULL),
-(10, 4, 'Silicone Bottle Boot', 'A protective silicone base that helps reduce dents and adds grip.', 15.00, 'img/products/silicone-boot-charcoal.png',NULL);
+(10, 4, 'Silicone Bottle Boot', 'A protective silicone base that helps reduce dents and adds grip.', 15.00, 'img/products/silicone-boot-charcoal.png',NULL),
 (11, 4, 'Hydro Exclusive Bottle', 'A bright bottle.', 88.00, 'img/products/hydro-exclusive.png', 'https://youtube.com/shorts/x4GBAmr4EBc?si=OQzV_uXDeyWzfS6K');
 
 -- Each product has a primary card image plus an alternative gallery angle.
@@ -317,7 +317,8 @@ INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 (4, 'Medium (18oz / 530ml)', 'Sage Green', 17),
 (5, 'Medium (18oz / 530ml)', 'Sage Green', 14),
 (7, 'Micro (12oz / 350ml)', 'Sunny Yellow', 25),
-(10, 'Medium (18oz / 530ml)', 'Charcoal', 40);
+(10, 'Medium (18oz / 530ml)', 'Charcoal', 40),
+(11, 'Mega (32oz / 950ml)', 'Blue', 40);
 
 -- Demo orders make the Top Selling section meaningful immediately after import.
 INSERT INTO `orders` (`order_id`, `user_id`, `order_date`, `shipped_at`, `completed_at`, `cancelled_at`, `total_amount`, `subtotal_amount`, `points_used`, `points_discount`, `points_earned`, `status`, `recipient_name`, `shipping_address`, `phone_number`, `payment_method`, `payment_reference`, `payment_status`) VALUES
