@@ -81,14 +81,11 @@
 
                             <!-- Logged-in User Navigation -->
                             <?php if (isset($_SESSION['users']->user_id)): ?>
-
-                                <?php if (($_SESSION['users']->role ?? '') !== 'admin'): ?>
-                                    <li>
-                                        <a href="/products.php" class="nav-link">
-                                            Products
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
+                                <li>
+                                    <a href="/products.php" class="nav-link">
+                                        Products
+                                    </a>
+                                </li>
 
                                 <li>
                                     <a href="/cart_view.php" class="nav-link">
