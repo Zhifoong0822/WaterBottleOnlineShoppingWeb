@@ -766,3 +766,29 @@ footer p {
     border-radius: 8px;
     background: #f0f9ff;
 }
+
+.product-video-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #eee;
+}
+
+.product-video-section h3 {
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.product-video-container {
+    width: 100%;
+    max-width: 900px;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.product-video-container iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}

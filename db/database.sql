@@ -39,6 +39,7 @@ CREATE TABLE `products` (
   `description` TEXT,
   `price` DECIMAL(10,2) NOT NULL,
   `image_url` VARCHAR(255),
+  `video_url` VARCHAR(500) DEFAULT NULL,
   `status` ENUM('active', 'archived') NOT NULL DEFAULT 'active',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -286,13 +287,14 @@ INSERT INTO `categories` (`category_name`) VALUES
 ('Bottle Care & Accessories');
 
 -- Curated product catalogue - fictional product names and locally generated images.
-INSERT INTO `products` (`product_id`, `category_id`, `name`, `description`, `price`, `image_url`) VALUES
-(1, 1, 'Nova Everyday Bottle 530ml', 'A lightweight insulated bottle for daily commutes, classes and desk hydration.', 79.00, 'img/products/nova-everyday-coral.png'),
-(2, 1, 'Nova Active Bottle 750ml', 'A larger leakproof bottle designed for gym sessions and long days out.', 89.00, 'img/products/nova-active-navy.png'),
-(4, 2, 'Halo Straw Tumbler 590ml', 'A double-wall tumbler with reusable straw for iced drinks and everyday sipping.', 69.00, 'img/products/halo-straw-sage.png'),
-(5, 2, 'Halo Coffee Tumbler 450ml', 'A compact insulated tumbler with a secure lid for coffee, tea and cocoa.', 65.00, 'img/products/halo-coffee-terracotta.png'),
-(7, 3, 'Little Sip Bottle 350ml', 'A child-friendly bottle with an easy flip straw and comfortable carry loop.', 45.00, 'img/products/little-sip-yellow.png'),
-(10, 4, 'Silicone Bottle Boot', 'A protective silicone base that helps reduce dents and adds grip.', 15.00, 'img/products/silicone-boot-charcoal.png');
+INSERT INTO `products` (`product_id`, `category_id`, `name`, `description`, `price`, `image_url`, `video_url`) VALUES
+(1, 1, 'Nova Everyday Bottle 530ml', 'A lightweight insulated bottle for daily commutes, classes and desk hydration.', 79.00, 'img/products/nova-everyday-coral.png',NULL),
+(2, 1, 'Nova Active Bottle 750ml', 'A larger leakproof bottle designed for gym sessions and long days out.', 89.00, 'img/products/nova-active-navy.png',NULL),
+(4, 2, 'Halo Straw Tumbler 590ml', 'A double-wall tumbler with reusable straw for iced drinks and everyday sipping.', 69.00, 'img/products/halo-straw-sage.png',NULL),
+(5, 2, 'Halo Coffee Tumbler 450ml', 'A compact insulated tumbler with a secure lid for coffee, tea and cocoa.', 65.00, 'img/products/halo-coffee-terracotta.png',NULL),
+(7, 3, 'Little Sip Bottle 350ml', 'A child-friendly bottle with an easy flip straw and comfortable carry loop.', 45.00, 'img/products/little-sip-yellow.png',NULL),
+(10, 4, 'Silicone Bottle Boot', 'A protective silicone base that helps reduce dents and adds grip.', 15.00, 'img/products/silicone-boot-charcoal.png',NULL);
+(11, 4, 'Hydro Exclusive Bottle', 'A bright bottle.', 88.00, 'img/products/hydro-exclusive.png', 'https://youtube.com/shorts/x4GBAmr4EBc?si=OQzV_uXDeyWzfS6K');
 
 -- Each product has a primary card image plus an alternative gallery angle.
 INSERT INTO `product_images` (`product_id`, `image_url`, `sort_order`) VALUES
