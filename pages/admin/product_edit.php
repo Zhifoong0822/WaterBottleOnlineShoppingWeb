@@ -88,6 +88,7 @@ $category_id = $product['category_id'];
 $price       = $product['price'];
 $size        = $product['size'];
 $description = $product['description'];
+$video_url   = $product['video_url'] ?? '';
 
 $colour = $product['colour'];
 $stock  = $product['stock'];
@@ -119,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $price       = $_POST['price'] ?? '';
     $size        = trim($_POST['size'] ?? '');
     $description = trim($_POST['description'] ?? '');
+    $video_url   = trim($_POST['video_url'] ?? '');
 
     $colour = trim($_POST['colour'] ?? '');
     $stock  = $_POST['stock'] ?? '';
@@ -371,7 +373,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     category_id = ?,
                     name = ?,
                     description = ?,
-                    price = ?
+                    price = ?,
+                    video_url = ?
                 WHERE product_id = ?
             ");
 
@@ -380,6 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $name,
                 $description,
                 $price,
+                $video_url,
                 $product_id
             ]);
 
@@ -717,7 +721,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
             $error['database'] =
-                "Unable to update the product. Please try again.";
+                "Unable to update the product" . $e->getMessage();
         }
     }
 }
@@ -1288,6 +1292,29 @@ include '../../_head.php';
                         rows="6"><?= htmlspecialchars(
                             $description
                         ) ?></textarea>
+
+                </div>
+
+                <div class="form-group full-width">
+
+                <label>
+                    Video URL
+                </label>
+
+                <input
+                type="url"
+                name="video_url"
+                value="<?= htmlspecialchars($video_url) ?>"
+                placeholder="Enter YouTube video URL"
+                >
+
+                <small>
+                    Enter a YouTube video URL. Leave blank if the product has no video.
+                </small>
+
+                <small class="error">
+                    <?= htmlspecialchars($error['video_url'] ?? '') ?>
+                </small>
 
                 </div>
 
