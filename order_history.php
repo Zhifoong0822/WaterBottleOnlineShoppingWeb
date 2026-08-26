@@ -3,13 +3,16 @@
 require_once "_base.php";
 
 $_title = "My Orders";
-$_page_title_class = "my-orders-title";
 
+//Go to Login Page if there's no logged-in user ID in session
 if (!isset($_SESSION['users']->user_id)) {
-    redirect('login.php');  //refresh to login page
+    redirect('login.php');
 }
-$user_id = (int) $_SESSION['users']->user_id;  //get user_id from session & store in variable 
 
+//Store the current user_id in session
+$user_id = (int) $_SESSION['users']->user_id;  
+
+//Use get() to update n store into variables
 $status_filter = get("status", "all");
 $page = get("page", "1");
 
@@ -29,12 +32,13 @@ $allowed_statuses = [
     "cancelled"
 ];
 
+//Display all status tab if $status_filter isn't in $allowed_statuses
 if (!in_array($status_filter, $allowed_statuses, true)) {
     $status_filter = "all";
 }
 
-// Customer clicks Order Received button
-if (is_post() && post("action") === "confirm_received") {
+//Customer clicks Order Received button
+if (is_post() && post("action") === "confirm_order_received") {
 
     $received_order_id = post("order_id");
 
@@ -46,8 +50,7 @@ if (is_post() && post("action") === "confirm_received") {
     $received_order_id = (int) $received_order_id;
 
     $sql = "UPDATE orders
-            SET status = 'completed',
-                completed_at = NOW()  /* record exact date&time for completed_at when cust clicks Order Received */
+            SET status = 'completed', completed_at = NOW()
             WHERE order_id = :order_id
               AND user_id = :user_id
               AND status = 'shipped'";
@@ -59,6 +62,7 @@ if (is_post() && post("action") === "confirm_received") {
         "user_id" => $user_id
     ]);
 
+    //Update status successfully
     if ($stmt->rowCount() > 0) {
         redirect("order_history.php?status=completed");
     }
@@ -66,7 +70,7 @@ if (is_post() && post("action") === "confirm_received") {
     redirect("order_history.php?status=shipped");
 }
 
-// Customer clicks Cancel Order button
+//Customer clicks Cancel Order button
 if (is_post() && post("action") === "cancel_order") {
 
     $cancel_order_id = post("order_id");
@@ -80,6 +84,7 @@ if (is_post() && post("action") === "cancel_order") {
     try {
         $_db->beginTransaction();
 
+        //Lock the row until transaction ends
         $stmt_order = $_db->prepare("
             SELECT points_used, points_earned
             FROM orders
@@ -94,20 +99,22 @@ if (is_post() && post("action") === "cancel_order") {
         ]);
         $cancelled_order = $stmt_order->fetch();
 
+        //Check if order exists
         if (!$cancelled_order) {
-            $_db->rollBack();
+            $_db->rollBack();  //Undo transaction
             redirect("order_history.php?status=pending");
         }
 
+        //Update order status
         $stmt_cancel = $_db->prepare("
             UPDATE orders
-            SET status = 'cancelled',
-                cancelled_at = NOW()  
+            SET status = 'cancelled', cancelled_at = NOW()  
             WHERE order_id = :order_id
                 AND status = 'pending'
         ");
         $stmt_cancel->execute(["order_id" => $cancel_order_id]);
 
+        //Restore reward points
         $stmt_points = $_db->prepare("
             UPDATE users
             SET reward_points = GREATEST(
@@ -123,8 +130,9 @@ if (is_post() && post("action") === "cancel_order") {
         ]);
 
         $_db->commit();
-        temp("info", "Order cancelled and reward points adjusted.");
         redirect("order_history.php?status=cancelled");
+        temp("info", "Order cancelled and reward points adjusted.");
+
     } catch (PDOException $e) {
         if ($_db->inTransaction()) {
             $_db->rollBack();
@@ -141,6 +149,7 @@ $sql = "SELECT
             o.status,
             o.total_amount,
 
+            /*Check if there's feedback for that order*/
             EXISTS (
                 SELECT 1
                 FROM order_feedback AS f
@@ -182,12 +191,14 @@ $sql = "SELECT
         LEFT JOIN products AS p
             ON oi.product_id = p.product_id
 
+        /*Ensure customer only sees their own orders*/
         WHERE o.user_id = :user_id";
 
 if ($status_filter !== "all") {
     $sql .= " AND o.status = :status";
 }
 
+//Sort orders
 $sql .= " ORDER BY
             o.order_date DESC,
             o.order_id DESC,
@@ -205,14 +216,16 @@ $sql .= " ORDER BY
             
             $stmt->execute($params);
 
+//$rows stores each detail of a row(order) as array
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $orders = [];
 
 foreach ($rows as $row) {
-    $order_id = $row["order_id"];
+    $order_id = $row["order_id"];  //Store current order ID
 
     if (!isset($orders[$order_id])) {
+        //Store order info of the current order ID
         $orders[$order_id] = [
             "order_id" => $row["order_id"],
             "order_date" => $row["order_date"],
@@ -226,6 +239,7 @@ foreach ($rows as $row) {
         ];
     }
 
+    //Store each product of the order
     if ($row["product_id"] !== null) {
         $orders[$order_id]["items"][] = [
             "product_name" => $row["product_name"],
@@ -244,6 +258,7 @@ if ($page > $total_pages) {
     $page = $total_pages;
 }
 
+//Pagination
 $orders = array_slice(
     $orders,
     ($page - 1) * $orders_per_page,
@@ -255,8 +270,10 @@ require "_head.php";
 
 ?>
 
-<nav class="order-tabs">
+<!-- Change URL based on the clicked status tab -->
+<nav class="order-tabs">  
 
+    <!-- active highlights the currently selected tab --> 
     <a
         href="order_history.php?status=all"
         class="<?= $status_filter === "all" ? "active" : "" ?>"
@@ -296,6 +313,7 @@ require "_head.php";
 
 <section class="order-history">
 
+    <!--Check if $orders array has any order*-->
     <?php if ($orders): ?>
 
         <?php foreach ($orders as $order): ?>
@@ -304,6 +322,7 @@ require "_head.php";
 
             <div class="order-left">
 
+        <!--Check if the order has products-->
         <?php if ($order["items"]): ?>
 
             <div class="order-items-list">
@@ -313,17 +332,18 @@ require "_head.php";
             <?php
             $productName = $item["product_name"] ?: "Unknown Product";
 
-            $imageUrl = $item["image_url"]
-                ?: "https://placehold.co/100x100?text=No+Image";
+            $imageUrl = $item["image_url"] ?: "https://placehold.co/100x100?text=No+Image";
 
             $quantity = (int) $item["quantity"];
             ?>
 
+            <!--First 2 items are visible, the rest is hidden-->
             <div
                 class="order-item-preview<?= $item_index >= 2 ? ' additional-order-item' : '' ?>"
                 <?= $item_index >= 2 ? 'hidden' : '' ?>
             >
 
+                <!--Item Image-->
                 <img
                     class="order-image"
                     src="<?= encode($imageUrl) ?>"
@@ -332,26 +352,28 @@ require "_head.php";
 
                 <div class="order-info">
 
-    <h2>
-        <?= encode($productName) ?>
-    </h2>
+                <!--Display Product Title-->
+                <h2>
+                    <?= encode($productName) ?>
+                </h2>
 
-    <?php if (!empty($item["size"])): ?>
-        <p class="product-variation">
-            Size: <?= encode($item["size"]) ?>
-        </p>
-    <?php endif; ?>
+                <!--Display size if $item["size"] exists-->
+                <?php if (!empty($item["size"])): ?>
+                    <p class="product-variation">
+                     Size: <?= encode($item["size"]) ?>
+                    </p>
+                <?php endif; ?>
 
-    <p class="quantity">
-        x<?= $quantity ?>
-    </p>
-
-</div>
+                <p class="quantity">
+                    x<?= $quantity ?>
+                </p>
 
             </div>
 
+        </div>
         <?php endforeach; ?>
 
+        <!--Display View More button if items more than 2-->
         <?php if (count($order["items"]) > 2): ?>
             <button
                 type="button"
@@ -365,17 +387,13 @@ require "_head.php";
         <div class="order-meta-section">
 
             <p class="order-meta">
-                <?= date(
-                    "d M Y, h:i A",
-                    strtotime($order["order_date"])
-                ) ?>
+                <?= date("d M Y, h:i A", strtotime($order["order_date"])) ?>
             </p>
 
+            <!--View Details button-->
             <a
                 class="view-details"
-                href="order_detail.php?id=<?= urlencode(
-                    $order["order_id"]
-                ) ?>"
+                href="order_detail.php?id=<?= urlencode($order["order_id"]) ?>"
             >
                 View Details
             </a>
@@ -383,8 +401,8 @@ require "_head.php";
         </div>
 
     </div>
-
-<?php else: ?>
+    <!--if order has no product-->
+    <?php else: ?>
 
     <div class="order-info">
 
@@ -410,6 +428,7 @@ require "_head.php";
         <?php endif; ?>
 
         <span class="status status-<?= encode($order["status"]) ?>">
+            <!--Print the status text inside the colourbox(uppercase 1st character)--> 
             <?= ucfirst(encode($order["status"])) ?>
         </span>
     </div>
@@ -421,26 +440,21 @@ require "_head.php";
         </span>
 
         <strong class="amount">
-            RM <?= number_format(
-                (float) $order["total_amount"],
-                2
-            ) ?>
+            RM <?= number_format((float) $order["total_amount"], 2) ?>
         </strong>
 
+        <!--Order Received button-->
         <?php if ($order["status"] === "shipped"): ?>
-
             <form
                 method="POST"
                 class="received-form"
                 onsubmit="return confirm(
-                    'Confirm that you have received this order?'
-                );"
+                    'Confirm that you have received this order?');"
             >
-
                 <input
                     type="hidden"
                     name="action"
-                    value="confirm_received"
+                    value="confirm_order_received"
                 >
 
                 <input
@@ -460,14 +474,13 @@ require "_head.php";
 
         <?php endif; ?>
 
+        <!--Cancel Order button-->
         <?php if ($order["status"] === "pending"): ?>
-
         <form
             method="POST"
             class="cancel-form"
             onsubmit="return confirm(
-            'Are you sure you want to cancel this order?'
-            );"
+            'Are you sure you want to cancel this order?');"
         >
 
         <input
@@ -494,40 +507,38 @@ require "_head.php";
     <?php endif; ?>
 
     <?php if ($order["status"] === "completed"): ?>
+    
+        <!--Check if $order["feedback_submitted"] exists-->
+        <?php if ($order["feedback_submitted"]): ?>
+        <!--Display View Rating if feedback_submitted of $order isn't null-->
+            <button
+            type="button"
+            class="view-rating-button"
+            data-order-id="<?= encode($order["order_id"]) ?>"
+            data-rating="<?= encode($order["feedback_rating"]) ?>"
+            data-feedback="<?= encode($order["feedback_text"] ?? '') ?>"
+            data-updated-at="<?= encode($order["feedback_updated_at"] ?? '') ?>"
+            >
+            View Rating
+            </button>
 
-<?php if ($order["feedback_submitted"]): ?>
-
-    <button
-        type="button"
-        class="view-rating-button"
-        data-order-id="<?= encode($order["order_id"]) ?>"
-        data-rating="<?= encode($order["feedback_rating"]) ?>"
-        data-feedback="<?= encode($order["feedback_text"] ?? '') ?>"
-        data-updated-at="<?= encode($order["feedback_updated_at"] ?? '') ?>"
-    >
-        View Rating
-    </button>
-
-<?php else: ?>
-
-    <a
+        <?php else: ?>
+        <a
         class="feedback-button"
-        href="order_feedback.php?id=<?= urlencode(
-            $order["order_id"]
-        ) ?>"
-    >
+        href="order_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
+        >
         Add Feedback or Rating
-    </a>
+        </a>
 
-    <?php endif; ?>
+        <?php endif; ?>
 
-<?php endif; ?>
+        <?php endif; ?>
 
-    </div>
+        </div>
 
-</div>
+        </div>
 
-</article>
+        </article>
 
         <?php endforeach; ?>
 
@@ -540,8 +551,8 @@ require "_head.php";
 </section>
 
 <?php if ($total_pages > 1): ?>
-
     <nav class="order-pagination" aria-label="Order history pages">
+        <!--Navigate to previous page if current page more than 1-->
         <?php if ($page > 1): ?>
             <a
                 class="pagination-link pagination-direction"
@@ -562,6 +573,7 @@ require "_head.php";
             </a>
         <?php endfor; ?>
 
+        <!--Navigate to next page if current page more than 1-->
         <?php if ($page < $total_pages): ?>
             <a
                 class="pagination-link pagination-direction"
@@ -575,38 +587,47 @@ require "_head.php";
 
 <?php endif; ?>
 
+<!--View Rating Popup Box-->
 <section id="rating-popover" class="rating-popover" hidden role="dialog" aria-modal="false" aria-labelledby="rating-popover-title">
-    <button type="button" class="rating-popover-close" aria-label="Close rating">&times;</button>
+    <button type="button" class="rating-popover-close" aria-label="Close rating">&times;</button>  <!-- &times displays x symbol-->
     <p class="rating-popover-eyebrow">Your Rating</p>
     <h2 id="rating-popover-title"><span id="rating-popover-stars"></span> <span id="rating-popover-score"></span></h2>
     <p id="rating-popover-feedback" class="rating-popover-feedback"></p>
     <p id="rating-popover-date" class="rating-popover-date"></p>
 </section>
 
+<!--JavaScript-->
 <script>
-// View More
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.view-more-products').forEach((button) => {
-        button.addEventListener('click', () => {
-            const orderItemsList = button.closest('.order-items-list');
-            const additionalItems = orderItemsList.querySelectorAll('.additional-order-item');
-            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+    //View More
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.view-more-products').forEach((button) => {
+            //Runs when customer clicks View More
+            button.addEventListener('click', () => {
+                //Find current order
+                const orderItemsList = button.closest('.order-items-list');
+                //Find hidden products
+                const additionalItems = orderItemsList.querySelectorAll('.additional-order-item');
+                //Check if it's expanded
+                const isExpanded = button.getAttribute('aria-expanded') === 'true';
 
-            additionalItems.forEach((item) => {
-                item.hidden = isExpanded;
+                additionalItems.forEach((item) => {
+                    item.hidden = isExpanded;
+                });
+
+                button.setAttribute('aria-expanded', String(!isExpanded));
+                button.textContent = isExpanded ? 'View More' : 'View Less';
             });
-
-            button.setAttribute('aria-expanded', String(!isExpanded));
-            button.textContent = isExpanded ? 'View More' : 'View Less';
         });
-    });
 
+    //View Rating Popup
     const popover = document.getElementById('rating-popover');
     const closeButton = popover.querySelector('.rating-popover-close');
+    //Function to hide popup whenever it's called
     const closePopover = () => { popover.hidden = true; };
 
-    // View Rating Button
+    //View Rating Button
     document.querySelectorAll('.view-rating-button').forEach((button) => {
+        //Runs when customer clicks View Rating
         button.addEventListener('click', () => {
             const rating = Number(button.dataset.rating);
             document.getElementById('rating-popover-stars').textContent = '★'.repeat(rating) + '☆'.repeat(5 - rating);
@@ -621,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    //Call closePopover() when customer clicks closeButton/clicks outside of the popup box
     closeButton.addEventListener('click', closePopover);
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePopover(); });
     document.addEventListener('click', (event) => {

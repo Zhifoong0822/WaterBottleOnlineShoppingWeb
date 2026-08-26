@@ -33,7 +33,6 @@ require "_head.php";
 <section class="admin-orders-page">
 
     <div class="page-header">
-
         <h1>Manage Orders</h1>
 
         <div class="order-count">
@@ -42,31 +41,32 @@ require "_head.php";
 
     </div>
 
+    <!--Search box and Table-->
     <div class="admin-order-card">
-
         <div class="table-tools">
 
             <label class="search-field-label" for="orderSearchField">
                 Search by
             </label>
 
+            <!--Selection List for order search filters-->
             <select id="orderSearchField" class="search-field-select">
                 <option value="order-id">Order ID</option>
                 <option value="user-id">User ID</option>
                 <option value="status">Order Status</option>
             </select>
 
+            <!--Search Textbox (Default: Order ID)-->
             <input
                 type="text"
                 id="orderSearch"
                 class="search-box"
-                placeholder="Enter order ID"
+                placeholder="Enter order ID" 
             >
 
         </div>
 
         <div class="table-wrapper">
-
             <table id="orderTable" class="admin-order-table">
 
                 <thead>
@@ -81,15 +81,14 @@ require "_head.php";
                 </thead>
 
                 <tbody>
-
                 <?php if ($orders): ?>
 
                     <?php foreach ($orders as $order): ?>
-
                         <?php
                         $status = strtolower($order["status"]);
                         ?>
 
+                        <!--Store info inside HTML so JS can filter the row-->
                         <tr
                             data-order-id="<?= encode($order["order_id"]) ?>"
                             data-user-id="<?= encode($order["user_id"]) ?>"
@@ -105,17 +104,11 @@ require "_head.php";
                             </td>
 
                             <td>
-                                <?= date(
-                                    "d M Y, h:i A",
-                                    strtotime($order["order_date"])
-                                ) ?>
+                                <?= date("d M Y, h:i A", strtotime($order["order_date"])) ?>
                             </td>
 
                             <td class="amount">
-                                RM <?= number_format(
-                                    (float) $order["total_amount"],
-                                    2
-                                ) ?>
+                                RM <?= number_format((float) $order["total_amount"], 2) ?>
                             </td>
 
                             <td>
@@ -127,9 +120,7 @@ require "_head.php";
                             <td>
                                 <a
                                     class="view-button"
-                                    href="admin_order_detail.php?id=<?= urlencode(
-                                        $order["order_id"]
-                                    ) ?>"
+                                    href="admin_order_detail.php?id=<?= urlencode($order["order_id"]) ?>"
                                 >
                                     View Details
                                 </a>
@@ -140,7 +131,6 @@ require "_head.php";
                     <?php endforeach; ?>
 
                 <?php else: ?>
-
                     <tr>
                         <td colspan="6" class="no-orders">
                             No orders found.
@@ -165,7 +155,7 @@ require "_head.php";
     ></nav>
 
     <a class="back-link" href="index.php">
-        ← Back to Home
+        Back to Home
     </a>
 
 </section>
@@ -178,6 +168,7 @@ const searchPlaceholders = {
     "user-id": "Enter user ID",
     "status": "Enter order status"
 };
+//Connect the dropdown option to HTML data-* attributes
 const searchDataKeys = {
     "order-id": "orderId",
     "user-id": "userId",
@@ -187,6 +178,7 @@ const pagination = document.getElementById("adminOrderPagination");
 const ordersPerPage = 12;
 let currentPage = 1;
 
+//Find orders that match the search
 function getFilteredRows() {
     const filter = searchInput.value.trim().toLowerCase().replace(/^#/, "");
     const field = searchField.value;
@@ -203,8 +195,9 @@ function createPageButton(label, page, options = {}) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "pagination-link";
-    button.textContent = label;
+    button.textContent = label;  //Button title eg. Previous/Next
 
+    //Check if it's a Previous/Next button
     if (options.direction) {
         button.classList.add("pagination-direction");
     }
@@ -215,15 +208,15 @@ function createPageButton(label, page, options = {}) {
     }
 
     button.addEventListener("click", function () {
-        currentPage = page;
-        renderOrders();
+        currentPage = page;  //Change the current page
+        renderOrders();  //Refresh displayed orders
     });
 
     return button;
 }
 
 function renderPagination(totalPages) {
-    pagination.replaceChildren();
+    pagination.replaceChildren();  //Remove existing pagination buttons
     pagination.hidden = totalPages <= 1;
 
     if (totalPages <= 1) {
@@ -249,21 +242,25 @@ function renderPagination(totalPages) {
     }
 }
 
+//Controls which orders to display
 function renderOrders() {
     const allRows = document.querySelectorAll("#orderTable tbody tr[data-order-id]");
     const filteredRows = getFilteredRows();
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / ordersPerPage));
 
     currentPage = Math.min(currentPage, totalPages);
+    //Calculate the first order begins with what number
     const firstRow = (currentPage - 1) * ordersPerPage;
     const visibleRows = new Set(
         filteredRows.slice(firstRow, firstRow + ordersPerPage)
     );
 
+    //Control which orders are shown
     allRows.forEach(function (row) {
         row.hidden = !visibleRows.has(row);
     });
 
+    //Updates pagination buttons
     renderPagination(totalPages);
 }
 
@@ -275,6 +272,7 @@ function filterOrders() {
 searchInput.addEventListener("input", filterOrders);
 
 searchField.addEventListener("change", function () {
+    //Change the placeholder based on searchField value
     searchInput.placeholder = searchPlaceholders[searchField.value];
     filterOrders();
     searchInput.focus();
