@@ -10,7 +10,7 @@
     <!-- 2. Dynamically load cart logic ONLY on pages that use the cart feature -->
     <?php 
     $current_page = basename($_SERVER['PHP_SELF']);
-    $cart_supported_pages = ['products.php', 'product_detail.php', 'cart_view.php', 'index.php'];
+    $cart_supported_pages = ['products.php', 'product_detail.php', 'cart_view.php'];
     
     if (in_array($current_page, $cart_supported_pages)): 
     ?>
