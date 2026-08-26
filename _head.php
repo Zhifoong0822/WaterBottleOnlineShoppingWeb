@@ -42,8 +42,17 @@
 
     <header class="site-header">
         <div class="header-container">
+            <?php
+            /*
+            Admins land on the admin dashboard when they click
+            the logo; everyone else (members, guests) goes to
+            the public product catalogue - unchanged behaviour.
+            */
+            $_is_admin_user = ($_SESSION['users']->role ?? '') === 'admin';
+            $_logo_href = $_is_admin_user ? '/admin_dashboard.php' : '/products.php';
+            ?>
 
-            <a href="/products.php" class="logo-link" aria-label="SippyGo products">
+            <a href="<?= $_logo_href ?>" class="logo-link" aria-label="SippyGo">
                 <h1>Sippy<span>Go</span></h1>
             </a>
 
