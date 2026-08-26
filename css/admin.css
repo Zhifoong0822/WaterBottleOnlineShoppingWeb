@@ -23,7 +23,7 @@
 .sort-link{color:white;text-decoration:none;display:flex;justify-content:center;align-items:center;gap:6px;font-weight:600;}
 .sort-link:hover{color:#7d7d7d;}
 .product-card {background: #fff; border-radius: 14px; box-shadow: 0 5px 18px rgba(0,0,0,.08); overflow: hidden;}
-.product-card:hover {transform: none;box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);}
+.product-card:hover {transform: none;box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);border-color: #e5e5e5;}
 .product-card img{height:100px;}
 
 /* =====================================================
@@ -77,6 +77,7 @@
    Image
 ===================================================== */
 .product-image {width: 70px; height: 70px; object-fit: cover; border-radius: 8px;}
+.product-image.is-archived {opacity: .7;}
 
 /* =====================================================
    Price
@@ -104,6 +105,8 @@
 .btn-edit:hover {background: #0b5ed7;}
 .btn-delete {background: #dc3545;}
 .btn-delete:hover {background: #bb2d3b;}
+.btn-restore {background: #1e7a34;}
+.btn-restore:hover {background: #17612a;}
 /* =====================================================
    Empty Message
 ===================================================== */
@@ -153,7 +156,33 @@
 .colour-display{display:flex; align-items:center; gap:15px;}
 .colour-circle{width:36px; height:36px; border-radius:50%; border:2px solid #ddd; display:inline-block;}
 .colour-name{font-weight:600; color:#333;}
+/* ==========================================
+   PRODUCT VIEW IMAGE GALLERY
+========================================== */
 
+.product-gallery {position: relative;width: 330px;height: 330px;display: flex; align-items: center;justify-content: center; margin: 0 auto;}
+.gallery-main {width: 290px;height: 290px;background: #f7f7f7; border-radius: 16px;overflow: hidden;display: flex;align-items: center;justify-content: center;}
+.gallery-main img {width: 100%;height: 100%;object-fit: contain;display: block;}
+/* ==========================================
+   ARROWS
+========================================== */
+.gallery-arrow {position: absolute; width: 42px; height: 42px;border: none; border-radius: 50%; background: #222;
+    color: white;font-size: 20px; cursor: pointer; display: flex; align-items: center;justify-content: center;z-index: 2;}
+.gallery-arrow:hover {background: #444;}
+.gallery-prev {left: 0;}
+.gallery-next {right: 0;}
+/* ==========================================
+   IMAGE COUNTER
+========================================== */
+.gallery-counter {text-align: center;margin-top: 8px;font-size: 14px;color: #666;}
+/* ==========================================
+   THUMBNAILS
+========================================== */
+.gallery-thumbnails {display: flex; justify-content: center; gap: 10px; margin-top: 15px;flex-wrap: wrap;}
+.gallery-thumbnail {width: 70px; height: 70px;padding: 0; border: 2px solid #ddd; border-radius: 8px; background: #f7f7f7;overflow: hidden;cursor: pointer;}
+.gallery-thumbnail:hover {border-color: #555;}
+.gallery-thumbnail.active {border: 3px solid #222;}
+.gallery-thumbnail img {width: 100%;height: 100%; object-fit: cover;display: block;}
 /* ------------------------------------------------------
    Edit Product
 ------------------------------------------------------ */
@@ -161,13 +190,11 @@
 .edit-header{margin-bottom:30px;}
 .edit-header h2{margin:0;}
 .edit-content{ display:grid;grid-template-columns:300px 1fr; gap:45px; align-items:flex-start;}
-
 /* Left */
 .edit-image{text-align:center;}
 .edit-product-image{ width:260px; height:260px; object-fit:cover;border-radius:12px;
     border:1px solid #ddd; margin-bottom:20px;background:#fafafa;}
 .file-input{width:100%;}
-
 /* Right */
 .edit-form{display:grid; grid-template-columns:1fr 1fr; gap:22px 25px;}
 .form-group{display:flex; flex-direction:column;}
@@ -194,6 +221,65 @@ input[type="color"]{width:80px; height:50px; padding:4px;cursor:pointer; border-
     .edit-content{grid-template-columns:1fr;    }
     .edit-form{grid-template-columns:1fr;}
     .edit-image{text-align:center;}
+}
+/* ==========================================
+   PRODUCT PHOTO MANAGER (Add / Edit Product)
+========================================== */
+.photo-manager {width: 100%; max-width: 340px; margin: 0 auto; background: #fff; border: 1px solid #e5e5e5;
+    border-radius: 16px; padding: 20px; box-sizing: border-box;}
+
+.photo-manager-header {display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 16px;}
+.photo-manager-header h3 {margin: 0; font-size: 17px;}
+.photo-manager-header p {margin: 4px 0 0; font-size: 12.5px; color: #888;}
+.photo-counter {flex-shrink: 0; background: #eaf2fd; color: #1976d2; font-weight: 700; font-size: 12.5px;
+    padding: 5px 12px; border-radius: 999px;}
+
+/* Main preview frame */
+.photo-main-frame {position: relative; width: 100%; aspect-ratio: 1 / 1; background: #f7f7f7; border: 1px solid #eee;
+    border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;}
+.photo-main-frame img {width: 100%; height: 100%; object-fit: contain; display: block;}
+.photo-main-badge {position: absolute; top: 10px; left: 10px; background: #222; color: #fff; font-size: 11.5px;
+    font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px;}
+
+/* Thumbnail grid */
+.photo-grid {display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;}
+.photo-tile {position: relative; aspect-ratio: 1 / 1; border: 2px solid #e2e2e2; border-radius: 10px;
+    overflow: hidden; cursor: pointer; background: #f7f7f7; transition: border-color .15s ease, transform .15s ease;}
+.photo-tile:hover {border-color: #bbb;}
+.photo-tile img {width: 100%; height: 100%; object-fit: cover; display: block;}
+.photo-tile.is-main {border-color: #222;}
+.photo-tile.is-selected {border-color: #1976d2; box-shadow: 0 0 0 3px rgba(25,118,210,.15);}
+
+.photo-tile-label {position: absolute; top: 5px; left: 5px; background: #1976d2; color: #fff; font-size: 9.5px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 3px 7px; border-radius: 5px;}
+
+.photo-tile-add {display: flex; align-items: center; justify-content: center; border-style: dashed;
+    color: #999; font-size: 26px; font-weight: 300; background: #fafafa;}
+.photo-tile-add:hover {border-color: #999; color: #555;}
+
+/* Selected tile actions */
+.photo-actions {display: flex; align-items: center; gap: 10px; margin-bottom: 14px;}
+.btn-photo-main, .btn-photo-delete {flex: 1; border: none; border-radius: 8px; padding: 10px 12px; font-size: 13px;
+    font-weight: 600; cursor: pointer; transition: .2s;}
+.btn-photo-main {background: #eaf2fd; color: #1976d2;}
+.btn-photo-main:hover {background: #d9e9fc;}
+.btn-photo-delete {background: #fdeaea; color: #c62828;}
+.btn-photo-delete:hover {background: #fbdcdc;}
+
+/* Dropzone */
+.photo-dropzone {display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    gap: 6px; border: 2px dashed #d9d9d9; border-radius: 12px; padding: 22px 14px; cursor: pointer;
+    transition: border-color .2s ease, background .2s ease;}
+.photo-dropzone:hover, .photo-dropzone.is-dragover {border-color: #1976d2; background: #f6faff;}
+.photo-dropzone-icon {width: 34px; height: 34px; border-radius: 50%; background: #eaf2fd; color: #1976d2;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 2px;}
+.photo-dropzone-text {font-size: 14px; font-weight: 600; color: #333;}
+.photo-dropzone-sub {font-size: 12px; color: #999;}
+
+.file-input {display: none;}
+
+@media (max-width: 900px) {
+    .photo-manager {max-width: 100%;}
 }
 /* ------------------------------------------------------
    Dashboard
@@ -481,4 +567,128 @@ input:invalid,select:invalid,textarea:invalid{border-color:#dc3545;}
 .overview-empty {
     opacity: 0.6;
     font-size: 0.95rem;
+}
+
+/* =====================================================
+   Active / Archived Tabs - Admin Products Page
+===================================================== */
+.view-tabs {display: flex; gap: 4px; padding: 18px 20px 0; border-bottom: 1px solid #e5e5e5;}
+.view-tab {display: inline-flex;align-items: center; gap: 8px; padding: 10px 16px;border-radius: 8px 8px 0 0; text-decoration: none;color: #777;font-weight: 600;
+    font-size: 14px;border: 1px solid transparent; border-bottom: none;transition: color .2s ease, background .2s ease;}
+.view-tab:hover {color: #222;}
+.view-tab.is-active {color: #222; background: #fff; border-color: #e5e5e5; position: relative; top: 1px;}
+.view-tab-count {background: #f0f0f0; color: #666; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px;}
+.view-tab.is-active .view-tab-count {background: #eaf2fd; color: #1976d2;}
+
+/* =====================================================
+   Batch Selection (Product Table Checkbox Column
+   + Selection Bar) - Admin Products Page
+===================================================== */
+.product-table th.checkbox-col,
+.product-table td.checkbox-col {width: 44px; text-align: center; padding: 16px 8px;}
+.product-table td.checkbox-col input[type="checkbox"],
+.product-table th.checkbox-col input[type="checkbox"] {width: 17px; height: 17px; cursor: pointer; accent-color: #1976d2;}
+.product-table tbody tr.row-selected {background: #eaf2fd;}
+.product-table tbody tr.row-selected:hover {background: #eaf2fd;}
+.selection-bar {display: none; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 20px; background: #eaf2fd; border-bottom: 1px solid #d9e9fc;}
+.selection-bar.is-active {display: flex;}
+.selection-bar span {font-weight: 600; color: #1976d2; font-size: 14px;}
+.selection-actions {display: flex; align-items: center; gap: 10px;}
+.selection-actions .btn-view,
+.selection-actions .btn-delete,
+.selection-actions .btn-restore {border: none; cursor: pointer; padding: 9px 16px; font-size: 13px;}
+
+/* =====================================================
+   Trash (Soft-Deleted Products)
+===================================================== */
+.trash-link {background: #6c757d;}
+.trash-link:hover {background: #5a6268;}
+.btn-restore {background: #198754; padding: 8px 10px; border-radius: 7px; text-decoration: none; color: white; font-size: 12px; text-align: center; transition: .2s;}
+.btn-restore:hover {background: #157347;}
+
+/* =====================================================
+   Add Product - Tabs & Bulk CSV Upload
+===================================================== */
+.product-tabs {display: flex; gap: 24px; border-bottom: 1px solid #e5e5e5; margin-bottom: 25px;}
+.tab-button {background: none; border: none; padding: 10px 2px 14px; font-size: 15px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; transition: .2s;}
+.tab-button:hover {color: #333;}
+.tab-button.active {color: #1976d2; border-bottom-color: #1976d2;}
+.bulk-info-banner {display: flex; align-items: center; justify-content: space-between; gap: 15px; background: #eaf2fd; border: 1px solid #d9e9fc; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; color: #1976d2; font-size: 14px;}
+.csv-dropzone {display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; border: 2px dashed #d9d9d9; border-radius: 12px; padding: 45px 20px; cursor: pointer; transition: border-color .2s ease, background .2s ease; margin-bottom: 25px;}
+.csv-dropzone:hover,
+.csv-dropzone.is-dragover {border-color: #1976d2; background: #f6faff;}
+.bulk-preview-title {margin: 0 0 12px; font-size: 16px;}
+.bulk-preview-box {border: 1px solid #e5e5e5; border-radius: 10px; min-height: 120px; margin-bottom: 25px; overflow: hidden;}
+.bulk-preview-empty {padding: 45px 20px; text-align: center; color: #999; font-size: 14px;}
+.bulk-preview-table-wrapper {max-height: 320px; overflow: auto;}
+.bulk-preview-table {width: 100%; border-collapse: collapse; font-size: 13px;}
+.bulk-preview-table th {background: #222; color: white; text-align: left; padding: 10px 12px; position: sticky; top: 0;}
+.bulk-preview-table td {padding: 10px 12px; border-bottom: 1px solid #eee; white-space: nowrap;}
+.bulk-error-list {margin: 8px 0 0; padding-left: 20px;}
+.bulk-error-list li {margin-bottom: 4px;}
+
+/* =====================================================
+   Admin Dashboard - Stat Card Icons, Charts, Quick Access
+===================================================== */
+
+.stat-card-top {display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px;}
+.stat-icon {width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;}
+.stat-icon-blue {background: #eaf2fd; color: #1976d2;}
+.stat-icon-green {background: #e3f6e9; color: #1e7a34;}
+.stat-icon-purple {background: #f0eaf9; color: #7c3aed;}
+.stat-icon-orange {background: #fdf0e2; color: #e67e22;}
+.stat-card-tag {font-size: 12.5px; color: #999;}
+.stat-card-icon h3 {margin: 0 0 6px; color: #777; font-size: 14px; font-weight: 600;}
+.stat-card-icon h2 {margin: 0; font-size: 30px; color: #222;}
+
+.chart-card-header {display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px;}
+.chart-card-header h3 {margin: 0 0 4px; font-size: 16px;}
+.chart-card-subtitle {margin: 0; font-size: 13px; color: #999;}
+.chart-week-tag {background: #f0f0f0; color: #555; font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; white-space: nowrap;}
+
+.donut-row {display: flex; align-items: center; justify-content: center; gap: 35px; padding: 10px 0;}
+.donut-wrap {position: relative; width: 180px; height: 180px; flex-shrink: 0;}
+.donut-center {position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;}
+.donut-center-value {font-size: 30px; font-weight: 700; color: #222; line-height: 1.1;}
+.donut-center-label {font-size: 12px; color: #999;}
+.donut-legend {list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px;}
+.donut-legend li {display: flex; align-items: center; gap: 10px; font-size: 14px; color: #333; min-width: 160px;}
+.donut-dot {width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;}
+.donut-dot-green {background: #1e7a34;}
+.donut-dot-orange {background: #e67e22;}
+.donut-dot-red {background: #dc3545;}
+.donut-legend-count {margin-left: auto; font-weight: 700; color: #222;}
+
+.quick-card-row {display: flex; align-items: center; gap: 16px;}
+.quick-card-row h3 {margin: 0 0 4px;}
+.quick-card-row p {margin: 0; color: #777; font-size: 13.5px;}
+.quick-card-icon {flex-shrink: 0; width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;}
+.quick-card-icon-blue {background: #eaf2fd; color: #1976d2;}
+.quick-card-icon-green {background: #e3f6e9; color: #1e7a34;}
+.quick-card-icon-purple {background: #f0eaf9; color: #7c3aed;}
+.quick-card-text {flex: 1;}
+.quick-card-chevron {flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: #f5f5f5; color: #777; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;}
+
+@media (max-width: 900px) {
+    .chart-container {grid-template-columns: 1fr;}
+    .donut-row {flex-direction: column; gap: 20px;}
+    .quick-grid {grid-template-columns: 1fr;}
+}
+
+/*
+Chart.js needs a container with a real, fixed CSS
+height to measure against when responsive:true +
+maintainAspectRatio:false. Without one, the canvas
+and its parent can feed off each other's size and
+grow without bound (the whole page kept getting
+taller and laggier). This wrapper gives it a stable
+box to fill instead.
+*/
+.chart-canvas-wrap {
+    position: relative;
+    height: 260px;
+}
+.chart-canvas-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
 }

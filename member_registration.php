@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['checkEmail'])) {
     }
 
     // Redirect after success
-    redirect('/');
+    redirect('/products.php');
     exit;
 }
 ?>

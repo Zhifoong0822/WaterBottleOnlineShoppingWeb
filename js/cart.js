@@ -21,9 +21,6 @@ $(document).ready(function() {
         var qtyToAdd = qtyInput.length ? parseInt(qtyInput.val()) : 1;
         var maxStock = qtyInput.length ? parseInt(qtyInput.attr("max")) : null;
         
-        // Grab the value of the checked sizing radio element on the detail screen
-        var selectedSize = $("input[name='product-size']:checked").val() || "Medium (18oz / 530ml)";
-
         if (isNaN(qtyToAdd) || qtyToAdd < 1) {
             alert("Please enter a valid quantity of 1 or more.");
             return;
@@ -44,8 +41,7 @@ $(document).ready(function() {
             data: {
                 action: "add_to_cart",
                 product_id: product_id,
-                quantity: qtyToAdd,
-                size: selectedSize
+                quantity: qtyToAdd
             },
             dataType: "json",
             success: function(response) {

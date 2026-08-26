@@ -4,6 +4,7 @@ require '_base.php';
 $_title = 'Product Details';
 
 $product_id = (int) req('id');
+$variant_id = (int) req('variant_id');
 $stmt = $_db->prepare('SELECT * FROM products WHERE product_id = ? LIMIT 1');
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
@@ -15,14 +16,26 @@ if (!$product) {
     exit;
 }
 
-// An admin add-product submission creates one product and one fixed SKU record.
-$variant_stmt = $_db->prepare(
-    'SELECT size, colour, stock FROM product_variants WHERE product_id = ? ORDER BY variant_id LIMIT 1'
-);
-$variant_stmt->execute([$product_id]);
+// A product card represents one specific size/colour variant.
+$variant_sql = 'SELECT variant_id, size, colour, stock FROM product_variants WHERE product_id = ?';
+$variant_params = [$product_id];
+if ($variant_id > 0) {
+    $variant_sql .= ' AND variant_id = ?';
+    $variant_params[] = $variant_id;
+}
+$variant_sql .= ' ORDER BY variant_id LIMIT 1';
+$variant_stmt = $_db->prepare($variant_sql);
+$variant_stmt->execute($variant_params);
 $variant = $variant_stmt->fetch();
+
+if (!$variant) {
+    require '_head.php';
+    echo "<div style='text-align:center; margin: 50px;'><h3>Product variant not found.</h3><a href='products.php'>Back to shop</a></div>";
+    require '_foot.php';
+    exit;
+}
 $stock = (int) ($variant->stock ?? 0);
-$display_price = variant_price($product->price, $variant->size ?? '');
+$display_price = (float) $product->price;
 
 $product_images = [];
 try {
@@ -74,7 +87,7 @@ require '_head.php';
         <form method="post" action="handle_cart.php" id="add-to-cart-form" style="display: flex; flex-direction: column; gap: 20px;">
             <input type="hidden" name="action" value="add_to_cart">
             <input type="hidden" name="product_id" value="<?= $product->product_id ?>">
-            <input type="hidden" name="size" value="<?= encode($variant->size ?? '') ?>">
+            <input type="hidden" name="variant_id" value="<?= $variant->variant_id ?>">
 
             <div>
                 <label for="quantity-input" style="display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px;">Quantity:</label>

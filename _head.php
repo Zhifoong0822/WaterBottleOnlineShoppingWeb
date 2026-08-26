@@ -42,8 +42,17 @@
 
     <header class="site-header">
         <div class="header-container">
+            <?php
+            /*
+            Admins land on the admin dashboard when they click
+            the logo; everyone else (members, guests) goes to
+            the public product catalogue - unchanged behaviour.
+            */
+            $_is_admin_user = ($_SESSION['users']->role ?? '') === 'admin';
+            $_logo_href = $_is_admin_user ? '/admin_dashboard.php' : '/products.php';
+            ?>
 
-            <a href="/products.php" class="logo-link" aria-label="SippyGo products">
+            <a href="<?= $_logo_href ?>" class="logo-link" aria-label="SippyGo">
                 <h1>Sippy<span>Go</span></h1>
             </a>
 
@@ -56,7 +65,7 @@
                         <?php if (isset($_SESSION['users'])): ?>
 
                             <!-- Admin Navigation -->
-                            <?php if (($_SESSION['users']->role ?? '') === 'admin'): ?>
+                            <?php if (($_SESSION['users']->role ?? '') === 'admin') : ?>
 
                                 <li>
                                     <a href="/pages/admin/admin_products.php" class="nav-link">
@@ -80,15 +89,12 @@
 
 
                             <!-- Logged-in User Navigation -->
-                            <?php if (isset($_SESSION['users']->user_id)): ?>
-
-                                <?php if (($_SESSION['users']->role ?? '') !== 'admin'): ?>
-                                    <li>
-                                        <a href="/products.php" class="nav-link">
-                                            Products
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
+                            <?php if (($_SESSION['users']->role ?? '') !== 'admin') : ?>
+                                <li>
+                                    <a href="/products.php" class="nav-link">
+                                        Products
+                                    </a>
+                                </li>
 
                                 <li>
                                     <a href="/cart_view.php" class="nav-link">
@@ -101,9 +107,13 @@
                                         My Orders
                                     </a>
                                 </li>
-
                             <?php endif; ?>
 
+                            <li>
+                                <a href="/live_chat.php" class="nav-link">
+                                    Chat Support
+                                </a>
+                            </li>
                         <?php endif; ?>
 
                     </div>
