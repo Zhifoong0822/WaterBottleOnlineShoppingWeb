@@ -256,7 +256,7 @@ function send_order_receipt($order_id, $user_id) {
         }
     }
 
-    $mail->addAddress($recipient_email, $order->username ?? $order->recipient_name);
+    $mail->addAddress($recipient_email, $order->recipient_name);
     $mail->isHTML(true);
     $mail->Subject = 'SippyGo e-Receipt - Order #' . $order->order_id;
     $mail->Body = receipt_html($order, $items);
