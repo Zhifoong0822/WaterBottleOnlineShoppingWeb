@@ -662,6 +662,24 @@ main > .my-orders-title {
     font-size: 1.5rem;
 }
 
+.customer-detail-section {
+    padding: 0 25px 25px;
+}
+
+.customer-detail-section h3 {
+    margin: 0 0 10px;
+    font-size: 1.5rem;
+}
+
+.customer-detail-link {
+    color: #0f5fa8;
+    font-weight: bold;
+}
+
+.customer-detail-link:hover {
+    color: #0a467c;
+}
+
 .form-section label {
     display: block;
     margin-bottom: 8px;

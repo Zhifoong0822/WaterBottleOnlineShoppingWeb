@@ -55,10 +55,7 @@ if (!$order) {
     );
 }
 
-/*
- * Retrieve an existing rating, if the customer
- * previously submitted feedback for this order.
- */
+/*Retrieve an existing rating, if the customer previously submitted feedback for this order.*/
 $sql = "SELECT rating, feedback
         FROM order_feedback
         WHERE order_id = :order_id
@@ -76,9 +73,7 @@ $existing_feedback = $stmt->fetch(PDO::FETCH_ASSOC);
 $rating = $existing_feedback["rating"] ?? "";
 $feedback = $existing_feedback["feedback"] ?? "";
 
-/*
- * Process feedback submission.
- */
+/*Process feedback submission.*/
 if (is_post()) {
 
     $rating = post("rating");
@@ -254,7 +249,7 @@ require "_head.php";
                         href="order_history.php?status=completed"
                         class="feedback-back-button"
                     >
-                        ← Back to Completed Orders
+                        Back to Completed Orders
                     </a>
 
                 </div>
