@@ -24,13 +24,13 @@ function is_post() {
 // Obtain GET parameter
 function get($key, $value = null) {
     $value = $_GET[$key] ?? $value;
-    return is_array($value) ? array_map('trim', $value) : trim($value);
+    return is_array($value) ? array_map('trim', $value) : trim($value ?? '');
 }
 
 // Obtain POST parameter
 function post($key, $value = null) {
     $value = $_POST[$key] ?? $value;
-    return is_array($value) ? array_map('trim', $value) : trim($value);
+    return is_array($value) ? array_map('trim', $value) : trim($value ?? '');
 }
 
 // Obtain REQUEST (GET and POST) parameter
@@ -376,5 +376,5 @@ $_current_page = basename($_SERVER['PHP_SELF']);
 
 if (!isset($_SESSION['users']) && !in_array($_current_page, $_public_pages)) {
     temp('info', 'Please login to continue.');
-    redirect('login.php');
+    redirect('/login.php');
 }
