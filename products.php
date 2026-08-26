@@ -282,7 +282,7 @@ require '_head.php';
     <?php if ($total_pages > 1): ?>
     <nav class="pagination" aria-label="Product pages">
         <?php if ($page > 1): ?>
-            <a href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&sort=<?= urlencode($sort) ?>&page=<?= $page - 1 ?>" aria-label="Previous page">Previous</a>
+            <a href="products.php?search=<?= urlencode($search) ?>&category=<?= $category_id ?? '' ?>&min_price=<?= urlencode($min_price) ?>&max_price=<?= urlencode($max_price) ?>&sort=<?= urlencode($sort) ?>&page=<?= $page - 1 ?>" aria-label="Previous page">Previous</a>
         <?php endif; ?>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
             <a

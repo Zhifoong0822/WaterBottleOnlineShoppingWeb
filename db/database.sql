@@ -275,10 +275,10 @@ INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profil
 (5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 0);
 
 INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `phone_number`, `address_text`) VALUES
-(3, 'Home (Default)', 'Member One', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),
-(3, 'Office HQ', 'Member One (Corp)', '013-9876543', 'Level 45, Tower 2, Petronas Twin Towers, KLCC, 50088 Kuala Lumpur'),
-(4, 'Home (Default)', 'Member One', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),
-(4, 'Office HQ', 'Member One (Corp)', '013-9876543', 'Level 45, Tower 2, Petronas Twin Towers, KLCC, 50088 Kuala Lumpur'); 
+(3, 'Home (Default)', 'John Tan', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),
+(3, 'Office HQ', 'John Tan (Corp)', '013-9876543', 'Level 45, Tower 2, Petronas Twin Towers, KLCC, 50088 Kuala Lumpur'),
+(4, 'Home (Default)', 'Jane Lee', '012-3456789', '88, Jalan Ampang, Kuala Lumpur'),
+(4, 'Office HQ', 'Jane Lee (Corp)', '013-9876543', 'Level 45, Tower 2, Petronas Twin Towers, KLCC, 50088 Kuala Lumpur'); 
 
 INSERT INTO `categories` (`category_name`) VALUES
 ('Hydration Bottles'),
