@@ -422,6 +422,7 @@ $_public_pages = [
     'index.php',
     'products.php',
     'product_detail.php',
+    'handle_cart.php',
 ];
 
 $_current_page = basename($_SERVER['PHP_SELF']);

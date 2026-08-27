@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.message) alert(data.message);
                 window.location.href = 'products.php';
             })
-            .catch(function () { window.location.href = 'products.php'; });
+            .catch(function () { window.location.href = 'login.php'; });
     });
 });
 </script>
