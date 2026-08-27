@@ -26,14 +26,13 @@ $(function () {
     });
 
     // Select chat session
-    $(".chat-item").on("click", function (e) {
+    $(document).on("click", ".chat-item", function (e) {
         // Don't select the chat when clicking an action button
         if ($(e.target).hasClass("chat-status-btn")) {
             return;
         }
 
         const chatId = $(this).data("chat-id");
-
         if (!chatId) {
             return;
         }
@@ -255,47 +254,117 @@ $(function () {
 
     // Update chat list item with last message and time
     function updateChatListItem(chatData) {
-        const item = $('.chat-item[data-chat-id="' + chatData.chat_session_id + '"]');
+        const chatSessionId = parseInt(chatData.chat_session_id);
+        const item = $('.chat-item[data-chat-id="' + chatSessionId + '"]');
+
+        // Remove chat If status doesn't match current filter
+        if (!chatMatchesCurrentFilter(chatData.status)) {
+            if (item.length > 0) {
+                item.remove();
+            }
+
+            // If removed chat is currently selected, refresh page with no chat selected
+            const currentChatId = new URLSearchParams(window.location.search).get("chat");
+            if (parseInt(currentChatId) === chatSessionId) {
+                const url = new URL(window.location.href);
+                url.searchParams.set("chat", 0);
+                window.location.href = url.toString();
+            }
+
+            return;
+        }
 
         if (item.length === 0) {
-            return;
+            // Create chat item if doesnt exist yet
+            const newChatItem = createChatItem(chatData);
+
+            // Put newest chat at the top
+            $("#chatList").prepend(newChatItem);
         }
+        else {
+            // Update status
+            item.find(".chat-item-status")
+                .removeClass("status-0 status-1 status-2")
+                .addClass("status-" + chatData.status)
+                .text(getStatusLabel(chatData.status));
 
-        // Remove If status doesn't match current filter
-        if (!chatMatchesCurrentFilter(chatData.status)) {
-            item.remove();
-            return;
+            // Update admin buttons
+            updateChatActionButtons(item, chatData.status);
+
+            // Check if have any new messages
+            const oldMessageAt = item.attr("data-last-message-at") || "";
+            const newMessageAt = chatData.last_message_at || "";
+
+            // Exit if no changes
+            if (newMessageAt === oldMessageAt) {
+                return;
+            }
+
+            item.attr("data-last-message-at", newMessageAt);
+
+            item.find(".chat-last-message").text(
+                chatData.last_message_sender + ": " + chatData.last_message
+            );
+
+            item.find(".chat-time").text(getTimeAgo(newMessageAt));
+
+            // Move to the top
+            $("#chatList").prepend(item);
         }
+    }
 
-        // Update status
-        item.find(".chat-item-status")
-            .removeClass("status-0 status-1 status-2")
-            .addClass("status-" + chatData.status)
-            .text(getStatusLabel(chatData.status));
+    function createChatItem(chatData) {
+        const newChatItem = $(`
+            <div
+                class="chat-item"
+                data-chat-id="${chatData.chat_session_id}"
+                data-status="${parseInt(chatData.status, 10)}"
+                data-last-message-at="${escapeHtml(chatData.last_message_at || "")}"
+            >
+                <div class="chat-item-top">
+                    <div class="chat-item-header">
 
-        // Update admin buttons
-        updateChatActionButtons(item, chatData.status);
+                        <span class="chat-session-id">
+                            #${chatData.chat_session_id}
+                        </span>
 
-        // Only update/move if the message changed
-        const oldMessageAt = item.attr("data-last-message-at") || "";
-        const newMessageAt = chatData.last_message_at || "";
+                        <div class="chat-customer-name">
+                            ${escapeHtml(chatData.username || "")}
+                        </div>
 
-        if (newMessageAt === oldMessageAt) {
-            return;
-        }
+                        <span class="chat-item-status status-${parseInt(chatData.status, 10)}">
+                            ${getStatusLabel(chatData.status)}
+                        </span>
 
-        item.attr("data-last-message-at", newMessageAt);
+                    </div>
 
-        item.find(".chat-last-message").text(
-            chatData.last_message_sender + ": " + chatData.last_message
+                    <div class="chat-time">
+                        ${getTimeAgo(chatData.last_message_at || "")}
+                    </div>
+                </div>
+
+                <div class="chat-item-bottom">
+                    <span class="chat-last-message">
+                        ${
+                            chatData.last_message_sender
+                                ? escapeHtml(chatData.last_message_sender) + ": "
+                                : ""
+                        }
+                        ${escapeHtml(chatData.last_message || "")}
+                    </span>
+                </div>
+
+                <div class="chat-item-actions"></div>
+            </div>
+        `);
+
+        // Add action buttons
+        updateChatActionButtons(
+            newChatItem,
+            parseInt(chatData.status, 10)
         );
 
-        item.find(".chat-time").text(
-            getTimeAgo(newMessageAt)
-        );
-
-        // Move to the top
-        $("#chatList").prepend(item);
+        return newChatItem;
     }
 
     // Update chat list item action buttons
@@ -354,12 +423,16 @@ $(function () {
     }
 
     // Check if scroll of the element is near bottom
-    function isNearBottom(element, threshold = 100) {
-        return (
-            element.scrollHeight -
-            element.scrollTop -
-            element.clientHeight
-        ) <= threshold;
+    function isNearBottom(container, messageThreshold = 10, tolerance = 50) {
+        const messages = [...container.querySelectorAll('[data-message-id]')];
+        const containerBottom = container.getBoundingClientRect().bottom;
+
+        const messagesBelow = messages.filter(message => {
+            const rect = message.getBoundingClientRect();
+            return rect.top >= (containerBottom + tolerance);
+        });
+
+        return messagesBelow.length <= messageThreshold;
     }
 
     // Auto scroll when new messages are added
@@ -436,17 +509,15 @@ $(function () {
     // Poll for new messages
     let pollingMessages = false;
     function pollNewMessages() {
+        const chatMessages = $("#chatMessages");
+        if (chatMessages.length === 0) {  // No chat is currently open
+            return;
+        }
+
         if (pollingMessages) {
             return;
         }
         pollingMessages = true;
-
-        const chatMessages = $("#chatMessages");
-
-        // No chat is currently open
-        if (chatMessages.length === 0) {
-            return;
-        }
 
         const chatSessionId = $("#chatMessageForm")
             .find('input[name="chat_session_id"]')
@@ -525,9 +596,12 @@ $(function () {
                     receivedNewMessage = true;
                 });
 
-                if (receivedNewMessage && isNearBottom(chatMessages[0])) {
-                    scrollToBottom();
+                if (receivedNewMessage) {
                     console.log("New messages received.");
+                    
+                    if (isNearBottom(chatMessages[0])) {
+                        scrollToBottom();
+                    }
                 }
             },
 

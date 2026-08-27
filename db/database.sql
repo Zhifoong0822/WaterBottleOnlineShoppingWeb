@@ -371,34 +371,45 @@ INSERT INTO `stores` (`store_id`, `store_name`, `state`, `address`, `opening_hou
 (2, 'Sippy Go Sunway Pyramid', 'Selangor', 'Darul Ehsan, Level CP6, Blue Atrium, 3, Jalan PJS 11/15, Bandar Sunway, 47500 Petaling Jaya, Selangor', '10 - 10', '03 779 8125', 'Sunway Pyramid, Selangor', 'store_1787812087_8fa5a0d3.png', 'active', '2026-08-27 14:26:50');
 
 -- Prefilled chat data
-INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`) VALUES
-(1, 3, 1),
-(2, 4, 1),
-(3, 5, 0),
-(4, 3, 2);
+INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`, `created_at`) VALUES
+(1, 3, 0, '2026-08-13 14:58:00'),
+(2, 4, 2, '2026-08-16 10:15:00'),
+(3, 5, 1, '2026-08-19 09:30:00'),
+(4, 3, 1, '2026-08-20 11:44:00');
+
+INSERT INTO `chat_messages` (`chat_session_id`, `user_id`, `created_at`, `message`)
+SELECT
+    cs.chat_session_id, 2, cs.created_at,
+    CONCAT(
+        'Hi! 👋 Welcome! This is an automatically generated message.',
+        CHAR(10), CHAR(10),
+        'Thank you for starting a chat with us. Before a staff member can assist you, ',
+        'please send us a message with your question, request, or any details you would like to share.',
+        CHAR(10), CHAR(10),
+        'Once we receive your message, a staff member will review it and get back to you as soon as possible.',
+        CHAR(10), CHAR(10),
+        'We look forward to hearing from you!'
+    )
+FROM `chat_sessions` cs;
 
 
 INSERT INTO `chat_messages` (`chat_session_id`, `user_id`, `message`, `created_at`) VALUES
-(1, 1, 'Hello! How can I assist you today?', '2026-08-13 14:58:00'),
 (1, 3, 'Hi! I have a question about my order.', '2026-08-13 14:59:00'),
-(1, 1, 'Sure! Please provide your order ID.', '2026-08-13 15:00:00'),
+(1, 2, 'Sure! Please provide your order ID.', '2026-08-13 15:00:00'),
 (1, 3, 'My order ID is #12345.', '2026-08-13 15:01:00'),
-(1, 1, 'Thank you! Let me check the status for you.', '2026-08-13 15:02:00'),
+(1, 2, 'Thank you! Let me check the status for you.', '2026-08-13 15:02:00'),
 
-(2, 1, 'Hello! How can I assist you today?', '2026-08-16 10:15:00'),
 (2, 4, 'Hi! I need help with a product.', '2026-08-16 10:16:00'),
-(2, 1, 'Of course! What product are you referring to?', '2026-08-16 10:17:00'),
+(2, 2, 'Of course! What product are you referring to?', '2026-08-16 10:17:00'),
 (2, 4, 'I am looking for the Nova Active Bottle.', '2026-08-16 10:18:00'),
-(2, 1, 'Great choice! How can I assist you with that?', '2026-08-16 10:19:00'),
+(2, 2, 'Great choice! How can I assist you with that?', '2026-08-16 10:19:00'),
 
-(3, 1, 'Hello! How can I assist you today?', '2026-08-19 09:30:00'),
 (3, 5, 'Hi! I have a question about my account.', '2026-08-19 09:31:00'),
-(3, 1, 'Sure! Please provide your account details.', '2026-08-19 09:32:00'),
+(3, 2, 'Sure! Please provide your account details.', '2026-08-19 09:32:00'),
 (3, 5, 'My username is "Ali".', '2026-08-19 09:33:00'),
-(3, 1, 'Thank you! Let me check your account information.', '2026-08-19 09:34:00'),
+(3, 2, 'Thank you! Let me check your account information.', '2026-08-19 09:34:00'),
 
-(4, 1, 'Hello! How can I assist you today?', '2026-08-20 11:45:00'),
 (4, 3, 'Hi! I need help with a product return.', '2026-08-20 11:46:00'),
-(4, 1, 'Of course! Can you provide the order ID for the return?', '2026-08-20 11:47:00'),
+(4, 2, 'Of course! Can you provide the order ID for the return?', '2026-08-20 11:47:00'),
 (4, 3, 'My order ID is #67890.', '2026-08-20 11:48:00'),
-(4, 1, 'Thank you! Let me guide you through the return process.', '2026-08-20 11:49:00');
+(4, 2, 'Thank you! Let me guide you through the return process.', '2026-08-20 11:49:00');
