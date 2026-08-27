@@ -154,10 +154,6 @@ require "_head.php";
         hidden
     ></nav>
 
-    <a class="back-link" href="index.php">
-        Back to Home
-    </a>
-
 </section>
 
 <script>

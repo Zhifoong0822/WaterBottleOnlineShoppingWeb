@@ -449,7 +449,7 @@ require "_head.php";
                 <button type="submit" class="receipt-button">Send E-Receipt</button>
             </form>
 
-            <a class="back-button" href="order_history.php">← Back to My Orders</a>
+            <a class="back-button" href="order_history.php">Back to My Orders</a>
 
         </div>
 

@@ -79,8 +79,7 @@ if (is_post()) {
     $rating = post("rating");
     $feedback = post("feedback");
 
-    if (
-        !ctype_digit($rating) ||
+    if (!ctype_digit($rating) ||
         (int) $rating < 1 ||
         (int) $rating > 5
     ) {
@@ -88,16 +87,10 @@ if (is_post()) {
     }
 
     if (strlen($feedback) > 1000) {
-        $errors["feedback"] =
-            "Feedback must not exceed 1000 characters.";
+        $errors["feedback"] = "Feedback must not exceed 1000 characters.";
     }
 
     if (!$errors) {
-
-        /*
-         * Because order_id and user_id are unique together,
-         * this inserts new feedback or updates existing feedback.
-         */
         $sql = "INSERT INTO order_feedback (
                     order_id,
                     user_id,
