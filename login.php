@@ -1,8 +1,4 @@
 <?php
-// Start session immediately before loading any other files
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 require_once '_base.php';
 
