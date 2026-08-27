@@ -45,6 +45,13 @@ $(document).ready(function() {
             },
             dataType: "json",
             success: function(response) {
+                if (response.redirect) {
+                    if (response.message) {
+                        alert(response.message);
+                    }
+                    window.location.href = response.redirect;
+                    return;
+                }
                 if (response.message) {
                     alert(response.message);
                 }

@@ -253,6 +253,11 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('handle_cart.php', { method: 'POST', body: new FormData(form) })
             .then(function (response) { return response.json(); })
             .then(function (data) {
+                if (data.redirect) {
+                    if (data.message) alert(data.message);
+                    window.location.href = data.redirect;
+                    return;
+                }
                 if (data.message) alert(data.message);
                 window.location.href = 'products.php';
             })
