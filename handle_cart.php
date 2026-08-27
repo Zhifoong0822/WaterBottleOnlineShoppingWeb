@@ -4,7 +4,8 @@ require_once '_base.php';
 header("Content-Type: application/json");
 
 if (!isset($_SESSION['users']->user_id)) {
-    echo json_encode(['message' => 'Please log in first.']);
+    temp('info', 'Please login to continue.');
+    echo json_encode(['message' => 'Please log in first.', 'redirect' => 'login.php']);
     exit;
 }
 
@@ -40,6 +41,7 @@ switch ($action) {
             exit;
         }
 
+        //retrieve the product info
         $stmt_stock = $_db->prepare(
             "SELECT size, colour, stock
              FROM product_variants
