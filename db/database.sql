@@ -367,8 +367,8 @@ INSERT INTO `order_items` (`order_id`, `product_id`, `size`, `quantity`, `price`
 (4, 2, 'Mega (32oz / 950ml)', 1, 124.60);
 
 INSERT INTO `stores` (`store_id`, `store_name`, `state`, `address`, `opening_hours`, `contact`, `map_query`, `store_image`, `status`, `created_at`) VALUES 
-(1, 'Sippy Go KLCC, Kuala Lumpur', 'Kuala Lumpur', 'Suria KLCC, Kuala Lumpur', '10 - 10', '03-889 9741', 'Suria KLCC, Kuala Lumpur', 'update/stores/store_1787811914_b2536965.png', 'active', '2026-08-27 11:41:51'), 
-(2, 'Sippy Go Sunway Pyramid', 'Selangor', 'Darul Ehsan, Level CP6, Blue Atrium, 3, Jalan PJS 11/15, Bandar Sunway, 47500 Petaling Jaya, Selangor', '10 - 10', '03 779 8125', 'Sunway Pyramid, Selangor', 'update/stores/store_1787812087_8fa5a0d3.png', 'active', '2026-08-27 14:26:50');
+(1, 'Sippy Go KLCC, Kuala Lumpur', 'Kuala Lumpur', 'Suria KLCC, Kuala Lumpur', '10 - 10', '03-889 9741', 'Suria KLCC, Kuala Lumpur', 'store_1787811914_b2536965.png', 'active', '2026-08-27 11:41:51'), 
+(2, 'Sippy Go Sunway Pyramid', 'Selangor', 'Darul Ehsan, Level CP6, Blue Atrium, 3, Jalan PJS 11/15, Bandar Sunway, 47500 Petaling Jaya, Selangor', '10 - 10', '03 779 8125', 'Sunway Pyramid, Selangor', 'store_1787812087_8fa5a0d3.png', 'active', '2026-08-27 14:26:50');
 
 -- Prefilled chat data
 INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`) VALUES

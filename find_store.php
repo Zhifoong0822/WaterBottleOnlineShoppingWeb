@@ -15,17 +15,6 @@ if (($_SESSION['users']->role ?? '') === 'admin') {
 
 $_title = "Find Store";
 
-// Folder where store images are uploaded to on the server.
-// Change this if your images live somewhere else (e.g. 'assets/images/stores/').
-define('STORE_IMAGE_FOLDER', 'uploads/stores/');
-
-/**
- * Resolve a store_image value into a usable <img src>.
- * Handles three cases:
- *  - already a full URL (http:// or https://)
- *  - already a relative path (contains a slash)
- *  - just a bare filename (needs STORE_IMAGE_FOLDER prepended)
- */
 function resolve_store_image($store_image) {
     if (empty($store_image)) {
         return null;
@@ -42,7 +31,7 @@ function resolve_store_image($store_image) {
     }
 
     // Bare filename - prepend the upload folder
-    return STORE_IMAGE_FOLDER . $store_image;
+    return STORE_IMAGE_DIR . $store_image;
 }
 
 // Get active stores from database
