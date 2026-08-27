@@ -1,5 +1,5 @@
 <?php
-require '_base.php';
+require_once '_base.php';
 
 unset(
     $_SESSION['users'],

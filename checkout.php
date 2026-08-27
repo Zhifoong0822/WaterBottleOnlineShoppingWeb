@@ -1,6 +1,6 @@
 <?php
 // 1. Load configuration utilities, session variables, and global $_db
-require '_base.php'; 
+require_once '_base.php';
 
 // 2. Supply dynamic metadata tracking to _head.php template
 $_title = "Checkout";

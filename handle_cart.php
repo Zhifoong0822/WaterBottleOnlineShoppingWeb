@@ -1,6 +1,6 @@
 <?php
 // 1. Load configuration utilities, session variables, and global $_db
-require '_base.php'; 
+require_once '_base.php';
 header("Content-Type: application/json");
 
 if (!isset($_SESSION['users']->user_id)) {

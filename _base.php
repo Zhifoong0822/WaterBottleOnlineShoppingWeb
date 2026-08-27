@@ -93,13 +93,16 @@ function html_text($key, $attr = '') {
 function html_radios($key, $items, $br = false) {
     $value = encode($GLOBALS[$key] ?? '');
     echo '<div>';
+
     foreach ($items as $id => $text) {
         $state = $id == $value ? 'checked' : '';
         echo "<label><input type='radio' id='{$key}_$id' name='$key' value='$id' $state>$text</label>";
+
         if ($br) {
             echo '<br>';
         }
     }
+
     echo '</div>';
 }
 
@@ -107,23 +110,27 @@ function html_radios($key, $items, $br = false) {
 function html_select($key, $items, $default = '- Select One -', $attr = '') {
     $value = encode($GLOBALS[$key] ?? '');
     echo "<select id='$key' name='$key' $attr>";
+
     if ($default !== null) {
         echo "<option value=''>$default</option>";
     }
+
     foreach ($items as $id => $text) {
         $state = $id == $value ? 'selected' : '';
         echo "<option value='$id' $state>$text</option>";
     }
+
     echo '</select>';
 }
 
 // ============================================================================
 // Check Price helper function
 // ============================================================================
+
 function variant_price($base_price, $size) {
-    if (str_contains($size, 'Mini'))   return $base_price * 1.10;
+    if (str_contains($size, 'Mini')) return $base_price * 1.10;
     if (str_contains($size, 'Medium')) return $base_price * 1.20;
-    if (str_contains($size, 'Mega'))   return $base_price * 1.40;
+    if (str_contains($size, 'Mega')) return $base_price * 1.40;
 
     return $base_price; // Micro/default
 }
@@ -173,6 +180,7 @@ function get_mail() {
     }
 
     $mail_config = require $config_file;
+
     if (empty($mail_config['enabled'])) {
         throw new RuntimeException('Email sending is disabled.');
     }
@@ -195,8 +203,10 @@ function get_mail() {
 
 function receipt_html($order, $items) {
     $rows = '';
+
     foreach ($items as $item) {
         $line_total = (float) $item->price * (int) $item->quantity;
+
         $rows .= '<tr>'
             . '<td style="padding:10px;border-bottom:1px solid #e5e7eb;">' . encode($item->name)
             . '<br><span style="color:#6b7280;font-size:12px;">' . encode($item->size)
@@ -206,6 +216,7 @@ function receipt_html($order, $items) {
     }
 
     $points_row = '';
+
     if ((int) $order->points_used > 0) {
         $points_row = '<tr><td style="padding:8px 10px;">Reward points discount</td><td style="padding:8px 10px;text-align:right;">- RM '
             . number_format((float) $order->points_discount, 2) . '</td></tr>';
@@ -274,6 +285,7 @@ $_err = [];
 // Generate <span class='err'>
 function err($key) {
     global $_err;
+
     if ($_err[$key] ?? false) {
         echo "<span class='err'>$_err[$key]</span>";
     }
@@ -291,6 +303,7 @@ $_user = $_SESSION['user'] ?? $_SESSION['users'] ?? null;
 
 function auth(...$roles) {
     global $_user;
+
     if ($_user) {
         if ($roles) {
             if (in_array($_user->role, $roles)) {
@@ -301,19 +314,45 @@ function auth(...$roles) {
             return; // OK
         }
     }
-    
+
     redirect('/login.php');
 }
 
-// Use this on every admin-only route. Navigation links are not a security
-// boundary: the role must be checked again when a URL is requested directly.
+// Check access to admin pages
 function require_admin($redirect_to = 'products.php') {
-    if (($_SESSION['users']->role ?? '') === 'admin') {
+    global $_db;
+
+    // User must be logged in
+    if (!isset($_SESSION['users'])) {
+        redirect('/login.php');
+        exit;
+    }
+
+    $role = $_SESSION['users']->role ?? '';
+    $user_id = (int) ($_SESSION['users']->user_id ?? 0);
+
+    // Admin can access every admin page
+    if ($role === 'admin') {
         return;
     }
 
+    // Staff and Supervisor can access assigned admin pages
+    if (in_array($role, ['Staff', 'Supervisor'], true)) {
+
+        $current_page = basename($_SERVER['SCRIPT_NAME']);
+
+        $stmt = $_db->prepare("SELECT COUNT(*) FROM user_permissions WHERE user_id = ? AND page_slug = ?");
+        $stmt->execute([$user_id, $current_page]);
+
+        if ((int) $stmt->fetchColumn() > 0) {
+            return;
+        }
+    }
+
+    // No permission
     temp('info', 'You do not have permission to access that page.');
     redirect($redirect_to);
+    exit;
 }
 
 // ============================================================================
@@ -345,16 +384,20 @@ auto_complete_shipped_orders();
 // Is unique?
 function is_unique($value, $table, $field) {
     global $_db;
+
     $stm = $_db->prepare("SELECT COUNT(*) FROM $table WHERE $field = ?");
     $stm->execute([$value]);
+
     return $stm->fetchColumn() == 0;
 }
 
 // Is exists?
 function is_exists($value, $table, $field) {
     global $_db;
+
     $stm = $_db->prepare("SELECT COUNT(*) FROM $table WHERE $field = ?");
     $stm->execute([$value]);
+
     return $stm->fetchColumn() > 0;
 }
 

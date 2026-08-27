@@ -3,17 +3,20 @@ CREATE DATABASE IF NOT EXISTS `waterbottle_shop`;
 USE `waterbottle_shop`;
 
 -- Drop existing tables in reverse order of dependencies
-DROP TABLE IF EXISTS `user_addresses`; 
+-- Drop existing tables in reverse order of dependencies
+DROP TABLE IF EXISTS `user_addresses`;
 DROP TABLE IF EXISTS `order_feedback`;
 DROP TABLE IF EXISTS `order_items`;
 DROP TABLE IF EXISTS `orders`;
 DROP TABLE IF EXISTS `cart_items`;
 DROP TABLE IF EXISTS `carts`;
 DROP TABLE IF EXISTS `product_images`;
-DROP TABLE IF EXISTS `product_variants`;  
+DROP TABLE IF EXISTS `product_variants`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `categories`;
-DROP TABLE IF EXISTS `role_permissions`;
+DROP TABLE IF EXISTS `user_permissions`; 
+DROP TABLE IF EXISTS `role_permissions`; 
+DROP TABLE IF EXISTS `stores`;     
 DROP TABLE IF EXISTS `roles`;
 DROP TABLE IF EXISTS `chat_messages`;
 DROP TABLE IF EXISTS `chat_sessions`;
@@ -87,10 +90,12 @@ CREATE TABLE `users` (
   `username` VARCHAR(50) NOT NULL UNIQUE,
   `email` VARCHAR(100) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
-  `role` ENUM('admin', 'member') NOT NULL DEFAULT 'member',
+  `role` VARCHAR(50) NOT NULL DEFAULT 'member',
   `profilepic` VARCHAR(255) DEFAULT NULL,
   `reward_points` INT UNSIGNED NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `failed_attempts` INT NOT NULL DEFAULT 0,
+  `locked_until` DATETIME DEFAULT NULL,
   PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -241,7 +246,34 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 );
 
 -- =========================================================
--- 12. Live Chat
+-- 12. Set page access for each role
+-- =========================================================
+CREATE TABLE user_permissions (
+  `permission_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `page_slug` VARCHAR(100) NOT NULL,
+  FOREIGN KEY (user_id)REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+-- =========================================================
+-- 13. Store Location
+-- =========================================================
+CREATE TABLE stores (
+  `store_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `store_name` VARCHAR(100) NOT NULL,
+  `state` VARCHAR(50) NOT NULL,
+  `address` VARCHAR(255) NOT NULL,
+  `opening_hours` VARCHAR(100) NOT NULL,
+  `contact` VARCHAR(30) NOT NULL,
+  `map_query` VARCHAR(255) NOT NULL,
+  `store_image` VARCHAR(255) DEFAULT NULL,
+  `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- =========================================================
+-- 14. Live Chat
 -- =========================================================
 CREATE TABLE IF NOT EXISTS chat_sessions (
     chat_session_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -333,6 +365,10 @@ INSERT INTO `order_items` (`order_id`, `product_id`, `size`, `quantity`, `price`
 (3, 1, 'Medium (18oz / 530ml)', 1, 94.80),
 (3, 4, 'Medium (18oz / 530ml)', 1, 82.80),
 (4, 2, 'Mega (32oz / 950ml)', 1, 124.60);
+
+INSERT INTO `stores` (`store_id`, `storename`, `state`, `address`, `opening_hours`, `contact`, `map_query`, `store_image`,`status`, `created_at`) VALUES
+(1, 'Sippy Go KLCC', 'Kuala Lumpur', 'Kuala Lumpur', '10 - 10', '03-889 9741', 'Suria KLCC, Kuala Lumpur', 'update/stores/store_1787811914_b2536965.png', 'active', '2026-08-27 11:41:51'),
+(2, 'Sippy Go Sunway Pyramid', 'Selangor', 'Darul Ehsan, Level CP6, Blue Atrium, 3, Jalan PJS 11/15, Bandar Sunway, 47500 Petaling Jaya, Selangor', '03 779 8125', 'Sunway Pyramid, Selangor', 'update/stores/store_1787812087_8fa5a0d3.png', 'active','2026-08-27 14:26:50');
 
 -- Prefilled chat data
 INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`) VALUES

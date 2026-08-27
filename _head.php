@@ -22,14 +22,14 @@
         'admin_order_detail.php'
     ])): ?>
 
-    <link rel="stylesheet" href="css/orders.css">
+        <link rel="stylesheet" href="css/orders.css">
 
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        >
 
-<?php endif; ?>
+    <?php endif; ?>
 
     <?php foreach ($_extra_css ?? [] as $stylesheet): ?>
         <link rel="stylesheet" href="<?= encode($stylesheet) ?>">
@@ -39,6 +39,19 @@
 <body>
 
     <div id="info"><?= temp('info') ?></div>
+
+    <?php
+    $current_role = $_SESSION['users']->role ?? '';
+    $current_user_id = (int) ($_SESSION['users']->user_id ?? 0);
+    $allowed_pages = [];
+
+    // Get individual page access for Staff and Supervisor
+    if (isset($_SESSION['users']) && isset($_db) && in_array($current_role, ['Staff', 'Supervisor'], true)) {
+        $stmt = $_db->prepare("SELECT page_slug FROM user_permissions WHERE user_id = ?");
+        $stmt->execute([$current_user_id]);
+        $allowed_pages = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+    ?>
 
     <header class="site-header">
         <div class="header-container">
@@ -65,7 +78,7 @@
                         <?php if (isset($_SESSION['users'])): ?>
 
                             <!-- Admin Navigation -->
-                            <?php if (($_SESSION['users']->role ?? '') === 'admin') : ?>
+                            <?php if ($current_role === 'admin'): ?>
 
                                 <li>
                                     <a href="/pages/admin/admin_products.php" class="nav-link">
@@ -85,11 +98,46 @@
                                     </a>
                                 </li>
 
-                            <?php endif; ?>
+
+                            <!-- Staff / Supervisor Navigation -->
+                            <?php elseif (in_array($current_role, ['Staff', 'Supervisor'], true)): ?>
+
+                                <?php if (in_array('admin_products.php', $allowed_pages, true)): ?>
+
+                                    <li>
+                                        <a href="/pages/admin/admin_products.php" class="nav-link">
+                                            Manage Products
+                                        </a>
+                                    </li>
+
+                                <?php endif; ?>
 
 
-                            <!-- Logged-in User Navigation -->
-                            <?php if (($_SESSION['users']->role ?? '') !== 'admin') : ?>
+                                <?php if (in_array('admin_orders.php', $allowed_pages, true)): ?>
+
+                                    <li>
+                                        <a href="/admin_orders.php" class="nav-link">
+                                            Manage Orders
+                                        </a>
+                                    </li>
+
+                                <?php endif; ?>
+
+
+                                <?php if (in_array('member_listing.php', $allowed_pages, true)): ?>
+
+                                    <li>
+                                        <a href="/pages/admin/member_listing.php" class="nav-link">
+                                            Member Listing
+                                        </a>
+                                    </li>
+
+                                <?php endif; ?>
+
+
+                            <!-- Member Navigation -->
+                            <?php elseif ($current_role === 'member'): ?>
+
                                 <li>
                                     <a href="/products.php" class="nav-link">
                                         Products
@@ -124,6 +172,19 @@
 
                         <?php if (isset($_SESSION['users'])): ?>
 
+                            <!-- Find Store for Member Only -->
+                            <?php if ($current_role === 'member'): ?>
+
+                                <li>
+                                    <a href="/find_store.php" class="nav-link">
+                                        Find Store
+                                    </a>
+                                </li>
+
+                            <?php endif; ?>
+
+
+                            <!-- Profile -->
                             <li class="user-greeting">
 
                                 <a href="/profile.php" class="user-name">
@@ -139,18 +200,26 @@
 
                             </li>
 
+
+                            <!-- Logout -->
                             <li>
+
                                 <a href="/logout.php" class="nav-link nav-link-btn">
                                     Logout
                                 </a>
+
                             </li>
+
 
                         <?php else: ?>
 
+                            <!-- Login -->
                             <li>
+
                                 <a href="/login.php" class="nav-link nav-link-btn">
                                     Login
                                 </a>
+
                             </li>
 
                         <?php endif; ?>
@@ -163,14 +232,25 @@
         </div>
     </header>
 
+
     <?php
+
     $main_classes = array_filter([
         $pageClass ?? '',
         !empty($_hide_page_title) ? 'main-without-page-title' : '',
     ]);
+
     $show_page_title = ($_displayTitle ?? true) !== false && empty($_hide_page_title);
+
     ?>
+
+
     <main<?= $main_classes ? ' class="' . encode(implode(' ', $main_classes)) . '"' : '' ?>>
+
         <?php if ($show_page_title): ?>
-            <h1<?= !empty($_page_title_class) ? ' class="' . encode($_page_title_class) . '"' : '' ?>><?= $_title ?? 'Untitled' ?></h1>
+
+            <h1<?= !empty($_page_title_class) ? ' class="' . encode($_page_title_class) . '"' : '' ?>>
+                <?= $_title ?? 'Untitled' ?>
+            </h1>
+
         <?php endif; ?>

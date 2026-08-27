@@ -1,3 +1,8 @@
+/* Structural (non-color) styles for the login card layout.
+   No background-color / color / border-color brand values are set here —
+   text, link, and button colors are inherited from css/main.css so the
+   site's existing palette is used instead of the mockup's blue. */
+
 .login-page {
     display: flex;
     justify-content: center;
@@ -35,43 +40,6 @@
     padding: 14px 22px;
 }
 
-.reg-page {
-    display: flex;
-    justify-content: center;
-    padding: 60px 20px;
-}
-
-.reg-card {
-    width: 100%;
-    max-width: 460px;
-    text-align: center;
-}
-
-.reg-card h1 {
-    margin: 0 0 12px;
-    font-size: 2.25rem;
-    font-weight: 700;
-}
-
-.reg-subtitle {
-    margin: 0 0 32px;
-    font-size: 1rem;
-}
-
-.reginput-pill {
-    position: relative;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 999px;
-    padding: 10px 15px;
-}
-
-.reg-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    text-align: left;
-}
-
 .input-pill label.visually-hidden {
     position: absolute;
     width: 1px;
@@ -90,49 +58,18 @@
     padding: 0;
 }
 
-.reginput-pill label.visually-hidden {
+.password-row .forgot-link {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-}
-
-.reginput-pill input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 1rem;
-    padding: 0;
-}
-
-.pass-forgot-link {
-    text-align: right;
+    top: 50%;
+    right: 22px;
+    transform: translateY(-50%);
     font-size: 0.9rem;
     text-decoration: underline;
     white-space: nowrap;
 }
 
-.reg-btn {
-    width: 100%;
-    border: none;
-    border-radius: 999px;
-    padding: 16px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
 .password-row input {
     padding-right: 140px;
-}
-
-.toggle-password-btn {
-    border: none;
-    background: none;
 }
 
 .login-btn {
@@ -151,11 +88,14 @@
     font-size: 0.95rem;
 }
 
-.existing-customer {
-    margin-top: 24px;
-    font-size: 0.95rem;
-}
-
 .login-err {
     font-size: 0.9rem;
+}
+
+/* Hide the auto-generated page heading + breadcrumb link from _head.php.
+   login.php builds its own full "Login" card below, so this duplicate
+   title/link (same pattern as the profile.php page-header fix) is redundant. */
+.page-header,
+.page-title {
+    display: none !important;
 }

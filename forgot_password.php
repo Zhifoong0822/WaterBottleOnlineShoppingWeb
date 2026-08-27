@@ -1,6 +1,6 @@
 <?php
 
-require '_base.php';
+require_once '_base.php';
 
 $_title = "Forgot Password";
 
