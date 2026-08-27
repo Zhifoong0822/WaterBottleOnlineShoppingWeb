@@ -29,7 +29,7 @@ if (is_post() && isset($_FILES['csv_file'])) {
 
     $insertSQL = "
         INSERT INTO users
-            (username, email, password, role, profilepic, reward_points)
+            (username, email, password, role, profile_pic, reward_points)
         VALUES
             (:username, :email, :password, 'member', NULL, 0)
     ";

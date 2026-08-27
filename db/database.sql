@@ -91,7 +91,7 @@ CREATE TABLE `users` (
   `email` VARCHAR(100) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
   `role` VARCHAR(50) NOT NULL DEFAULT 'member',
-  `profilepic` VARCHAR(255) DEFAULT NULL,
+  `profile_pic` VARCHAR(255) DEFAULT NULL,
   `reward_points` INT UNSIGNED NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `failed_attempts` INT NOT NULL DEFAULT 0,
@@ -299,12 +299,12 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 -- =========================================================
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
-INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`, `reward_points`) VALUES
-(1, 'daniel', 'daniel@example.com', '$2y$10$3ovrxmv7E7.IvYUnOUJ5teH/nkI6Rg.3eKhVXhMPsIerWwD0tHt6q', 'admin', NULL, 0),
-(2, 'admin', 'admin@example.com', '$2y$10$vwPjuG9/msNZkRsvsjqzBO7ItAcrGbIa75oPYfRNPz337CXA23VL2', 'admin', NULL, 0),
-(3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', NULL, 500),
-(4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 250),
-(5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 0);
+INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profile_pic`, `reward_points`) VALUES
+(1, 'daniel', 'daniel@example.com', '$2y$10$3ovrxmv7E7.IvYUnOUJ5teH/nkI6Rg.3eKhVXhMPsIerWwD0tHt6q', 'admin', '1.jpeg', 0),
+(2, 'admin', 'admin@example.com', '$2y$10$vwPjuG9/msNZkRsvsjqzBO7ItAcrGbIa75oPYfRNPz337CXA23VL2', 'admin', '2.jpeg', 0),
+(3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', '3.jpeg', 500),
+(4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', '4.jpeg', 250),
+(5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', '5.jpeg', 0);
 
 INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `phone_number`, `address_text`) VALUES
 (3, 'Home (Default)', 'John Tan', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),

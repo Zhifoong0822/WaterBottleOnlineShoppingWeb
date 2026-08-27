@@ -1,9 +1,5 @@
 <?php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once '_base.php';
 
 if (!isset($_SESSION['users'])) {
@@ -29,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $updated_name = trim($_POST['user-name'] ?? '');
         $updated_email = trim($_POST['user-email'] ?? '');
-        $updated_profilepic = null;
+        $updated_profile_pic = null;
 
         if ($updated_name === '') {
             temp('email_error', 'Name cannot be empty.');
@@ -57,12 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Upload profile photo
         if (isset($_FILES['photo']) && $_FILES['photo']['error'] === 0) {
 
-            $folder = __DIR__ . '/update/profile';
-
-            if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
-            }
-
             $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
@@ -73,17 +63,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $filename = $user_id . '_' . time() . '.' . $ext;
-            $target_path = $folder . '/' . $filename;
+            $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
             if (move_uploaded_file($_FILES['photo']['tmp_name'], $target_path)) {
-                $updated_profilepic = 'update/profile/' . $filename;
+                $updated_profile_pic = $filename;
             }
         }
 
         // Update profile
-        if ($updated_profilepic) {
-            $stmt = $_db->prepare("UPDATE users SET username = ?, email = ?, profilepic = ? WHERE user_id = ?");
-            $stmt->execute([$updated_name, $updated_email, $updated_profilepic, $user_id]);
+        if ($updated_profile_pic) {
+            $stmt = $_db->prepare("UPDATE users SET username = ?, email = ?, profile_pic = ? WHERE user_id = ?");
+            $stmt->execute([$updated_name, $updated_email, $updated_profile_pic, $user_id]);
         } else {
             $stmt = $_db->prepare("UPDATE users SET username = ?, email = ? WHERE user_id = ?");
             $stmt->execute([$updated_name, $updated_email, $user_id]);
@@ -93,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['users']->username = $updated_name;
         $_SESSION['users']->email = $updated_email;
 
-        if ($updated_profilepic) {
-            $_SESSION['users']->profilepic = $updated_profilepic;
+        if ($updated_profile_pic) {
+            $_SESSION['users']->profile_pic = $updated_profile_pic;
         }
 
         header("Location: profile.php?tab=settings");
@@ -423,12 +413,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (isset($_FILES['store_image']) && $_FILES['store_image']['error'] === UPLOAD_ERR_OK) {
 
-            $folder = __DIR__ . '/update/stores';
-
-            if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
-            }
-
             $ext = strtolower(pathinfo($_FILES['store_image']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
@@ -445,7 +429,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $filename = 'store_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-            $target_path = $folder . '/' . $filename;
+            $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
             if (!move_uploaded_file($_FILES['store_image']['tmp_name'], $target_path)) {
                 temp('store_error', 'Unable to upload store picture.');
@@ -523,12 +507,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (isset($_FILES['store_image']) && $_FILES['store_image']['error'] === UPLOAD_ERR_OK) {
 
-            $folder = __DIR__ . '/update/stores';
-
-            if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
-            }
-
             $ext = strtolower(pathinfo($_FILES['store_image']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
@@ -545,7 +523,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $filename = 'store_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-            $target_path = $folder . '/' . $filename;
+            $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
             if (!move_uploaded_file($_FILES['store_image']['tmp_name'], $target_path)) {
                 temp('store_error', 'Unable to upload store picture.');
@@ -554,7 +532,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!empty($existing_store->store_image)) {
-                $old_path = __DIR__ . '/' . $existing_store->store_image;
+                $old_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $existing_store->store_image;
                 if (is_file($old_path)) {
                     @unlink($old_path);
                 }
@@ -652,7 +630,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$store_id]);
 
             if (!empty($store->store_image)) {
-                $image_path = __DIR__ . '/' . $store->store_image;
+                $image_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $store->store_image;
                 if (is_file($image_path)) {
                     @unlink($image_path);
                 }
@@ -673,7 +651,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $_db->prepare("SELECT * FROM users WHERE user_id = ? LIMIT 1");
 $stmt->execute([$user_id]);
 $current_user = $stmt->fetch(PDO::FETCH_OBJ);
-$saved_avatar = $current_user->profilepic ?? '';
+$saved_avatar = $current_user->profile_pic ?? '';
 
 // Get one value safely
 function safe_scalar($db, $sql, $params = []) {
@@ -766,9 +744,9 @@ include '_head.php';
 
             <div class="avatar-badge">
 
-                <?php if (!empty($_SESSION['users']->profilepic)): ?>
+                <?php if (!empty($_SESSION['users']->profile_pic)): ?>
 
-                    <img src="<?= encode($_SESSION['users']->profilepic) ?>" alt="Profile Picture" class="profile-image">
+                    <img src="<?= encode(PROFILE_IMAGE_DIR . $_SESSION['users']->profile_pic) ?>" alt="Profile Picture" class="profile-image">
 
                 <?php else: ?>
 

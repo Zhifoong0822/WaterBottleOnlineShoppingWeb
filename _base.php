@@ -404,11 +404,18 @@ function is_exists($value, $table, $field) {
 // ============================================================================
 // Global Constants and Variables
 // ============================================================================
+define('PROJECT_ROOT', __DIR__ . '\\');
 
-$_genders = [
-    'F' => 'Female',
-    'M' => 'Male',
-];
+define('PROFILE_IMAGE_DIR', 'img\\profiles\\');
+if (!is_dir(PROJECT_ROOT . PROFILE_IMAGE_DIR)) {
+    mkdir(PROJECT_ROOT . PROFILE_IMAGE_DIR, 0777, true);
+}
+
+define('STORE_IMAGE_DIR', 'img\\stores\\');
+if (!is_dir(PROJECT_ROOT . STORE_IMAGE_DIR)) {
+    mkdir(PROJECT_ROOT . STORE_IMAGE_DIR, 0777, true);
+}
+
 
 // ============================================================================
 // Access Control - require login for every page except these public ones
