@@ -88,7 +88,7 @@ require "_head.php";
                         $status = strtolower($order["status"]);
                         ?>
 
-                        <!--Store info inside HTML so JS can filter the row-->
+                        <!--Store inside each tablerow (HTML) so JS can use them to filter the rows-->
                         <tr
                             data-order-id="<?= encode($order["order_id"]) ?>"
                             data-user-id="<?= encode($order["user_id"]) ?>"
@@ -147,134 +147,169 @@ require "_head.php";
 
     </div>
 
-    <nav
-        id="adminOrderPagination"
-        class="order-pagination"
-        aria-label="Manage orders pages"
-        hidden
-    ></nav>
+<nav id="pagination" class="order-pagination"></nav>
 
 </section>
 
 <script>
+const searchFilter = document.getElementById("orderSearchField");
 const searchInput = document.getElementById("orderSearch");
-const searchField = document.getElementById("orderSearchField");
-const searchPlaceholders = {
+//Get all order rows from Order table
+const orderRows = document.querySelectorAll("#orderTable tbody tr[data-order-id]");
+
+const placeholders = {
     "order-id": "Enter order ID",
     "user-id": "Enter user ID",
     "status": "Enter order status"
 };
-//Connect the dropdown option to HTML data-* attributes
-const searchDataKeys = {
-    "order-id": "orderId",
-    "user-id": "userId",
-    "status": "status"
-};
-const pagination = document.getElementById("adminOrderPagination");
+
 const ordersPerPage = 12;
 let currentPage = 1;
+//Get pagination area
+const pagination = document.getElementById("pagination");
 
-//Find orders that match the search
-function getFilteredRows() {
-    const filter = searchInput.value.trim().toLowerCase().replace(/^#/, "");
-    const field = searchField.value;
+function getFilteredOrders() {
+    //Get the admin input
+    const searchValue = searchInput.value
+        .trim()
+        .toLowerCase()
+        .replace(/^#/, "");
 
-    return Array.from(
-        document.querySelectorAll("#orderTable tbody tr[data-order-id]")
-    ).filter(function (row) {
-        const value = row.dataset[searchDataKeys[field]].toLowerCase();
-        return value.includes(filter);
+        //Check each row and Return rows that match the searchValue
+        return Array.from(orderRows).filter(function(row) {
+            let value;
+
+            if(searchFilter.value === "order-id"){
+                value = row.dataset.orderId;
+            }
+
+            else if (searchFilter.value === "user-id"){
+                value = row.dataset.userId;
+            }
+
+            else {
+                value = row.dataset.status;
+            }
+
+            //Return row that includes the searchValue
+            return value.toLowerCase().includes(searchValue);
+        });
+    }
+
+    function displayOrders() {
+        const filteredOrders = getFilteredOrders();
+
+        const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ordersPerPage));
+
+        if (currentPage > totalPages){
+            currentPage = totalPages;
+        }
+
+        const orderStartIndex = (currentPage - 1) * ordersPerPage;
+        const orderEndIndex = orderStartIndex + ordersPerPage;
+
+        //Hide all order rows first
+        orderRows.forEach(function(row) {
+            row.hidden = true;
+        });
+
+        //Display filtered rows for current page
+        filteredOrders.slice(orderStartIndex, orderEndIndex)
+            .forEach(function(row) {
+                row.hidden = false;
+            });
+
+        createPaginationButtons(totalPages);
+    }
+
+    function createPaginationButtons(totalPages) {
+        // Clear existing pagination buttons
+        pagination.innerHTML = "";
+
+        if (totalPages <= 1) {
+            pagination.hidden = true;
+            return;
+        }
+        pagination.hidden = false;
+
+        //PREVIOUS button
+        if (currentPage > 1) {
+            const previousButton = document.createElement("button");
+
+            previousButton.type = "button";
+            previousButton.textContent = "Previous";
+            previousButton.className = "pagination-link";
+
+            previousButton.addEventListener("click", function() {
+                currentPage--;
+
+                displayOrders();
+            });
+
+            //display the Previous button
+            pagination.appendChild(previousButton);
+        }
+
+        //PAGE NUMBER buttons
+        for (let page = 1; page <= totalPages; page++) {
+            const pageButton = document.createElement("button");
+
+            pageButton.type = "button";
+            pageButton.textContent = page;
+            pageButton.className = "pagination-link";
+
+            //Highlight current page
+            if (page === currentPage) {
+                pageButton.classList.add("active");
+            }
+
+            pageButton.addEventListener("click", function() {
+                currentPage = page;
+
+                displayOrders();
+            });
+
+            pagination.appendChild(pageButton);
+        }
+
+        //NEXT button
+        if (currentPage < totalPages) {
+            const nextButton = document.createElement("button");
+
+            nextButton.type = "button";
+            nextButton.textContent = "Next";
+            nextButton.className = "pagination-link";
+
+            nextButton.addEventListener("click", function() {
+                currentPage++;
+
+                displayOrders();
+            });
+
+            //display the Next button
+            pagination.appendChild(nextButton);
+        }
+    }
+
+    searchInput.addEventListener("input", function() {
+        //Go back to page1 when admin wants a new search
+        currentPage = 1;
+
+        displayOrders();
     });
-}
 
-function createPageButton(label, page, options = {}) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "pagination-link";
-    button.textContent = label;  //Button title eg. Previous/Next
+    searchFilter.addEventListener("change", function () {
+        //Change the placeholder
+        searchInput.placeholder = placeholders[searchFilter.value];
+        
+        currentPage = 1;
 
-    //Check if it's a Previous/Next button
-    if (options.direction) {
-        button.classList.add("pagination-direction");
-    }
-
-    if (options.active) {
-        button.classList.add("active");
-        button.setAttribute("aria-current", "page");
-    }
-
-    button.addEventListener("click", function () {
-        currentPage = page;  //Change the current page
-        renderOrders();  //Refresh displayed orders
-    });
-
-    return button;
-}
-
-function renderPagination(totalPages) {
-    pagination.replaceChildren();  //Remove existing pagination buttons
-    pagination.hidden = totalPages <= 1;
-
-    if (totalPages <= 1) {
-        return;
-    }
-
-    if (currentPage > 1) {
-        pagination.appendChild(
-            createPageButton("Previous", currentPage - 1, { direction: true })
-        );
-    }
-
-    for (let page = 1; page <= totalPages; page += 1) {
-        pagination.appendChild(
-            createPageButton(String(page), page, { active: page === currentPage })
-        );
-    }
-
-    if (currentPage < totalPages) {
-        pagination.appendChild(
-            createPageButton("Next", currentPage + 1, { direction: true })
-        );
-    }
-}
-
-//Controls which orders to display
-function renderOrders() {
-    const allRows = document.querySelectorAll("#orderTable tbody tr[data-order-id]");
-    const filteredRows = getFilteredRows();
-    const totalPages = Math.max(1, Math.ceil(filteredRows.length / ordersPerPage));
-
-    currentPage = Math.min(currentPage, totalPages);
-    //Calculate the first order begins with what number
-    const firstRow = (currentPage - 1) * ordersPerPage;
-    const visibleRows = new Set(
-        filteredRows.slice(firstRow, firstRow + ordersPerPage)
-    );
-
-    //Control which orders are shown
-    allRows.forEach(function (row) {
-        row.hidden = !visibleRows.has(row);
-    });
-
-    //Updates pagination buttons
-    renderPagination(totalPages);
-}
-
-function filterOrders() {
-    currentPage = 1;
-    renderOrders();
-}
-
-searchInput.addEventListener("input", filterOrders);
-
-searchField.addEventListener("change", function () {
-    //Change the placeholder based on searchField value
-    searchInput.placeholder = searchPlaceholders[searchField.value];
-    filterOrders();
-    searchInput.focus();
+        displayOrders();
+    
+        searchInput.focus();
 });
 
-renderOrders();
+displayOrders();
 </script>
 
 <?php require "_foot.php"; ?>
