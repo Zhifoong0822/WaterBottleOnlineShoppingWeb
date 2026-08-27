@@ -751,6 +751,29 @@ if ($is_admin) {
     $stores = safe_rows($_db, "SELECT * FROM stores ORDER BY created_at DESC, store_id DESC");
 }
 
+// Wishlist tab data
+$wishlist_products = [];
+
+if ($is_member) {
+    $wishlist_products = safe_rows($_db, "
+        SELECT
+            w.wishlist_id,
+            p.product_id,
+            p.name,
+            p.description,
+            p.price,
+            p.image_url,
+            pv.variant_id,
+            pv.size,
+            pv.colour
+        FROM wishlist w
+        JOIN products p ON p.product_id = w.product_id
+        JOIN product_variants pv ON pv.variant_id = w.variant_id AND pv.product_id = p.product_id
+        WHERE w.user_id = ?
+        ORDER BY w.created_at DESC
+    ", [$user_id]);
+}
+
 include '_head.php';
 ?>
 
@@ -821,6 +844,58 @@ include '_head.php';
         </button>
 
     </nav>
+
+    <?php if ($is_member): ?>
+
+        <!-- Wishlist Tab -->
+        <div id="wishlist" class="tab-content" style="display: none;">
+
+            <h2>My Wishlist</h2>
+
+            <?php if (empty($wishlist_products)): ?>
+
+                <p class="empty-catalogue">No products in your wishlist yet.</p>
+
+            <?php else: ?>
+
+                <div class="product-grid">
+
+                    <?php foreach ($wishlist_products as $item): ?>
+
+                        <article class="product-card" id="wishlist-item-<?= (int) $item->wishlist_id ?>">
+
+                            <a href="product_detail.php?id=<?= (int) $item->product_id ?>&variant_id=<?= (int) $item->variant_id ?>" class="product-card-link">
+                                <img src="<?= encode($item->image_url) ?>" alt="<?= encode($item->name) ?>">
+                                <h3><?= encode($item->name) ?></h3>
+                            </a>
+
+                            <p><?= encode($item->description) ?></p>
+
+                            <?php if (!empty($item->size)): ?>
+                                <p class="product-variant">Size: <?= encode($item->size) ?></p>
+                            <?php endif; ?>
+
+                            <?php if (!empty($item->colour)): ?>
+                                <p class="product-variant">Colour: <?= encode($item->colour) ?></p>
+                            <?php endif; ?>
+
+                            <p class="product-price">RM<?= number_format((float) $item->price, 2) ?></p>
+
+                            <a href="product_detail.php?id=<?= (int) $item->product_id ?>&variant_id=<?= (int) $item->variant_id ?>" class="view-details-btn">View Details</a>
+
+                            <button type="button" class="view-details-btn wishlist-remove-btn" data-product-id="<?= (int) $item->product_id ?>" data-variant-id="<?= (int) $item->variant_id ?>" data-wishlist-id="<?= (int) $item->wishlist_id ?>" style="margin-top: 10px; width: 100%; cursor: pointer;">Remove</button>
+
+                        </article>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+
+    <?php endif; ?>
 
     <?php if ($is_admin): ?>
 
@@ -1667,6 +1742,39 @@ function toggleStoreEdit(storeId) {
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
+
+// Remove wishlist product
+document.querySelectorAll('.wishlist-remove-btn').forEach(function(button) {
+    button.addEventListener('click', function () {
+        const formData = new FormData();
+        formData.append('product_id', button.dataset.productId);
+        formData.append('variant_id', button.dataset.variantId);
+
+        fetch('wishlist_handler.php', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (!data.success) {
+                    alert(data.message);
+                    return;
+                }
+
+                if (!data.wishlisted) {
+                    const wishlistItem = document.getElementById('wishlist-item-' + button.dataset.wishlistId);
+
+                    if (wishlistItem) {
+                        wishlistItem.remove();
+                    }
+
+                    if (document.querySelectorAll('.wishlist-remove-btn').length === 0) {
+                        window.location.href = 'profile.php?tab=wishlist';
+                    }
+                }
+            })
+            .catch(function () {
+                alert('Unable to update wishlist.');
+            });
+    });
+});
 
 // Open selected main tab
 <?php

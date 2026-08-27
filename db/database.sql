@@ -297,6 +297,23 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 -- =========================================================
+-- 15. Wishlist
+-- =========================================================
+CREATE TABLE wishlist (
+    wishlist_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    variant_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE KEY unique_wishlist (user_id, product_id, variant_id),
+
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id),
+    FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+);
+
+-- =========================================================
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
 INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`, `reward_points`) VALUES
