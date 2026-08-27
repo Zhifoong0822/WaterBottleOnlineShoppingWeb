@@ -406,12 +406,12 @@ function is_exists($value, $table, $field) {
 // ============================================================================
 define('PROJECT_ROOT', __DIR__ . '\\');
 
-define('PROFILE_IMAGE_DIR', 'img\\profiles\\');
+define('PROFILE_IMAGE_DIR', '\\img\\profiles\\');
 if (!is_dir(PROJECT_ROOT . PROFILE_IMAGE_DIR)) {
     mkdir(PROJECT_ROOT . PROFILE_IMAGE_DIR, 0777, true);
 }
 
-define('STORE_IMAGE_DIR', 'img\\stores\\');
+define('STORE_IMAGE_DIR', '\\img\\stores\\');
 if (!is_dir(PROJECT_ROOT . STORE_IMAGE_DIR)) {
     mkdir(PROJECT_ROOT . STORE_IMAGE_DIR, 0777, true);
 }

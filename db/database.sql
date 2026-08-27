@@ -372,8 +372,8 @@ INSERT INTO `stores` (`store_id`, `store_name`, `state`, `address`, `opening_hou
 
 -- Prefilled chat data
 INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`, `created_at`) VALUES
-(1, 3, 0, '2026-08-13 14:58:00'),
-(2, 4, 2, '2026-08-16 10:15:00'),
+(1, 3, 2, '2026-08-13 14:58:00'),
+(2, 4, 0, '2026-08-16 10:15:00'),
 (3, 5, 1, '2026-08-19 09:30:00'),
 (4, 3, 1, '2026-08-20 11:44:00');
 
