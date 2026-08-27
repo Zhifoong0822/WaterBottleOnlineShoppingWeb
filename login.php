@@ -25,7 +25,7 @@ if (is_post()) {
         $_SESSION['users'] = $user;
 
         temp('info', "Welcome back, " . encode($user->username) . "!");
-        redirect($user->role === 'admin' ? 'admin_orders.php' : 'products.php');
+        redirect($user->role === 'admin' ? 'admin_dashboard.php' : 'products.php');
         exit;
     } else {
         $_err['login'] = "Invalid email or password.";

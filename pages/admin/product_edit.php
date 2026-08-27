@@ -2,11 +2,9 @@
 require_once '../../_base.php';
 
 $_title = 'Edit Product';
-
 /*----------------------------------------------------------
     Validate Product ID
 -----------------------------------------------------------*/
-
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header("Location: admin_products.php");
     exit;
@@ -14,22 +12,18 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 
 $product_id = (int) $_GET['id'];
 
-
 /*----------------------------------------------------------
     Get Categories
 -----------------------------------------------------------*/
-
 $categories = $_db->query("
     SELECT *
     FROM categories
     ORDER BY category_name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-
 /*----------------------------------------------------------
     Load Product + Variant
 -----------------------------------------------------------*/
-
 $sql = "
 SELECT
     p.*,
@@ -60,11 +54,9 @@ if (!$product) {
     exit;
 }
 
-
 /*----------------------------------------------------------
     Load Existing Images
 -----------------------------------------------------------*/
-
 $image_stmt = $_db->prepare("
     SELECT
         image_id,
@@ -78,11 +70,9 @@ $image_stmt->execute([$product_id]);
 
 $additional_images = $image_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-
 /*----------------------------------------------------------
     Default Values
 -----------------------------------------------------------*/
-
 $name        = $product['name'];
 $category_id = $product['category_id'];
 $price       = $product['price'];
@@ -93,20 +83,19 @@ $video_url   = $product['video_url'] ?? '';
 $colour = $product['colour'];
 $stock  = $product['stock'];
 
-$error = [];
+$new_category = '';
 
+$error = [];
 
 /*----------------------------------------------------------
     Standard Sizes
 -----------------------------------------------------------*/
-
 $standard_sizes = [
     'Micro (12oz / 350ml)',
     'Mini (15oz / 450ml)',
     'Medium (18oz / 530ml)',
     'Mega (32oz / 950ml)'
 ];
-
 
 /*----------------------------------------------------------
     Save Changes
@@ -117,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     -------------------------------------------------------*/
     $name        = trim($_POST['name'] ?? '');
     $category_id = $_POST['category'] ?? '';
+    $new_category = trim($_POST['new_category'] ?? '');
     $price       = $_POST['price'] ?? '';
     $size        = trim($_POST['size'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -175,11 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-
     /*------------------------------------------------------
         Validation
     -------------------------------------------------------*/
-
     if ($name == '') {
         $error['name'] =
             "Product name is required.";
@@ -200,13 +188,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             "Colour is required.";
     }
 
+    if ($category_id === '') {
+        $error['category'] =
+            "Please select a category.";
+    }
+
+    if ($category_id === 'new' && $new_category === '') {
+        $error['new_category'] =
+            "Please enter the new category.";
+    }
 
     /*------------------------------------------------------
         Calculate Existing Images After Removal
     -------------------------------------------------------*/
-
     $remaining_additional_images = [];
-
     foreach ($additional_images as $image) {
 
         if (
@@ -221,21 +216,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-
     /*
     Main image is stored in products.image_url.
-
     If the main image is not removable, it remains.
-
     If all additional images are removed,
     we still have the main image.
     */
-
-
     /*------------------------------------------------------
         Handle New Images
     -------------------------------------------------------*/
-
     $new_files = [];
 
     if (
@@ -268,11 +257,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-
     /*------------------------------------------------------
         Count Total Images
     -------------------------------------------------------*/
-
     /*
     Existing main image
     +
@@ -280,7 +267,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     +
     new images
     */
-
     $total_images =
         1
         + count($remaining_additional_images)
@@ -293,11 +279,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             "A product can have a maximum of 5 images.";
     }
 
-
     /*------------------------------------------------------
         Validate New Images
     -------------------------------------------------------*/
-
     $allowed_types = [
         'image/jpeg',
         'image/png',
@@ -305,10 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ];
 
     foreach ($new_files as $file) {
-
-        /*
-        Maximum file size: 5 MB
-        */
+        //Maximum file size: 5 MB
 
         if ($file['size'] > 5 * 1024 * 1024) {
 
@@ -318,11 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             break;
         }
 
-
-        /*
-        Check actual image type
-        */
-
+        //Check actual image type
         $image_info =
             getimagesize($file['tmp_name']);
 
@@ -349,24 +326,56 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-
     /*------------------------------------------------------
         Update Database
     -------------------------------------------------------*/
-
     if (empty($error)) {
-
         $uploaded_files = [];
-
         try {
 
             $_db->beginTransaction();
 
+            /*----------------------------------------------
+                Resolve "+ New Category" into a real
+                category_id, reusing an existing category
+                of the same name if one already exists.
+            -----------------------------------------------*/
+            if ($category_id === 'new') {
+
+                $stmt = $_db->prepare("
+                    SELECT category_id
+                    FROM categories
+                    WHERE category_name = ?
+                ");
+
+                $stmt->execute([$new_category]);
+
+                $existing_category = $stmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
+
+                if ($existing_category) {
+
+                    $category_id =
+                        $existing_category['category_id'];
+
+                } else {
+
+                    $stmt = $_db->prepare("
+                        INSERT INTO categories
+                        (category_name)
+                        VALUES (?)
+                    ");
+
+                    $stmt->execute([$new_category]);
+
+                    $category_id = $_db->lastInsertId();
+                }
+            }
 
             /*----------------------------------------------
                 Update Product
             -----------------------------------------------*/
-
             $stmt = $_db->prepare("
                 UPDATE products
                 SET
@@ -387,11 +396,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $product_id
             ]);
 
-
             /*----------------------------------------------
                 Update Variant
             -----------------------------------------------*/
-
             $stmt = $_db->prepare("
                 UPDATE product_variants
                 SET
@@ -408,13 +415,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $product['variant_id']
             ]);
 
-
             /*----------------------------------------------
                 Delete Selected Additional Images
             -----------------------------------------------*/
-
             if (!empty($remove_images)) {
-
                 $delete_stmt = $_db->prepare("
                     SELECT image_url
                     FROM product_images
@@ -472,15 +476,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
 
-
             /*----------------------------------------------
                 Upload New Images
             -----------------------------------------------*/
-
             $new_image_urls = [];
-
             if (!empty($new_files)) {
-
                 $folder =
                     "../../img/products/";
 
@@ -493,7 +493,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     );
                 }
 
-
                 $insert_image = $_db->prepare("
                     INSERT INTO product_images
                     (
@@ -502,7 +501,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     )
                     VALUES (?, ?)
                 ");
-
 
                 foreach ($new_files as $index => $file) {
 
@@ -585,16 +583,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
 
-
             /*----------------------------------------------
                 Apply Main Image Change (if any)
             -----------------------------------------------*/
-
             if ($main_selection !== '') {
-
                 $old_main_url = $product['image_url'];
                 $new_main_url = null;
-
+                
                 if (
                     str_starts_with(
                         $main_selection,
@@ -643,7 +638,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         'new:'
                     )
                 ) {
-
                     $picked_index =
                         (int) substr($main_selection, 4);
 
@@ -706,19 +700,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_db->rollBack();
             }
 
-
             /*
             Remove newly uploaded files
             if database update failed.
             */
-
             foreach ($uploaded_files as $file) {
 
                 if (file_exists($file)) {
                     unlink($file);
                 }
             }
-
 
             $error['database'] =
                 "Unable to update the product" . $e->getMessage();
@@ -728,7 +719,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 /*----------------------------------------------------------
     Determine Custom Size
 -----------------------------------------------------------*/
-
 $is_custom_size =
     !in_array(
         $size,
@@ -739,7 +729,6 @@ $is_custom_size =
 /*----------------------------------------------------------
     Prepare Existing Images For JavaScript
 -----------------------------------------------------------*/
-
 $existing_images = [];
 
 
@@ -756,11 +745,7 @@ if (!empty($product['image_url'])) {
     ];
 }
 
-
-/*
-Additional images
-*/
-
+//Additional images
 foreach ($additional_images as $image) {
 
     $existing_images[] = [
@@ -769,7 +754,6 @@ foreach ($additional_images as $image) {
         'main' => false
     ];
 }
-
 
 include '../../_head.php';
 ?>
@@ -790,43 +774,28 @@ include '../../_head.php';
         enctype="multipart/form-data"
         class="edit-card">
 
-
         <!-- ==========================================
              HEADER
         =========================================== -->
-
         <div class="edit-header">
-
             <h2>Edit Product</h2>
-
         </div>
 
-
         <?php if (!empty($error['database'])): ?>
-
             <div class="error-message">
-
                 <?= htmlspecialchars(
                     $error['database']
                 ) ?>
-
             </div>
-
         <?php endif; ?>
 
-
         <?php if (!empty($error['image'])): ?>
-
             <div class="error-message">
-
                 <?= htmlspecialchars(
                     $error['image']
                 ) ?>
-
             </div>
-
         <?php endif; ?>
-
 
         <div class="edit-content">
 
@@ -834,11 +803,8 @@ include '../../_head.php';
             <!-- ======================================
                  LEFT SIDE - PHOTO MANAGER
             ======================================= -->
-
             <div class="edit-image">
-
                 <div class="photo-manager">
-
                     <!-- Header -->
                     <div class="photo-manager-header">
                         <div>
@@ -851,7 +817,6 @@ include '../../_head.php';
                             <?= count($existing_images) ?>/5
                         </span>
                     </div>
-
 
                     <!-- Main preview -->
                     <?php
@@ -884,7 +849,6 @@ include '../../_head.php';
                     ?>
 
                     <div class="photo-main-frame">
-
                         <span
                             class="photo-main-badge"
                             id="mainFrameBadge">
@@ -900,7 +864,6 @@ include '../../_head.php';
                         >
 
                     </div>
-
 
                     <!-- Thumbnail grid (existing + new images) -->
                     <div
@@ -977,7 +940,6 @@ include '../../_head.php';
                             id="addPhotoTile">
                             <span>+</span>
                         </div>
-
                     </div>
 
 
@@ -1002,7 +964,6 @@ include '../../_head.php';
                         </button>
 
                     </div>
-
 
                     <!-- Drag & drop / click to upload -->
                     <label
@@ -1037,18 +998,12 @@ include '../../_head.php';
 
             </div>
 
-
             <!-- ======================================
                  RIGHT SIDE - FORM
             ======================================= -->
-
             <div class="edit-form">
-
-
                 <!-- Product Name -->
-
                 <div class="form-group">
-
                     <label>
                         Product Name
                     </label>
@@ -1069,17 +1024,14 @@ include '../../_head.php';
                     </small>
 
                 </div>
-
-
                 <!-- Category -->
-
                 <div class="form-group">
 
                     <label>
                         Category
                     </label>
 
-                    <select name="category">
+                    <select name="category" id="category">
 
                         <?php foreach (
                             $categories
@@ -1105,19 +1057,56 @@ include '../../_head.php';
 
                         <?php endforeach; ?>
 
+                        <option
+                            value="new"
+                            <?= ($category_id === 'new')
+                                ? 'selected'
+                                : ''
+                            ?>>
+
+                            + New Category
+                        </option>
                     </select>
 
+                    <small class="error">
+                        <?= htmlspecialchars(
+                            $error['category'] ?? ''
+                        ) ?>
+                    </small>
                 </div>
 
-
-                <!-- Size -->
-
-                <div class="form-group">
+                <!-- New Category -->
+                <div
+                    class="form-group full-width"
+                    id="newCategoryBox"
+                    style="<?= ($category_id === 'new')
+                        ? ''
+                        : 'display:none;'
+                    ?>">
 
                     <label>
-                        Size
+                        New Category
                     </label>
 
+                    <input
+                        type="text"
+                        name="new_category"
+                        value="<?= htmlspecialchars(
+                            $new_category
+                        ) ?>">
+
+                    <small class="error">
+
+                        <?= htmlspecialchars(
+                            $error['new_category'] ?? ''
+                        ) ?>
+
+                    </small>
+                </div>
+
+                <!-- Size -->
+                <div class="form-group">
+                    <label>Size</label>
                     <select
                         name="size"
                         id="size">
@@ -1162,9 +1151,7 @@ include '../../_head.php';
                             ?>>
 
                             Custom
-
                         </option>
-
                     </select>
 
 
@@ -1189,23 +1176,16 @@ include '../../_head.php';
 
 
                     <small class="error">
-
                         <?= htmlspecialchars(
                             $error['size'] ?? ''
                         ) ?>
-
                     </small>
-
                 </div>
 
 
                 <!-- Price -->
-
                 <div class="form-group">
-
-                    <label>
-                        Price (RM)
-                    </label>
+                    <label>Price (RM)</label>
 
                     <input
                         type="number"
@@ -1222,18 +1202,11 @@ include '../../_head.php';
                         ) ?>
 
                     </small>
-
                 </div>
 
-
                 <!-- Colour -->
-
                 <div class="form-group">
-
-                    <label>
-                        Colour
-                    </label>
-
+                    <label>Colour</label>  
                     <input
                         type="text"
                         name="colour"
@@ -1248,18 +1221,13 @@ include '../../_head.php';
                         ) ?>
 
                     </small>
-
                 </div>
 
 
                 <!-- Stock -->
 
                 <div class="form-group">
-
-                    <label>
-                        Stock
-                    </label>
-
+                    <label>Stock</label>
                     <input
                         type="number"
                         name="stock"
@@ -1275,14 +1243,10 @@ include '../../_head.php';
                         ) ?>
 
                     </small>
-
                 </div>
 
-
                 <!-- Description -->
-
                 <div class="form-group full-width">
-
                     <label>
                         Description
                     </label>
@@ -1319,46 +1283,32 @@ include '../../_head.php';
                 </div>
 
             </div>
-
         </div>
 
 
         <!-- ==========================================
              FOOTER
         =========================================== -->
-
         <div class="edit-footer">
-
             <a
                 href="admin_products.php"
                 class="btn-view">
-
                 Cancel
-
             </a>
-
 
             <button
                 type="submit"
                 class="btn-edit">
-
                 Save Changes
-
             </button>
-
         </div>
-
     </form>
-
 </div>
 
-
 <script>
-
 /* ==================================================
    SIZE
 ================================================== */
-
 const sizeSelect =
     document.getElementById('size');
 
@@ -1388,7 +1338,6 @@ function checkCustomSize() {
     }
 }
 
-
 sizeSelect.addEventListener(
     'change',
     checkCustomSize
@@ -1396,6 +1345,18 @@ sizeSelect.addEventListener(
 
 checkCustomSize();
 
+
+/* ==================================================
+   CATEGORY
+================================================== */
+document.getElementById('category').addEventListener(
+    'change',
+    function () {
+
+        document.getElementById('newCategoryBox').style.display =
+            (this.value === 'new') ? 'block' : 'none';
+    }
+);
 
 /* ==================================================
    PHOTO MANAGER
@@ -1454,7 +1415,6 @@ let formDirty = false;
 /*--------------------------------------------------
     Counter
 --------------------------------------------------*/
-
 function getExistingCount() {
 
     return photoGrid.querySelectorAll(
@@ -1481,11 +1441,9 @@ function updateCounter() {
         (total >= 5) ? 'none' : 'flex';
 }
 
-
 /*--------------------------------------------------
     Selection (click a tile to preview it)
 --------------------------------------------------*/
-
 function clearSelection() {
 
     if (selectedTile) {
@@ -1499,7 +1457,6 @@ function clearSelection() {
     editMainPreview.src = trueMainSrc;
     mainFrameBadge.textContent = '\u2713 Main Image';
 }
-
 
 function selectTile(tile) {
 
@@ -1540,7 +1497,6 @@ function selectTile(tile) {
     }
 }
 
-
 /*--------------------------------------------------
     Click handling inside the grid
     (selection only - no per-tile remove button)
@@ -1556,7 +1512,6 @@ photoGrid.addEventListener('click', function (e) {
 
     selectTile(tile);
 });
-
 
 addPhotoTile.addEventListener(
     'click',
@@ -1591,11 +1546,9 @@ function removeExistingTile(tile) {
     updateCounter();
 }
 
-
 /*--------------------------------------------------
     Remove a newly chosen (not yet uploaded) image
 --------------------------------------------------*/
-
 function removeNewTile(tile) {
 
     formDirty = true;
@@ -1616,7 +1569,6 @@ function removeNewTile(tile) {
 /*--------------------------------------------------
     New file selection (input + drag & drop)
 --------------------------------------------------*/
-
 imageInput.addEventListener('change', function () {
 
     addFiles(Array.from(this.files));
@@ -1644,13 +1596,11 @@ function addFiles(files) {
         }
     });
 
-
     /*
     Maximum 5 total images
 
     Existing images + new images
     */
-
     const existingCount = getExistingCount();
 
     if (existingCount + selectedFiles.length > 5) {
@@ -1671,11 +1621,9 @@ function addFiles(files) {
     renderNewTiles();
 }
 
-
 /*--------------------------------------------------
     Keep Files In Input
 --------------------------------------------------*/
-
 function updateFileInput() {
 
     const dataTransfer = new DataTransfer();
@@ -1693,7 +1641,6 @@ function updateFileInput() {
     (no remove button here - select the tile, then
     use the "Delete" button in the action bar)
 --------------------------------------------------*/
-
 function renderNewTiles() {
 
     photoGrid
@@ -1720,7 +1667,6 @@ function renderNewTiles() {
     updateCounter();
 }
 
-
 /*--------------------------------------------------
     Set as Main
     Records the pending choice instead of navigating
@@ -1731,7 +1677,6 @@ function renderNewTiles() {
     The actual database swap happens server-side when
     the form is submitted.
 --------------------------------------------------*/
-
 setMainBtn.addEventListener('click', function () {
 
     if (!selectedTile) {
@@ -1757,7 +1702,6 @@ setMainBtn.addEventListener('click', function () {
     );
 });
 
-
 /*--------------------------------------------------
     Delete the currently selected tile
 --------------------------------------------------*/
@@ -1774,7 +1718,6 @@ deletePhotoBtn.addEventListener('click', function () {
         removeNewTile(selectedTile);
     }
 });
-
 
 /*--------------------------------------------------
     Drag & Drop onto the dropzone
@@ -1812,7 +1755,6 @@ Initial counter state
 
 updateCounter();
 
-
 /*--------------------------------------------------
     Warn on refresh / navigation away if there are
     unsaved changes (new photos, removed photos, or
@@ -1820,7 +1762,6 @@ updateCounter();
     persist any data - it only prompts the browser's
     native "leave site?" confirmation.
 --------------------------------------------------*/
-
 window.addEventListener('beforeunload', function (e) {
 
     if (formDirty) {
@@ -1857,6 +1798,5 @@ document
     });
 
 </script>
-
 
 <?php include '../../_foot.php'; ?>
