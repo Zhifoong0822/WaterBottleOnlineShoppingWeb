@@ -199,6 +199,7 @@ $custom_size = '';
 $colour = '';
 $stock = '';
 $description = '';
+$video_url = '';
 
 $error = [];
 $bulk_results = null;
@@ -249,6 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $colour = trim($_POST['colour'] ?? '');
         $stock = trim($_POST['stock'] ?? '');
         $description = trim($_POST['description'] ?? '');
+        $video_url = trim($_POST['video_url'] ?? '');
 
         if ($name == '') $error['name'] = 'Product name is required.';
 
@@ -351,10 +353,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $main_image = $uploaded_images[0];
 
                 $stmt = $_db->prepare("
-                    INSERT INTO products (category_id, name, description, price, image_url)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO products (category_id, name, description, price, image_url, video_url)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 ");
-                $stmt->execute([$category, $name, $description, $price, $main_image]);
+                $stmt->execute([$category, $name, $description, $price, $main_image, $video_url !== '' ? $video_url : null]);
 
                 $product_id = $_db->lastInsertId();
 
@@ -565,6 +567,16 @@ include '../../_head.php';
                         <div class="form-group full-width">
                             <label>Description</label>
                             <textarea name="description" rows="6"><?= htmlspecialchars($description) ?></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label>Product Video URL <small>(Optional)</small></label>
+                            <input
+                                type="url"
+                                name="video_url"
+                                value="<?= htmlspecialchars($video_url) ?>"
+                                placeholder="https://www.youtube.com/watch?v=..."
+                            >
                         </div>
                     </div>
                 </div>

@@ -57,6 +57,58 @@ foreach ($product_images as $image) {
     $gallery_image_urls[] = $image->image_url;
 }
 
+function getYoutubeEmbedUrl($url){
+    if (!$url) {
+        return null;
+    }
+
+    $parts = parse_url($url);
+
+    if (!$parts || empty($parts['host'])) {
+        return null;
+    }
+
+    $host = strtolower($parts['host']);
+
+    // Normal YouTube URL
+    if ($host === 'www.youtube.com' || $host === 'youtube.com') {
+
+        if (!empty($parts['query'])) {
+
+            parse_str($parts['query'], $query);
+
+            if (!empty($query['v'])) {
+                return 'https://www.youtube.com/embed/' . rawurlencode($query['v']);
+            }
+        }
+
+        // Already an embed URL
+        if (
+            !empty($parts['path']) &&
+            str_starts_with($parts['path'], '/embed/')
+        ) {
+            return 'https://www.youtube.com' . $parts['path'];
+        }
+    }
+
+    // YouTube Shorts URL
+    if ($host === 'www.youtube.com' || $host === 'youtube.com') {
+        if (
+            !empty($parts['path']) &&
+            str_starts_with($parts['path'], '/shorts/')
+        ) {
+            $video_id = trim(substr($parts['path'], strlen('/shorts/')));
+
+        if ($video_id !== '') {
+            return 'https://www.youtube.com/embed/' . rawurlencode($video_id);
+        }
+    }
+}
+    return null;
+}
+
+$youtube_embed_url = getYoutubeEmbedUrl($product->video_url ?? null);
+
 require '_head.php';
 ?>
 
@@ -103,6 +155,73 @@ require '_head.php';
         </form>
     </div>
 </div>
+
+</div>
+
+<?php if ($youtube_embed_url): ?>
+
+<div
+    class="product-video-section"
+    style="
+        max-width:1200px;
+        margin:40px auto;
+        padding:0 20px;
+    "
+>
+
+    <h3
+        style="
+            margin-bottom:20px;
+            font-size:22px;
+        "
+    >
+        Product Video
+    </h3>
+
+
+    <div
+        class="product-video-container"
+        style="
+            position:relative;
+            width:100%;
+            aspect-ratio:9 / 16;
+            max-width:360px;
+            margin:0 auto;
+            overflow:hidden;
+            border-radius:8px;
+            background:#000;
+        "
+    >
+
+        <iframe
+            src="<?= encode($youtube_embed_url) ?>"
+            title="<?= encode($product->name) ?> Product Video"
+            style="
+                position:absolute;
+                top:0;
+                left:0;
+                width:100%;
+                height:100%;
+                border:0;
+            "
+            allow="
+                accelerometer;
+                autoplay;
+                clipboard-write;
+                encrypted-media;
+                gyroscope;
+                picture-in-picture;
+                web-share
+            "
+            allowfullscreen
+        >
+        </iframe>
+
+    </div>
+
+</div>
+
+<?php endif; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

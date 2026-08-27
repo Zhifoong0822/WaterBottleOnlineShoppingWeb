@@ -27,6 +27,7 @@ if (is_post() && post('action') === 'send_receipt') {
     redirect('order_detail.php?id=' . urlencode($order_id));
 }
 
+//Retrieve order from db
 try {
     $sql = "SELECT
                 order_id,
@@ -56,9 +57,10 @@ try {
 
     $stmt->execute([
         "order_id" => $order_id,
-        "user_id" => $user_id
+        "user_id" => $user_id  //required to prevent cust w different user_id from viewing other ppl's orders
     ]);
 
+    //$order array stores the row (order info)
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$order) {
@@ -76,16 +78,18 @@ $can_update_address = $status === 'pending' && !(bool) $order['address_updated']
 $show_address_editor = $can_update_address && get('edit_address') === '1';
 
 if (is_post() && post('action') === 'update_address') {
-    $address_source = post('address_source', 'saved');
+    $address_source = post('address_source', 'saved'); //initial shipping address
     $return_url = 'order_detail.php?id=' . urlencode($order_id);
     $shipping_address = '';
     $recipient_name = $order['recipient_name'];
     $phone_number = $order['phone_number'];
 
+    //Customer not allowed to update address
     if (!$can_update_address) {
         temp('info', 'The delivery address can only be changed once before the order is processed.');
     } else {
         if ($address_source === 'saved') {
+            //Get selected saved address ID
             $address_id = post('address_id', '');
             $saved_address_stmt = $_db->prepare(
                 'SELECT recipient_name, phone_number, address_text FROM user_addresses WHERE address_id = ? AND user_id = ?'
@@ -101,6 +105,7 @@ if (is_post() && post('action') === 'update_address') {
                 $recipient_name = $saved_address->recipient_name;
                 $phone_number = $saved_address->phone_number;
             }
+        //Customer manually enter a new address
         } elseif ($address_source === 'manual') {
             $shipping_address = trim(post('shipping_address', ''));
 
@@ -117,6 +122,7 @@ if (is_post() && post('action') === 'update_address') {
         }
 
         if ($shipping_address !== '') {
+            //Update delivery address query
             $update_stmt = $_db->prepare(
                 "UPDATE orders
                  SET recipient_name = ?, phone_number = ?, shipping_address = ?, address_updated = 1
@@ -133,9 +139,11 @@ if (is_post() && post('action') === 'update_address') {
         }
     }
 
+    //Send customer back to order_detail page
     redirect($return_url);
 }
 
+//Store all saved addresses in $saved_addresses array
 $saved_addresses = [];
 if ($show_address_editor) {
     $saved_addresses_stmt = $_db->prepare(
@@ -152,9 +160,8 @@ require "_head.php";
 <div class="order-detail-container">
 <div class="order-tracking">
 
-<!-- Order Placed -->
+<!--Order Placed (1st Tracking step)-->
 <div class="tracking-step completed-step">
-
     <div class="tracking-circle">
         <i class="fa-solid fa-receipt"></i>
     </div>
@@ -163,17 +170,11 @@ require "_head.php";
         <strong>Order Placed</strong>
 
         <span>
-            <?= date(
-                "d M Y",
-                strtotime($order["order_date"])
-            ) ?>
+            <?= date("d M Y", strtotime($order["order_date"])) ?>
         </span>
 
         <span>
-            <?= date(
-                "h:i A",
-                strtotime($order["order_date"])
-            ) ?>
+            <?= date("h:i A", strtotime($order["order_date"])) ?>
         </span>
     </div>
 
@@ -181,16 +182,14 @@ require "_head.php";
 
 
 <?php if ($status !== "cancelled"): ?>
-
-    <!-- Line to Shipped -->
+    <!--Line to Shipped-->
     <div class="tracking-line
-        <?= !empty($order["shipped_at"]) ? "active-line" : "" ?>">
+        <?= !empty($order["shipped_at"]) ? "active-line" : "" ?>">  <!--Check if shipped_at has value-->
     </div>
 
-
-    <!-- Shipped -->
+    <!--Shipped (2nd Tracking step)-->
     <div class="tracking-step
-        <?= !empty($order["shipped_at"]) ? "completed-step" : "" ?>">
+        <?= !empty($order["shipped_at"]) ? "completed-step" : "" ?>">  <!--Bold the Line to shipped making it looks shipped-->
 
         <div class="tracking-circle">
             <i class="fa-solid fa-truck"></i>
@@ -198,26 +197,19 @@ require "_head.php";
 
         <div class="tracking-info">
 
-            <strong>Shipped</strong>
+        <strong>Shipped</strong>
 
             <?php if (!empty($order["shipped_at"])): ?>
-
                 <span>
-                    <?= date(
-                        "d M Y",
-                        strtotime($order["shipped_at"])
-                    ) ?>
+                    <?= date("d M Y", strtotime($order["shipped_at"])) ?>
                 </span>
 
                 <span>
-                    <?= date(
-                        "h:i A",
-                        strtotime($order["shipped_at"])
-                    ) ?>
+                    <?= date("h:i A", strtotime($order["shipped_at"])) ?>
                 </span>
 
             <?php else: ?>
-
+                <!--If shipped_at doesn't have date&time-->
                 <span class="tracking-pending">
                     Pending
                 </span>
@@ -228,24 +220,21 @@ require "_head.php";
 
     </div>
 
-
-    <!-- Line to Completed -->
+    <!--Line to Completed-->
     <div class="tracking-line
-        <?= !empty($order["completed_at"]) ? "active-line" : "" ?>">
+        <?= !empty($order["completed_at"]) ? "active-line" : "" ?>">  <!--Bold the Line to completed making it looks completed-->
     </div>
 
 <?php else: ?>
 
-    <!-- Direct line to Cancelled -->
+    <!--Direct line to Cancelled-->
     <div class="tracking-line active-line"></div>
 
 <?php endif; ?>
 
-
-<!-- Final Step -->
+<!--Final Step (Completed/Cancelled)-->
 <div class="tracking-step
-    <?= (!empty($order["completed_at"]) ||
-         !empty($order["cancelled_at"]))
+    <?= (!empty($order["completed_at"]) || !empty($order["cancelled_at"]))
         ? "completed-step"
         : "" ?>
     <?= ($status !== "cancelled" && !empty($order["completed_at"]))
@@ -259,10 +248,12 @@ require "_head.php";
 
         <?php if ($status === "cancelled"): ?>
 
+            <!--Display x icon (Cancelled)-->
             <i class="fa-solid fa-xmark"></i>
 
         <?php else: ?>
 
+            <!--Display star icon (Completed)-->
             <i class="fa-solid fa-star"></i>
 
         <?php endif; ?>
@@ -276,46 +267,30 @@ require "_head.php";
             <strong>Cancelled</strong>
 
             <?php if (!empty($order["cancelled_at"])): ?>
-
                 <span>
-                    <?= date(
-                        "d M Y",
-                        strtotime($order["cancelled_at"])
-                    ) ?>
+                    <?= date("d M Y", strtotime($order["cancelled_at"])) ?>
                 </span>
 
                 <span>
-                    <?= date(
-                        "h:i A",
-                        strtotime($order["cancelled_at"])
-                    ) ?>
+                    <?= date("h:i A", strtotime($order["cancelled_at"])) ?>
                 </span>
 
             <?php endif; ?>
-
 
         <?php else: ?>
 
             <strong>Completed</strong>
 
             <?php if (!empty($order["completed_at"])): ?>
-
                 <span>
-                    <?= date(
-                        "d M Y",
-                        strtotime($order["completed_at"])
-                    ) ?>
+                    <?= date("d M Y", strtotime($order["completed_at"])) ?>
                 </span>
 
                 <span>
-                    <?= date(
-                        "h:i A",
-                        strtotime($order["completed_at"])
-                    ) ?>
+                    <?= date("h:i A", strtotime($order["completed_at"])) ?>
                 </span>
 
             <?php else: ?>
-
                 <span class="tracking-pending">
                     Pending
                 </span>
@@ -339,7 +314,6 @@ require "_head.php";
         </div>
 
         <table class="order-detail-table">
-
             <tr>
                 <th>Order ID</th>
                 <td>
@@ -350,10 +324,7 @@ require "_head.php";
             <tr>
                 <th>Order Date</th>
                 <td>
-                    <?= date(
-                        "d M Y, h:i A",
-                        strtotime($order["order_date"])
-                    ) ?>
+                    <?= date("d M Y, h:i A", strtotime($order["order_date"])) ?>
                 </td>
             </tr>
 
@@ -369,10 +340,7 @@ require "_head.php";
             <tr>
                 <th>Subtotal</th>
                 <td class="amount">
-                    RM <?= number_format(
-                        (float) $order["subtotal_amount"],
-                        2
-                    ) ?>
+                    RM <?= number_format((float) $order["subtotal_amount"], 2) ?>
                 </td>
             </tr>
 
@@ -389,10 +357,7 @@ require "_head.php";
             <tr>
                 <th>Amount Paid</th>
                 <td class="amount">
-                    RM <?= number_format(
-                        (float) $order["total_amount"],
-                        2
-                    ) ?>
+                    RM <?= number_format((float) $order["total_amount"], 2) ?>
                 </td>
             </tr>
 
@@ -428,28 +393,32 @@ require "_head.php";
 
             <tr>
                 <th>Delivery Address</th>
-                <td><?= nl2br(encode($order['shipping_address'])) ?></td>
+                <td><?= nl2br(encode($order['shipping_address'])) ?></td>  <!--n12br() converts linebreaks into HTML <br> tags-->
             </tr>
 
         </table>
 
+        <!--Change Delivery Address button-->
         <?php if ($can_update_address && !$show_address_editor): ?>
             <div class="address-change-action">
                 <a class="receipt-button" href="order_detail.php?id=<?= urlencode($order_id) ?>&edit_address=1">Change Delivery Address</a>
                 <p>You can make one change before this order is processed.</p>
             </div>
         <?php elseif ($show_address_editor): ?>
+            <!--Address editing form-->
             <form method="post" class="address-update-form">
                 <input type="hidden" name="action" value="update_address">
                 <h3>Change Delivery Address</h3>
                 <p>Choose a saved address, or enter a new one. This can only be done once.</p>
 
+                <!--If $saved_addresses array isn't empty-->
                 <?php if ($saved_addresses): ?>
                     <label class="address-source-option">
                         <input type="radio" name="address_source" value="saved" checked>
                         Use a saved address
                     </label>
                     <select id="saved-address-select" name="address_id" required>
+                        <!--Dropdown list for each saved address option-->
                         <?php foreach ($saved_addresses as $address): ?>
                             <option value="<?= (int) $address->address_id ?>">
                                 [<?= encode($address->address_label) ?>] <?= encode($address->recipient_name) ?> — <?= encode($address->address_text) ?>
@@ -466,10 +435,10 @@ require "_head.php";
 
                 <div class="address-update-actions">
                     <button type="submit" class="receipt-button">Save Delivery Address</button>
-                    <a class="back-button" href="order_detail.php?id=<?= urlencode($order_id) ?>">Cancel</a>
+                    <a class="back-button" href="order_detail.php?id=<?= urlencode($order_id) ?>">Cancel</a> <!--Redirect back to order_detail page-->
                 </div>
             </form>
-        <?php elseif ((bool) $order['address_updated']): ?>
+        <?php elseif ((bool) $order['address_updated']): ?> <!--If $order[address_updated] == true, then nomore updating allowed-->
             <p class="address-update-note">The one-time delivery address change has already been used.</p>
         <?php endif; ?>
 
@@ -480,9 +449,7 @@ require "_head.php";
                 <button type="submit" class="receipt-button">Send E-Receipt</button>
             </form>
 
-            <a class="back-button" href="order_history.php">
-                ← Back to My Orders
-            </a>
+            <a class="back-button" href="order_history.php">Back to My Orders</a>
 
         </div>
 
@@ -502,7 +469,7 @@ document.querySelectorAll('input[name="address_source"]').forEach(function (opti
             savedSelect.disabled = !useSaved;
             savedSelect.required = useSaved;
         }
-        manualAddress.disabled = useSaved;
+        manualAddress.disabled = useSaved; //if useSaved=true, manualAddress radio will be disabled
         manualAddress.required = !useSaved;
     });
 });

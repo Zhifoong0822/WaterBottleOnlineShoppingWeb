@@ -55,10 +55,7 @@ if (!$order) {
     );
 }
 
-/*
- * Retrieve an existing rating, if the customer
- * previously submitted feedback for this order.
- */
+/*Retrieve an existing rating, if the customer previously submitted feedback for this order.*/
 $sql = "SELECT rating, feedback
         FROM order_feedback
         WHERE order_id = :order_id
@@ -76,16 +73,13 @@ $existing_feedback = $stmt->fetch(PDO::FETCH_ASSOC);
 $rating = $existing_feedback["rating"] ?? "";
 $feedback = $existing_feedback["feedback"] ?? "";
 
-/*
- * Process feedback submission.
- */
+/*Process feedback submission.*/
 if (is_post()) {
 
     $rating = post("rating");
     $feedback = post("feedback");
 
-    if (
-        !ctype_digit($rating) ||
+    if (!ctype_digit($rating) ||
         (int) $rating < 1 ||
         (int) $rating > 5
     ) {
@@ -93,16 +87,10 @@ if (is_post()) {
     }
 
     if (strlen($feedback) > 1000) {
-        $errors["feedback"] =
-            "Feedback must not exceed 1000 characters.";
+        $errors["feedback"] = "Feedback must not exceed 1000 characters.";
     }
 
     if (!$errors) {
-
-        /*
-         * Because order_id and user_id are unique together,
-         * this inserts new feedback or updates existing feedback.
-         */
         $sql = "INSERT INTO order_feedback (
                     order_id,
                     user_id,
@@ -254,7 +242,7 @@ require "_head.php";
                         href="order_history.php?status=completed"
                         class="feedback-back-button"
                     >
-                        ← Back to Completed Orders
+                        Back to Completed Orders
                     </a>
 
                 </div>

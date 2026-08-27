@@ -14,7 +14,7 @@ $order_id = (int) $_GET["id"];
 $message = "";
 $error = "";
 
-//retrieve the current order first
+//retrieve the current order
 try {
     $sql = "SELECT
                 order_id,
@@ -77,33 +77,22 @@ $status_transitions = [
 
 //process status update
 if (is_post()) {
-
     $new_status = post("status"); //capture admin input(new status)
 
-    $allowed_next_statuses =
-        $status_transitions[$current_status] ?? [];
+    $allowed_next_statuses = $status_transitions[$current_status] ?? [];
 
     if (!in_array($new_status, $allowed_next_statuses, true)) {
-        
-        $error =
-            "The order status cannot be changed from " .
-            ucfirst($current_status) .
-            " to " .
-            ucfirst($new_status) .
-            ".";
+        $error = "The order status cannot be changed from " .ucfirst($current_status) ." to " .ucfirst($new_status) .".";
 
     } elseif ($new_status === $current_status) {
-
         $message = "The order status remains unchanged.";
 
     } else {
-
         try {
             if ($new_status === "shipped" && $current_status === "pending") {
 
                 $update_sql = "UPDATE orders
-                               SET status = 'shipped',
-                                   shipped_at = NOW()
+                               SET status = 'shipped', shipped_at = NOW()
                                WHERE order_id = :order_id
                                  AND status = 'pending'";
             
@@ -116,8 +105,7 @@ if (is_post()) {
             } elseif ($new_status === "cancelled" && $current_status === "pending") {
             
                 $update_sql = "UPDATE orders
-                               SET status = 'cancelled',
-                                   cancelled_at = NOW()
+                               SET status = 'cancelled', cancelled_at = NOW()
                                WHERE order_id = :order_id
                                  AND status = 'pending'";
             
@@ -130,8 +118,7 @@ if (is_post()) {
             } elseif ($new_status === "completed" && $current_status === "shipped") {
             
                 $update_sql = "UPDATE orders
-                               SET status = 'completed',
-                                   completed_at = NOW()
+                               SET status = 'completed', completed_at = NOW()
                                WHERE order_id = :order_id
                                  AND status = 'shipped'";
             
@@ -147,10 +134,7 @@ if (is_post()) {
             }
 
             if (isset($update_stmt) && $update_stmt->rowCount() > 0) {
-                redirect(
-                    "admin_order_detail.php?id=" .
-                    urlencode($order_id)
-                );
+                redirect("admin_order_detail.php?id=" .urlencode($order_id));
             }
 
         } catch (PDOException $e) {
@@ -221,12 +205,6 @@ require "_head.php";
     <div class="order-tracking">
 
 <!-- Order Placed -->
-<!--
-<div class="tracking-step completed-step">
-
-    <div class="tracking-circle">✓</div>
-
--->
 <div class="tracking-step completed-step">
 
     <div class="tracking-circle">
@@ -237,25 +215,17 @@ require "_head.php";
         <strong>Order Placed</strong>
 
         <span>
-            <?= date(
-                "d M Y",
-                strtotime($order["order_date"])
-            ) ?>
+            <?= date("d M Y", strtotime($order["order_date"])) ?>
         </span>
 
         <span>
-            <?= date(
-                "h:i A",
-                strtotime($order["order_date"])
-            ) ?>
+            <?= date("h:i A", strtotime($order["order_date"])) ?>
         </span>
     </div>
 
 </div>
 
-
 <?php if ($status !== "cancelled"): ?>
-
     <div class="tracking-line
         <?= !empty($order["shipped_at"]) ? "active-line" : "" ?>">
     </div>
@@ -275,17 +245,11 @@ require "_head.php";
             <?php if (!empty($order["shipped_at"])): ?>
 
                 <span>
-                    <?= date(
-                        "d M Y",
-                        strtotime($order["shipped_at"])
-                    ) ?>
+                    <?= date("d M Y", strtotime($order["shipped_at"])) ?>
                 </span>
 
                 <span>
-                    <?= date(
-                        "h:i A",
-                        strtotime($order["shipped_at"])
-                    ) ?>
+                    <?= date("h:i A", strtotime($order["shipped_at"])) ?>
                 </span>
 
             <?php else: ?>
@@ -340,17 +304,11 @@ require "_head.php";
             <?php if (!empty($order["cancelled_at"])): ?>
 
                 <span>
-                    <?= date(
-                        "d M Y",
-                        strtotime($order["cancelled_at"])
-                    ) ?>
+                    <?= date("d M Y", strtotime($order["cancelled_at"])) ?>
                 </span>
 
                 <span>
-                    <?= date(
-                        "h:i A",
-                        strtotime($order["cancelled_at"])
-                    ) ?>
+                    <?= date("h:i A", strtotime($order["cancelled_at"])) ?>
                 </span>
 
             <?php endif; ?>
@@ -360,23 +318,15 @@ require "_head.php";
             <strong>Completed</strong>
 
             <?php if (!empty($order["completed_at"])): ?>
-
                 <span>
-                    <?= date(
-                        "d M Y",
-                        strtotime($order["completed_at"])
-                    ) ?>
+                    <?= date("d M Y", strtotime($order["completed_at"])) ?>
                 </span>
 
                 <span>
-                    <?= date(
-                        "h:i A",
-                        strtotime($order["completed_at"])
-                    ) ?>
+                    <?= date("h:i A", strtotime($order["completed_at"])) ?>
                 </span>
 
             <?php else: ?>
-
                 <span class="tracking-pending">
                     Pending
                 </span>
@@ -418,20 +368,14 @@ require "_head.php";
             <tr>
                 <th>Order Date</th>
                 <td>
-                    <?= date(
-                        "d M Y, h:i A",
-                        strtotime($order["order_date"])
-                    ) ?>
+                    <?= date("d M Y, h:i A", strtotime($order["order_date"])) ?>
                 </td>
             </tr>
 
             <tr>
                 <th>Subtotal</th>
                 <td class="amount">
-                    RM <?= number_format(
-                        (float) $order["subtotal_amount"],
-                        2
-                    ) ?>
+                    RM <?= number_format((float) $order["subtotal_amount"], 2) ?>
                 </td>
             </tr>
 
@@ -448,10 +392,7 @@ require "_head.php";
             <tr>
                 <th>Amount Paid</th>
                 <td class="amount">
-                    RM <?= number_format(
-                        (float) $order["total_amount"],
-                        2
-                    ) ?>
+                    RM <?= number_format((float) $order["total_amount"], 2) ?>
                 </td>
             </tr>
 
@@ -494,9 +435,7 @@ require "_head.php";
 
             <form
                 method="POST"
-                action="admin_order_detail.php?id=<?= urlencode(
-                    $order["order_id"]
-                ) ?>"
+                action="admin_order_detail.php?id=<?= urlencode($order["order_id"]) ?>"
                 onsubmit="return confirmStatusUpdate();"
        >
 
@@ -566,11 +505,7 @@ require "_head.php";
         <div class="button-group">
 
             <?php
-            $is_final_status = in_array(
-                $status,
-                ["completed", "cancelled"],
-                true
-            );
+            $is_final_status = in_array($status, ["completed", "cancelled"], true);
             ?>
 
             <button
@@ -583,7 +518,7 @@ require "_head.php";
             </button>
 
             <a class="back-button" href="admin_orders.php">
-                ← Back to Manage Orders
+                Back to Manage Orders
             </a>
 
         </div>
@@ -592,23 +527,25 @@ require "_head.php";
 
         </div>
 
-    </div>
+        <div class="customer-detail-section">
+            <h3>Customer Detail</h3>
+            <a
+                class="customer-detail-link"
+                href="pages/admin/member_details.php?id=<?= urlencode($order["user_id"]) ?>&page=1"
+            >
+                View Customer Profile
+            </a>
+        </div>
 
+    </div>
 </section>
 
-
 <script>
-
-
 function confirmStatusUpdate() {
     const statusSelect = document.getElementById("status");
-    const selectedStatus =
-        statusSelect.options[statusSelect.selectedIndex].text;
-    return confirm(
-        "Update this order status to " + selectedStatus + "?"
-    );
+    const selectedStatus = statusSelect.options[statusSelect.selectedIndex].text;
+    return confirm("Update this order status to " + selectedStatus + "?");
 }
-
 </script>
 
 <?php require "_foot.php"; ?>

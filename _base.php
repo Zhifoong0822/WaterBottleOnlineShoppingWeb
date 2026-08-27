@@ -7,6 +7,17 @@
 date_default_timezone_set('Asia/Kuala_Lumpur');
 session_start();
 
+// Compatibility for sessions created before the merge. The profile module
+// stores a user object, while the shop modules use individual session keys.
+if (!isset($_SESSION['user_id']) && isset($_SESSION['users']) && is_object($_SESSION['users'])) {
+    $session_user = $_SESSION['users'];
+    if (isset($session_user->user_id)) {
+        $_SESSION['user_id'] = (int) $session_user->user_id;
+        $_SESSION['name'] = $session_user->username ?? '';
+        $_SESSION['role'] = $session_user->role ?? 'member';
+    }
+}
+
 // ============================================================================
 // General Page Functions
 // ============================================================================
@@ -24,13 +35,13 @@ function is_post() {
 // Obtain GET parameter
 function get($key, $value = null) {
     $value = $_GET[$key] ?? $value;
-    return is_array($value) ? array_map('trim', $value) : trim($value ?? '');
+    return is_array($value) ? array_map('trim', $value) : trim($value);
 }
 
 // Obtain POST parameter
 function post($key, $value = null) {
     $value = $_POST[$key] ?? $value;
-    return is_array($value) ? array_map('trim', $value) : trim($value ?? '');
+    return is_array($value) ? array_map('trim', $value) : trim($value);
 }
 
 // Obtain REQUEST (GET and POST) parameter
@@ -106,6 +117,17 @@ function html_select($key, $items, $default = '- Select One -', $attr = '') {
     echo '</select>';
 }
 
+// ============================================================================
+// Check Price helper function
+// ============================================================================
+function variant_price($base_price, $size) {
+    if (str_contains($size, 'Mini'))   return $base_price * 1.10;
+    if (str_contains($size, 'Medium')) return $base_price * 1.20;
+    if (str_contains($size, 'Mega'))   return $base_price * 1.40;
+
+    return $base_price; // Micro/default
+}
+
 function valid_phone($phone) {
     return preg_match('/^[0-9+\-\s]{8,20}$/', $phone);
 }
@@ -140,9 +162,6 @@ function earned_reward_points($amount_paid) {
     return (int) floor($amount_paid / 10) * POINTS_EARNED_PER_RM10;
 }
 
-// ============================================================================
-// E-receipt email
-// ============================================================================
 
 function get_mail() {
     $config_file = __DIR__ . '/mail_config.php';
@@ -226,7 +245,18 @@ function send_order_receipt($order_id, $user_id) {
     $items = $item_stmt->fetchAll();
 
     $mail = get_mail();
-    $mail->addAddress($order->email, $order->recipient_name);
+    $recipient_email = $order->email;
+
+    // Safety check for fake demo emails (.example / .test):
+    // Redirect to sender email address during local testing so you can inspect the email without bounce errors.
+    if (str_ends_with(strtolower($recipient_email), '@example.com') || str_ends_with(strtolower($recipient_email), '@test.com')) {
+        $mail_config = require __DIR__ . '/mail_config.php';
+        if (!empty($mail_config['from_email'])) {
+            $recipient_email = $mail_config['from_email'];
+        }
+    }
+
+    $mail->addAddress($recipient_email, $order->recipient_name);
     $mail->isHTML(true);
     $mail->Subject = 'SippyGo e-Receipt - Order #' . $order->order_id;
     $mail->Body = receipt_html($order, $items);
@@ -295,31 +325,21 @@ $_db = new PDO('mysql:dbname=waterbottle_shop', 'root', '', [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
 ]);
 
-const ORDER_AUTO_COMPLETE_DAYS = 7;
-
-/**
- * Complete shipped orders once their seven-day delivery window has passed.
- *
- * This runs during normal website requests. completed_at is set to the exact
- * deadline rather than the time of the next visit, so the recorded date and
- * time remain accurate even when the site has no traffic at that moment.
- */
+//Order Auto-complete
 function auto_complete_shipped_orders() {
     global $_db;
 
-    $days = ORDER_AUTO_COMPLETE_DAYS;
+    $days = 7;  //Order Auto-complete Days
     $sql = "UPDATE orders
-            SET status = 'completed',
-                completed_at = DATE_ADD(shipped_at, INTERVAL $days DAY)
+            SET status = 'completed', completed_at = DATE_ADD(shipped_at, INTERVAL $days DAY)
             WHERE status = 'shipped'
               AND shipped_at IS NOT NULL
               AND completed_at IS NULL
-              AND DATE_ADD(shipped_at, INTERVAL $days DAY) <= NOW()";
+              AND DATE_ADD(shipped_at, INTERVAL $days DAY) <= NOW()";  //completed_at have reached 7days deadline
 
     $_db->exec($sql);
 }
 
-// Keep overdue order statuses current whenever the application is used.
 auto_complete_shipped_orders();
 
 // Is unique?
