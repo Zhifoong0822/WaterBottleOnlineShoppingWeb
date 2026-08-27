@@ -5,7 +5,9 @@
 // ============================================================================
 
 date_default_timezone_set('Asia/Kuala_Lumpur');
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Compatibility for sessions created before the merge. The profile module
 // stores a user object, while the shop modules use individual session keys.
