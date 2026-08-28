@@ -4,6 +4,8 @@ USE `waterbottle_shop`;
 
 -- Drop existing tables in reverse order of dependencies
 -- Drop existing tables in reverse order of dependencies
+DROP TABLE IF EXISTS `password_reset_otp`;
+DROP TABLE IF EXISTS `wishlist`;
 DROP TABLE IF EXISTS `user_addresses`;
 DROP TABLE IF EXISTS `order_feedback`;
 DROP TABLE IF EXISTS `order_items`;
@@ -14,12 +16,12 @@ DROP TABLE IF EXISTS `product_images`;
 DROP TABLE IF EXISTS `product_variants`;
 DROP TABLE IF EXISTS `products`;
 DROP TABLE IF EXISTS `categories`;
-DROP TABLE IF EXISTS `user_permissions`; 
-DROP TABLE IF EXISTS `role_permissions`; 
-DROP TABLE IF EXISTS `stores`;     
-DROP TABLE IF EXISTS `roles`;
+DROP TABLE IF EXISTS `user_permissions`;
+DROP TABLE IF EXISTS `role_permissions`;
+DROP TABLE IF EXISTS `stores`;
 DROP TABLE IF EXISTS `chat_messages`;
 DROP TABLE IF EXISTS `chat_sessions`;
+DROP TABLE IF EXISTS `roles`;
 DROP TABLE IF EXISTS `users`;
 
 -- =========================================================
@@ -311,6 +313,19 @@ CREATE TABLE wishlist (
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (product_id) REFERENCES products(product_id),
     FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+);
+
+-- =========================================================
+-- 16. Reset Password
+-- =========================================================
+CREATE TABLE password_reset_otp (
+    reset_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    otp_code VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    verified TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
 -- =========================================================

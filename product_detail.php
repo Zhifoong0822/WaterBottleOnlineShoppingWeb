@@ -259,8 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }); 
     }
 
-    // Wishlist button
-    const wishlistButton = document.getElementById('product-wishlist-btn');
+    // Add to cart
     const form = document.getElementById('add-to-cart-form');
     form.addEventListener('submit', function (event) {
         event.preventDefault();
@@ -277,8 +276,9 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(function () { window.location.href = 'login.php'; });
     });
-});
 
+    // Wishlist button
+    const wishlistButton = document.getElementById('product-wishlist-btn');
     if (wishlistButton) {
         wishlistButton.addEventListener('click', function () {
             const formData = new FormData();
@@ -306,18 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     }
- 
-    const form = document.getElementById('add-to-cart-form'); 
-    form.addEventListener('submit', function (event) { 
-        event.preventDefault(); 
-        fetch('handle_cart.php', { method: 'POST', body: new FormData(form) }) 
-            .then(function (response) { return response.json(); }) 
-            .then(function (data) { 
-                if (data.message) alert(data.message); 
-                window.location.href = 'products.php'; 
-            }) 
-            .catch(function () { window.location.href = 'products.php'; }); 
-    }); 
-</script> 
+});
+</script>
  
 <?php require '_foot.php'; ?>

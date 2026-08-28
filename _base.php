@@ -418,6 +418,7 @@ $_public_pages = [
     'login.php',
     'register.php',
     'forgot_password.php',
+    'verify_otp.php',
     'reset_password.php',
     'index.php',
     'products.php',
