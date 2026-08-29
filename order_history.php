@@ -9,7 +9,6 @@ if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
 }
 
-//Store the current user_id in session
 $user_id = (int) $_SESSION['users']->user_id;  
 
 //Use get() to update n store into variables
@@ -130,8 +129,8 @@ if (is_post() && post("action") === "cancel_order") {
         ]);
 
         $_db->commit();
-        redirect("order_history.php?status=cancelled");
         temp("info", "Order cancelled and reward points adjusted.");
+        redirect("order_history.php?status=cancelled");
 
     } catch (PDOException $e) {
         if ($_db->inTransaction()) {
@@ -156,24 +155,6 @@ $sql = "SELECT
                 WHERE f.order_id = o.order_id
                   AND f.user_id = o.user_id
             ) AS feedback_submitted,
-
-            (
-                SELECT f.rating FROM order_feedback AS f
-                WHERE f.order_id = o.order_id AND f.user_id = o.user_id
-                LIMIT 1
-            ) AS feedback_rating,
-
-            (
-                SELECT f.feedback FROM order_feedback AS f
-                WHERE f.order_id = o.order_id AND f.user_id = o.user_id
-                LIMIT 1
-            ) AS feedback_text,
-
-            (
-                SELECT f.updated_at FROM order_feedback AS f
-                WHERE f.order_id = o.order_id AND f.user_id = o.user_id
-                LIMIT 1
-            ) AS feedback_updated_at,
 
             oi.order_item_id,
             oi.product_id,
@@ -232,9 +213,6 @@ foreach ($rows as $row) {
             "status" => $row["status"],
             "total_amount" => $row["total_amount"],
             "feedback_submitted" => (bool) $row["feedback_submitted"],
-            "feedback_rating" => $row["feedback_rating"],
-            "feedback_text" => $row["feedback_text"],
-            "feedback_updated_at" => $row["feedback_updated_at"],
             "items" => []
         ];
     }
@@ -428,7 +406,7 @@ require "_head.php";
         <?php endif; ?>
 
         <span class="status status-<?= encode($order["status"]) ?>">
-            <!--Print the status text inside the colourbox(uppercase 1st character)--> 
+            <!--Display the status text inside the colourbox--> 
             <?= ucfirst(encode($order["status"])) ?>
         </span>
     </div>
@@ -507,28 +485,22 @@ require "_head.php";
     <?php endif; ?>
 
     <?php if ($order["status"] === "completed"): ?>
-    
-        <!--Check if $order["feedback_submitted"] exists-->
+        <!--Display View Feedback if feedback_submitted isn't null-->
         <?php if ($order["feedback_submitted"]): ?>
-        <!--Display View Rating if feedback_submitted of $order isn't null-->
-            <button
-            type="button"
-            class="view-rating-button"
-            data-order-id="<?= encode($order["order_id"]) ?>"
-            data-rating="<?= encode($order["feedback_rating"]) ?>"
-            data-feedback="<?= encode($order["feedback_text"] ?? '') ?>"
-            data-updated-at="<?= encode($order["feedback_updated_at"] ?? '') ?>"
+            <a 
+                class="feedback-button" 
+                href="view_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
             >
-            View Rating
-            </button>
+                View Feedback
+            </a>
 
         <?php else: ?>
-        <a
-        class="feedback-button"
-        href="order_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
-        >
-        Add Feedback or Rating
-        </a>
+            <a 
+                class="feedback-button" 
+                href="order_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
+            >
+                Add Feedback
+            </a>
 
         <?php endif; ?>
 
@@ -587,16 +559,6 @@ require "_head.php";
 
 <?php endif; ?>
 
-<!--View Rating Popup Box-->
-<section id="rating-popover" class="rating-popover" hidden role="dialog" aria-modal="false" aria-labelledby="rating-popover-title">
-    <button type="button" class="rating-popover-close" aria-label="Close rating">&times;</button>  <!-- &times displays x symbol-->
-    <p class="rating-popover-eyebrow">Your Rating</p>
-    <h2 id="rating-popover-title"><span id="rating-popover-stars"></span> <span id="rating-popover-score"></span></h2>
-    <p id="rating-popover-feedback" class="rating-popover-feedback"></p>
-    <p id="rating-popover-date" class="rating-popover-date"></p>
-</section>
-
-<!--JavaScript-->
 <script>
     //View More
     document.addEventListener('DOMContentLoaded', () => {
@@ -618,39 +580,7 @@ require "_head.php";
                 button.textContent = isExpanded ? 'View More' : 'View Less';
             });
         });
-
-    //View Rating Popup
-    const popover = document.getElementById('rating-popover');
-    const closeButton = popover.querySelector('.rating-popover-close');
-    //Function to hide popup whenever it's called
-    const closePopover = () => { popover.hidden = true; };
-
-    //View Rating Button
-    document.querySelectorAll('.view-rating-button').forEach((button) => {
-        //Runs when customer clicks View Rating
-        button.addEventListener('click', () => {
-            const rating = Number(button.dataset.rating);
-            document.getElementById('rating-popover-stars').textContent = '★'.repeat(rating) + '☆'.repeat(5 - rating);
-            document.getElementById('rating-popover-score').textContent = `${rating}/5`;
-            document.getElementById('rating-popover-feedback').textContent = button.dataset.feedback || 'No written feedback was added.';
-            document.getElementById('rating-popover-date').textContent = button.dataset.updatedAt ? `Submitted ${button.dataset.updatedAt}` : '';
-            popover.hidden = false;
-            const buttonRect = button.getBoundingClientRect();
-            const popoverWidth = popover.offsetWidth;
-            popover.style.left = `${Math.max(16, Math.min(buttonRect.right - popoverWidth, window.innerWidth - popoverWidth - 16))}px`;
-            popover.style.top = `${Math.max(16, Math.min(buttonRect.top - popover.offsetHeight - 12, window.innerHeight - popover.offsetHeight - 16))}px`;
-        });
     });
-
-    //Call closePopover() when customer clicks closeButton/clicks outside of the popup box
-    closeButton.addEventListener('click', closePopover);
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePopover(); });
-    document.addEventListener('click', (event) => {
-        if (!popover.hidden && !popover.contains(event.target) && !event.target.closest('.view-rating-button')) {
-            closePopover();
-        }
-    });
-});
 </script>
 
 <?php require "_foot.php"; ?>
