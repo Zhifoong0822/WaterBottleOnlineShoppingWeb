@@ -4,7 +4,6 @@
 require_once '_base.php';
 $_title = 'Live Chat';
 
-$users = $_SESSION['users'];
 if (!isset($users)) {
     redirect('/login.php');
     exit;
@@ -623,7 +622,6 @@ $selectedChatId = intval(req('chat', 0));
 $chatSessions = [];
 $messages = [];
 
-// Get Chat Sessions
 // Get Chat Sessions
 $chatSessionsStmt = $_db->prepare("
     SELECT
