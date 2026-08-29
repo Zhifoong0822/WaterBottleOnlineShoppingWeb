@@ -63,10 +63,10 @@ if (is_post() && post('action') === 'create_chat') {
 
     // Identify user id of first admin account (Fallback = 2)
     $adminStmt = $_db->prepare("
-        SELECT id
+        SELECT user_id
         FROM users
         WHERE role = 'admin'
-        ORDER BY id ASC
+        ORDER BY user_id ASC
         LIMIT 1
     ");
     $adminStmt->execute();
