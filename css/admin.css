@@ -513,6 +513,16 @@ input:invalid,select:invalid,textarea:invalid{border-color:#dc3545;}
     color: #a02020;
 }
 
+.badge-active {
+    background: #dff3e3;
+    color: #1e7a34;
+}
+
+.badge-blocked {
+    background: #fbe1e1;
+    color: #a02020;
+}
+
 /* Responsive */
 @media (max-width: 800px) {
     .dash-stats {

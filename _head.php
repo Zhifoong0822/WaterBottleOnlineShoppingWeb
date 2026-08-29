@@ -1,3 +1,7 @@
+<?php
+$error_message = temp('error');
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,7 +43,7 @@
 
 <body>
 
-    <div id="info"><?= temp('info') ?></div>
+    <div id="info" class="<?= $error_message ? 'error-alert' : '' ?>"><?= $error_message ?: temp('info') ?></div>
 
     <?php
     $current_role = $_SESSION['users']->role ?? '';

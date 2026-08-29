@@ -332,11 +332,11 @@ CREATE TABLE password_reset_otp (
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
 INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`, `reward_points`) VALUES
-(1, 'daniel', 'daniel@example.com', '$2y$10$3ovrxmv7E7.IvYUnOUJ5teH/nkI6Rg.3eKhVXhMPsIerWwD0tHt6q', 'admin', NULL, 0),
-(2, 'admin', 'admin@example.com', '$2y$10$vwPjuG9/msNZkRsvsjqzBO7ItAcrGbIa75oPYfRNPz337CXA23VL2', 'admin', NULL, 0),
-(3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', NULL, 500),
-(4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 250),
-(5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', NULL, 0);
+(1, 'daniel', 'daniel@example.com', '$2y$10$3ovrxmv7E7.IvYUnOUJ5teH/nkI6Rg.3eKhVXhMPsIerWwD0tHt6q', 'admin', '1.jpeg', 0),
+(2, 'admin', 'admin@example.com', '$2y$10$vwPjuG9/msNZkRsvsjqzBO7ItAcrGbIa75oPYfRNPz337CXA23VL2', 'admin', '2.jpeg', 0),
+(3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', '3.jpeg', 500),
+(4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', '4.jpeg', 250),
+(5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', '5.jpeg', 0);
 
 INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `phone_number`, `address_text`) VALUES
 (3, 'Home (Default)', 'John Tan', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),
@@ -399,38 +399,49 @@ INSERT INTO `order_items` (`order_id`, `product_id`, `size`, `quantity`, `price`
 (4, 2, 'Mega (32oz / 950ml)', 1, 124.60);
 
 INSERT INTO `stores` (`store_id`, `store_name`, `state`, `address`, `opening_hours`, `contact`, `map_query`, `store_image`, `status`, `created_at`) VALUES 
-(1, 'Sippy Go KLCC, Kuala Lumpur', 'Kuala Lumpur', 'Suria KLCC, Kuala Lumpur', '10 - 10', '03-889 9741', 'Suria KLCC, Kuala Lumpur', 'update/stores/store_1787811914_b2536965.png', 'active', '2026-08-27 11:41:51'), 
-(2, 'Sippy Go Sunway Pyramid', 'Selangor', 'Darul Ehsan, Level CP6, Blue Atrium, 3, Jalan PJS 11/15, Bandar Sunway, 47500 Petaling Jaya, Selangor', '10 - 10', '03 779 8125', 'Sunway Pyramid, Selangor', 'update/stores/store_1787812087_8fa5a0d3.png', 'active', '2026-08-27 14:26:50');
+(1, 'Sippy Go KLCC, Kuala Lumpur', 'Kuala Lumpur', 'Suria KLCC, Kuala Lumpur', '10 - 10', '03-889 9741', 'Suria KLCC, Kuala Lumpur', 'store_1787811914_b2536965.png', 'active', '2026-08-27 11:41:51'), 
+(2, 'Sippy Go Sunway Pyramid', 'Selangor', 'Darul Ehsan, Level CP6, Blue Atrium, 3, Jalan PJS 11/15, Bandar Sunway, 47500 Petaling Jaya, Selangor', '10 - 10', '03 779 8125', 'Sunway Pyramid, Selangor', 'store_1787812087_8fa5a0d3.png', 'active', '2026-08-27 14:26:50');
 
 -- Prefilled chat data
-INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`) VALUES
-(1, 3, 1),
-(2, 4, 1),
-(3, 5, 0),
-(4, 3, 2);
+INSERT INTO `chat_sessions` (`chat_session_id`, `user_id`, `status`, `created_at`) VALUES
+(1, 3, 2, '2026-08-13 14:58:00'),
+(2, 4, 0, '2026-08-16 10:15:00'),
+(3, 5, 1, '2026-08-19 09:30:00'),
+(4, 3, 1, '2026-08-20 11:44:00');
+
+INSERT INTO `chat_messages` (`chat_session_id`, `user_id`, `created_at`, `message`)
+SELECT
+    cs.chat_session_id, 2, cs.created_at,
+    CONCAT(
+        'Hi! 👋 Welcome! This is an automatically generated message.',
+        CHAR(10), CHAR(10),
+        'Thank you for starting a chat with us. Before a staff member can assist you, ',
+        'please send us a message with your question, request, or any details you would like to share.',
+        CHAR(10), CHAR(10),
+        'Once we receive your message, a staff member will review it and get back to you as soon as possible.',
+        CHAR(10), CHAR(10),
+        'We look forward to hearing from you!'
+    )
+FROM `chat_sessions` cs;
 
 
 INSERT INTO `chat_messages` (`chat_session_id`, `user_id`, `message`, `created_at`) VALUES
-(1, 1, 'Hello! How can I assist you today?', '2026-08-13 14:58:00'),
 (1, 3, 'Hi! I have a question about my order.', '2026-08-13 14:59:00'),
-(1, 1, 'Sure! Please provide your order ID.', '2026-08-13 15:00:00'),
+(1, 2, 'Sure! Please provide your order ID.', '2026-08-13 15:00:00'),
 (1, 3, 'My order ID is #12345.', '2026-08-13 15:01:00'),
-(1, 1, 'Thank you! Let me check the status for you.', '2026-08-13 15:02:00'),
+(1, 2, 'Thank you! Let me check the status for you.', '2026-08-13 15:02:00'),
 
-(2, 1, 'Hello! How can I assist you today?', '2026-08-16 10:15:00'),
 (2, 4, 'Hi! I need help with a product.', '2026-08-16 10:16:00'),
-(2, 1, 'Of course! What product are you referring to?', '2026-08-16 10:17:00'),
+(2, 2, 'Of course! What product are you referring to?', '2026-08-16 10:17:00'),
 (2, 4, 'I am looking for the Nova Active Bottle.', '2026-08-16 10:18:00'),
-(2, 1, 'Great choice! How can I assist you with that?', '2026-08-16 10:19:00'),
+(2, 2, 'Great choice! How can I assist you with that?', '2026-08-16 10:19:00'),
 
-(3, 1, 'Hello! How can I assist you today?', '2026-08-19 09:30:00'),
 (3, 5, 'Hi! I have a question about my account.', '2026-08-19 09:31:00'),
-(3, 1, 'Sure! Please provide your account details.', '2026-08-19 09:32:00'),
+(3, 2, 'Sure! Please provide your account details.', '2026-08-19 09:32:00'),
 (3, 5, 'My username is "Ali".', '2026-08-19 09:33:00'),
-(3, 1, 'Thank you! Let me check your account information.', '2026-08-19 09:34:00'),
+(3, 2, 'Thank you! Let me check your account information.', '2026-08-19 09:34:00'),
 
-(4, 1, 'Hello! How can I assist you today?', '2026-08-20 11:45:00'),
 (4, 3, 'Hi! I need help with a product return.', '2026-08-20 11:46:00'),
-(4, 1, 'Of course! Can you provide the order ID for the return?', '2026-08-20 11:47:00'),
+(4, 2, 'Of course! Can you provide the order ID for the return?', '2026-08-20 11:47:00'),
 (4, 3, 'My order ID is #67890.', '2026-08-20 11:48:00'),
-(4, 1, 'Thank you! Let me guide you through the return process.', '2026-08-20 11:49:00');
+(4, 2, 'Thank you! Let me guide you through the return process.', '2026-08-20 11:49:00');

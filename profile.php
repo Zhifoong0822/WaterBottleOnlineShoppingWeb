@@ -1,9 +1,5 @@
 <?php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once '_base.php';
 
 if (!isset($_SESSION['users'])) {
@@ -63,17 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cropped_photo = base64_decode($cropped_photo, true);
 
                 if ($cropped_photo !== false) {
-                    $folder = __DIR__ . '/update/profile';
-
-                    if (!is_dir($folder)) {
-                        mkdir($folder, 0777, true);
-                    }
-
                     $filename = $user_id . '_' . time() . '.jpg';
-                    $target_path = $folder . '/' . $filename;
+                    $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
                     if (file_put_contents($target_path, $cropped_photo) !== false) {
-                        $updated_profilepic = 'update/profile/' . $filename;
+                        $updated_profilepic = $filename;
                     }
                 }
             }
@@ -81,11 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Upload original profile photo if no cropped photo was saved
         if (!$updated_profilepic && isset($_FILES['photo']) && $_FILES['photo']['error'] === 0) {
-            $folder = __DIR__ . '/update/profile';
-
-            if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
-            }
 
             $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
@@ -97,10 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $filename = $user_id . '_' . time() . '.' . $ext;
-            $target_path = $folder . '/' . $filename;
+            $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
             if (move_uploaded_file($_FILES['photo']['tmp_name'], $target_path)) {
-                $updated_profilepic = 'update/profile/' . $filename;
+                $updated_profilepic = $filename;
             }
         }
 
@@ -447,12 +432,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (isset($_FILES['store_image']) && $_FILES['store_image']['error'] === UPLOAD_ERR_OK) {
 
-            $folder = __DIR__ . '/update/stores';
-
-            if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
-            }
-
             $ext = strtolower(pathinfo($_FILES['store_image']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
@@ -469,7 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $filename = 'store_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-            $target_path = $folder . '/' . $filename;
+            $target_path = PROJECT_ROOT . STORE_IMAGE_DIR . $filename;
 
             if (!move_uploaded_file($_FILES['store_image']['tmp_name'], $target_path)) {
                 temp('store_error', 'Unable to upload store picture.');
@@ -477,7 +456,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            $store_image = 'update/stores/' . $filename;
+            $store_image = $filename;
         }
 
         try {
@@ -547,12 +526,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (isset($_FILES['store_image']) && $_FILES['store_image']['error'] === UPLOAD_ERR_OK) {
 
-            $folder = __DIR__ . '/update/stores';
-
-            if (!is_dir($folder)) {
-                mkdir($folder, 0777, true);
-            }
-
             $ext = strtolower(pathinfo($_FILES['store_image']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
@@ -569,7 +542,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $filename = 'store_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-            $target_path = $folder . '/' . $filename;
+            $target_path = PROJECT_ROOT . STORE_IMAGE_DIR . $filename;
 
             if (!move_uploaded_file($_FILES['store_image']['tmp_name'], $target_path)) {
                 temp('store_error', 'Unable to upload store picture.');
@@ -578,13 +551,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!empty($existing_store->store_image)) {
-                $old_path = __DIR__ . '/' . $existing_store->store_image;
+                $old_path = PROJECT_ROOT . STORE_IMAGE_DIR . $existing_store->store_image;
                 if (is_file($old_path)) {
                     @unlink($old_path);
                 }
             }
 
-            $store_image = 'update/stores/' . $filename;
+            $store_image = $filename;
         }
 
         try {
@@ -676,7 +649,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$store_id]);
 
             if (!empty($store->store_image)) {
-                $image_path = __DIR__ . '/' . $store->store_image;
+                $image_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $store->store_image;
                 if (is_file($image_path)) {
                     @unlink($image_path);
                 }
@@ -814,7 +787,7 @@ include '_head.php';
 
                 <?php if (!empty($_SESSION['users']->profilepic)): ?>
 
-                    <img src="<?= encode($_SESSION['users']->profilepic) ?>" alt="Profile Picture" class="profile-image">
+                    <img src="<?= encode(PROFILE_IMAGE_DIR . $_SESSION['users']->profilepic) ?>" alt="Profile Picture" class="profile-image">
 
                 <?php else: ?>
 
@@ -1263,7 +1236,7 @@ include '_head.php';
 
                             <div class="store-management-image">
                                 <?php if (!empty($store->store_image)): ?>
-                                    <img src="<?= encode($store->store_image) ?>" alt="<?= encode($store->store_name) ?>">
+                                    <img src="<?= encode(STORE_IMAGE_DIR . $store->store_image) ?>" alt="<?= encode($store->store_name) ?>">
                                 <?php else: ?>
                                     <div class="store-no-image">No Image</div>
                                 <?php endif; ?>

@@ -531,7 +531,7 @@ require "_head.php";
             <h3>Customer Detail</h3>
             <a
                 class="customer-detail-link"
-                href="pages/admin/member_details.php?id=<?= urlencode($order["user_id"]) ?>&page=1"
+                href="pages/admin/member_details.php?from=<?= urlencode($_SERVER['REQUEST_URI']) ?>&id=<?= urlencode($order["user_id"]) ?>"
             >
                 View Customer Profile
             </a>

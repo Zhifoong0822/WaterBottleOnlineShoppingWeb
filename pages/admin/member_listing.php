@@ -2,6 +2,7 @@
 // Core Components
 require_once '../../_base.php';
 require_admin('/products.php');
+
 $_title = 'Member Listing';
 
 if (is_post() && isset($_FILES['csv_file'])) {
@@ -118,6 +119,7 @@ $userFields = [
     'email'         => 'Email',
     // 'role'          => 'Role',
     'created_at'    => 'Created At',
+    'failed_attempts' => 'Status',
 ];
 
 // Page Query Parameters
@@ -134,7 +136,7 @@ $pageSize = 10;
 $pageOffset = ($page - 1) * $pageSize;
 
 // Database Query
-$selectSQL = "SELECT user_id, username, email, created_at";
+$selectSQL = "SELECT user_id, username, email, created_at, failed_attempts";
 $countSQL = "SELECT COUNT(*) AS total_members";
 
 $baseSQL = "
@@ -162,9 +164,7 @@ $members = $_db->query("{$selectSQL} {$baseSQL} {$orderSQL} {$paginationSQL}")->
 <div class="admin-orders-page">
     <!-- Main Bar -->
     <div class="page-header" style="justify-content: space-between;">
-        <a class="back-link" href="/" style="margin: 0px;">
-            ← Back to Home
-        </a>
+        <h1><?= $_title ?></h1>
 
         <div class="order-count">
             Total Members: <?= $total_members ?>
@@ -204,7 +204,7 @@ $members = $_db->query("{$selectSQL} {$baseSQL} {$orderSQL} {$paginationSQL}")->
         </div>
 
         <!-- Table -->
-        <div style="margin: 10px;">
+        <div>
             <table class="admin-order-table">
                 <!-- Table Header -->
                 <thead>
@@ -236,6 +236,14 @@ $members = $_db->query("{$selectSQL} {$baseSQL} {$orderSQL} {$paginationSQL}")->
                                     <td>
                                         <?php if ($field == 'created_at'): ?>
                                             <?= date('Y-m-d', strtotime($member[$field])) ?>
+
+                                        <?php elseif ($field === 'failed_attempts'): ?>
+                                            <?php if ((int)$member[$field] < 0): ?>
+                                                <span class="badge badge-blocked">Blocked</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-active">Active</span>
+                                            <?php endif; ?>
+
                                         <?php else: ?>
                                             <?= encode($member[$field]) ?>
                                         <?php endif; ?>
@@ -243,7 +251,7 @@ $members = $_db->query("{$selectSQL} {$baseSQL} {$orderSQL} {$paginationSQL}")->
                                 <?php endforeach; ?>
                                 
                                 <td class="action-buttons">
-                                    <a href="member_details.php?id=<?= $member['user_id'] ?>&page=<?= $page ?>"
+                                    <a href="./member_details.php?from=<?= urlencode($_SERVER['REQUEST_URI']) ?>&id=<?= $member['user_id'] ?>"
                                     class="btn-view" style="text-align: center; font-size: medium;">
                                         View
                                     </a>

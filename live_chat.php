@@ -20,7 +20,6 @@ $user_is_admin = $user_role === 'admin';
 // Handle AJAX Request
 
 if (is_post() && post('action') === 'create_chat') {
-
     // Only members can create chat sessions
     if ($user_is_admin) {
         echo json_encode([
@@ -61,6 +60,17 @@ if (is_post() && post('action') === 'create_chat') {
         ]);
         exit;
     }
+
+    // Identify user id of first admin account (Fallback = 2)
+    $adminStmt = $_db->prepare("
+        SELECT user_id
+        FROM users
+        WHERE role = 'admin'
+        ORDER BY user_id ASC
+        LIMIT 1
+    ");
+    $adminStmt->execute();
+    $adminUserId = $adminStmt->fetchColumn() ?? 2;
 
     // Create new chat session
     $createChatStmt = $_db->prepare("
@@ -108,7 +118,7 @@ if (is_post() && post('action') === 'create_chat') {
 
     $welcomeStmt->execute([
         ':chatSessionId' => $chat_session_id,
-        ':userId' => 2,
+        ':userId' => $adminUserId,
         ':message' => $welcomeMessage
     ]);
 
@@ -613,7 +623,6 @@ $selectedChatId = intval(req('chat', 0));
 $chatSessions = [];
 $messages = [];
 
-// Get Chat Sessions
 // Get Chat Sessions
 $chatSessionsStmt = $_db->prepare("
     SELECT

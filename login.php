@@ -1,8 +1,4 @@
 <?php
-// Start session immediately before loading any other files
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 
 require_once '_base.php';
 
@@ -18,8 +14,12 @@ if (is_post()) {
 
     $user = $stmt->fetch(PDO::FETCH_OBJ);
 
+    // --- Check if this account is currently blocked ---
+    if ($user && $user->failed_attempts < 0) {
+        $_err['login'] = "Your account has been blocked.";
+    }
     // --- Check if this account is currently locked out ---
-    if ($user && $user->locked_until !== null && strtotime($user->locked_until) > time()) {
+    elseif ($user && $user->locked_until !== null && strtotime($user->locked_until) > time()) {
         $seconds_left = strtotime($user->locked_until) - time();
         $minutes_left = (int) ceil($seconds_left / 60);
         $_err['login'] = "This account is temporarily locked due to too many failed attempts. Try again in $minutes_left minute" . ($minutes_left === 1 ? '' : 's') . ".";

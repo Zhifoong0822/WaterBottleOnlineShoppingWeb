@@ -293,11 +293,10 @@ $(function () {
         $("#memberChatStatus").val(status);
 
         const statusBadge = $(".chat-header-status .status");
-
         statusBadge
             .removeClass("status-0 status-1 status-2")
             .addClass("status-" + status)
-            .text(getStatusLabel(status) || "Unknown");
+            .text(getStatusLabel(status));
 
         if (status === 1) {
             // Active
@@ -309,8 +308,7 @@ $(function () {
             $("#memberChatMessageForm").hide();
             $("#memberChatStatusMessage").show();
 
-            $("#memberChatStatusText")
-                .text(statusLabels[status] || "Unknown");
+            $("#memberChatStatusText").text(getStatusLabel(status));
         }
     }
 
@@ -384,9 +382,6 @@ $(function () {
                 chatMessages.find(".member-chat-empty").remove();
 
                 let receivedNewMessage = false;
-                const shouldScroll = isNearBottom(
-                    chatMessages[0]
-                );
 
                 response.messages.forEach(function (messageData) {
                     // Prevent duplicates
@@ -405,8 +400,12 @@ $(function () {
                     receivedNewMessage = true;
                 });
 
-                if (receivedNewMessage && shouldScroll) {
-                    scrollToBottom();
+                if (receivedNewMessage) {
+                    console.log("New messages received.");
+
+                    if (isNearBottom(chatMessages[0])) {
+                        scrollToBottom();
+                    }
                 }
             },
 
@@ -481,12 +480,16 @@ $(function () {
     }
 
     // Check if scroll of the element is near bottom
-    function isNearBottom(element, threshold = 100) {
-        return (
-            element.scrollHeight -
-            element.scrollTop -
-            element.clientHeight
-        ) <= threshold;
+    function isNearBottom(container, messageThreshold = 10, tolerance = 50) {
+        const messages = [...container.querySelectorAll('[data-message-id]')];
+        const containerBottom = container.getBoundingClientRect().bottom;
+
+        const messagesBelow = messages.filter(message => {
+            const rect = message.getBoundingClientRect();
+            return rect.top >= (containerBottom + tolerance);
+        });
+
+        return messagesBelow.length <= messageThreshold;
     }
 
     // Scroll to latest message
