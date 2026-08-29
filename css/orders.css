@@ -165,7 +165,7 @@ main > .my-orders-title {
 
 .amount {
     color: #222222;
-    font-size: 21px;
+    font-size: 18px;
     font-weight: bold;
 }
 
@@ -216,7 +216,7 @@ main > .my-orders-title {
 
 .empty-message,
 .no-orders {
-    padding: 25px;
+    padding: 35px;
 
     background-color: #ffffff;
     color: #777777;
@@ -301,6 +301,11 @@ main > .my-orders-title {
     }
 }
 
+
+/* ========================================================================== 
+   Order Detail Page
+   ========================================================================== */
+
 .order-detail-container {
     width: 100%;
     max-width: 750px;
@@ -340,11 +345,6 @@ main > .my-orders-title {
 .order-detail-table th {
     width: 35%;
     background-color: #fafafa;
-}
-
-.amount {
-    font-size: 18px;
-    font-weight: bold;
 }
 
 .button-area {
@@ -431,6 +431,11 @@ main > .my-orders-title {
 .back-button:hover {
     background-color: #555555;
 }
+
+
+/* ========================================================================== 
+   Admin Orders Page
+   ========================================================================== */
 
 .admin-orders-page {
     width: 100%;
@@ -541,8 +546,7 @@ main > .my-orders-title {
     background-color: #f8f9fa;
 }
 
-.order-id,
-.amount {
+.order-id {
     font-weight: bold;
 }
 
@@ -557,12 +561,6 @@ main > .my-orders-title {
 
 .view-button:hover {
     background-color: #1e3a5f;
-}
-
-.no-orders {
-    padding: 35px;
-    color: #777777;
-    text-align: center;
 }
 
 .back-link {
@@ -593,6 +591,11 @@ main > .my-orders-title {
     }
 }
 
+
+/* ========================================================================== 
+   Admin Order Detail Page
+   ========================================================================== */
+
 .admin-order-detail-page {
     width: 100%;
     max-width: 850px;
@@ -614,41 +617,6 @@ main > .my-orders-title {
 .alert-error {
     background-color: #f8d7da;
     color: #721c24;
-}
-
-.detail-card {
-    overflow: hidden;
-    background-color: #ffffff;
-    border: 1px solid #dddddd;
-    border-radius: 14px;
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-    padding: 22px 25px;
-    background-color: #0f2747;
-    color: #ffffff;
-}
-
-.card-header h2 {
-    margin: 0;
-}
-
-.order-detail-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.order-detail-table th,
-.order-detail-table td {
-    padding: 17px 25px;
-    border-bottom: 1px solid #eeeeee;
-    text-align: left;
-}
-
-.order-detail-table th {
-    width: 35%;
-    background-color: #fafafa;
 }
 
 .form-section {
@@ -810,11 +778,6 @@ main > .my-orders-title {
     min-width: 88px;
 }
 
-.order-left {
-    flex: 1;
-    min-width: 0;
-}
-
 .order-items-list {
     width: 100%;
     display: flex;
@@ -864,17 +827,18 @@ main > .my-orders-title {
     border-radius: 2px;
 }
 
-/* =========================================================
-   VIEW FEEDBACK - USE SAME STYLE AS ORDER DETAIL
-   ========================================================= */
 
-   .order-detail-container {
+/* ========================================================================== 
+   Order Feedback Page
+   ========================================================================== */
+
+.feedback-page {
     width: 100%;
     max-width: 750px;
     margin: 0 auto;
 }
 
-.order-detail-container .detail-card {
+.feedback-card {
     overflow: hidden;
     background-color: #ffffff;
     border: 1px solid #dddddd;
@@ -882,61 +846,156 @@ main > .my-orders-title {
     box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
 }
 
-.order-detail-container .card-header {
+.feedback-card-header {
     padding: 22px 25px;
-    background-color: #0f2747;
+    background-color: #222222;
     color: #ffffff;
 }
 
-.order-detail-container .card-header h2 {
+.feedback-card-header h2 {
     margin: 0;
 }
 
-.order-detail-container .order-detail-table {
-    width: 100%;
-    border-collapse: collapse;
+.feedback-card-body {
+    padding: 25px;
 }
 
-.order-detail-container .order-detail-table th,
-.order-detail-container .order-detail-table td {
-    padding: 17px 25px;
-    border-bottom: 1px solid #eeeeee;
-    text-align: left;
+.feedback-description {
+    margin-top: 0;
+    margin-bottom: 24px;
+    color: #666666;
 }
 
-.order-detail-container .order-detail-table th {
-    width: 35%;
-    background-color: #fafafa;
+.rating-fieldset {
+    margin: 0 0 24px;
+    padding: 0;
+    border: none;
 }
 
-/* Feedback stars */
-.view-star-rating {
-    display: inline-flex;
-    gap: 3px;
-}
-
-.view-star {
-    font-size: 24px;
-    line-height: 1;
-}
-
-.view-star.filled {
-    color: #f59e0b;
-}
-
-.view-star.empty {
-    color: #cccccc;
-}
-
-.rating-value {
-    margin-left: 10px;
+.rating-fieldset legend {
+    margin-bottom: 10px;
     font-weight: bold;
 }
 
-.no-feedback {
-    color: #777777;
-    font-style: italic;
+.star-rating {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
 }
+
+.star-rating input {
+    display: none;
+}
+
+.star-rating label {
+    color: #cccccc;
+    font-size: 38px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+    color: #f59e0b;
+}
+
+.feedback-form-group {
+    margin-bottom: 22px;
+}
+
+.feedback-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.optional-text {
+    color: #777777;
+    font-size: 13px;
+    font-weight: normal;
+}
+
+.feedback-form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+
+    font-family: inherit;
+    font-size: 15px;
+    resize: vertical;
+}
+
+.feedback-form-group textarea:focus {
+    outline: none;
+    border-color: #333333;
+}
+
+.feedback-error {
+    margin: 7px 0 0;
+    color: #dc3545;
+    font-size: 14px;
+}
+
+.feedback-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.submit-feedback-button,
+.feedback-back-button {
+    padding: 10px 18px;
+    border-radius: 7px;
+    font-size: 15px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.submit-feedback-button {
+    border: none;
+    background-color: #222222;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.submit-feedback-button:hover {
+    background-color: #555555;
+}
+
+.feedback-back-button {
+    display: inline-block;
+    background-color: #e9ecef;
+    color: #222222;
+}
+
+.feedback-back-button:hover {
+    background-color: #dfe3e6;
+}
+
+.rating-submitted {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 9px 15px;
+
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+
+    background-color: #eeeeee;
+    color: #777777;
+
+    font-size: 14px;
+    font-weight: bold;
+    cursor: not-allowed;
+}
+
+
+/* ========================================================================== 
+   Order Tracking
+   ========================================================================== */
 
 .order-tracking {
     display: grid;
@@ -1029,4 +1088,43 @@ main > .my-orders-title {
 
 .tracking-pending {
     color: #999999 !important;
+}
+
+
+/* ========================================================================== 
+   View Feedback
+   ========================================================================== */
+
+/* Read-only stars */
+.view-star-rating {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.view-star {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.view-star.filled {
+    color: #f59e0b;
+}
+
+.view-star.empty {
+    color: #cccccc;
+}
+
+.rating-value {
+    margin-left: 10px;
+
+    color: #666666;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Feedback text */
+.no-feedback {
+    color: #777777;
+    font-style: italic;
 }
