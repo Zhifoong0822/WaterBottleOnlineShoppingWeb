@@ -13,22 +13,16 @@ if ($_SESSION['users']->role !== 'member') {
     redirect('admin_orders.php');
 }
 
-$user_id = (int) $_SESSION['users']->user_id; //set user_id in the current session
+$user_id = (int) $_SESSION['users']->user_id; //Set user_id in the current session
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");
 }
 
-$order_id = (int) $_GET["id"];
+$order_id = (int) $_GET["id"]; //Get current order_id
 
 $errors = [];
 
-/*
- * Check that:
- * 1. The order exists
- * 2. It belongs to this customer
- * 3. Its status is completed
- */
 $sql = "SELECT
             order_id,
             order_date,
@@ -50,12 +44,11 @@ $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$order) {
     die(
-        "This order does not exist, does not belong to you, " .
-        "or has not been completed."
+        "This order does not exist, does not belong to you, " . "or has not been completed."
     );
 }
 
-/*Retrieve an existing rating, if the customer previously submitted feedback for this order.*/
+/*Retrieve an existing rating, if the customer previously submitted feedback for this order*/
 $sql = "SELECT rating, feedback
         FROM order_feedback
         WHERE order_id = :order_id
@@ -73,7 +66,7 @@ $existing_feedback = $stmt->fetch(PDO::FETCH_ASSOC);
 $rating = $existing_feedback["rating"] ?? "";
 $feedback = $existing_feedback["feedback"] ?? "";
 
-/*Process feedback submission.*/
+/*Process feedback submission*/
 if (is_post()) {
 
     $rating = post("rating");
@@ -137,7 +130,7 @@ require "_head.php";
         <div class="feedback-card-body">
 
             <p class="feedback-description">
-                Rate your completed order and optionally share your experience.
+                Rate your completed order and share your experience.
             </p>
 
             <form method="POST" id="feedbackForm">
@@ -203,7 +196,6 @@ require "_head.php";
 
                 </fieldset>
 
-
                 <div class="feedback-form-group">
 
                     <label for="feedback">
@@ -227,7 +219,6 @@ require "_head.php";
                     <?php endif; ?>
 
                 </div>
-
 
                 <div class="feedback-actions">
 

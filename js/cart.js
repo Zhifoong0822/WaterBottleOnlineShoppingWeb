@@ -45,6 +45,13 @@ $(document).ready(function() {
             },
             dataType: "json",
             success: function(response) {
+                if (response.redirect) {
+                    if (response.message) {
+                        alert(response.message);
+                    }
+                    window.location.href = response.redirect;
+                    return;
+                }
                 if (response.message) {
                     alert(response.message);
                 }
@@ -53,8 +60,8 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error("AJAX Error:", error, xhr.responseText);
-                // Fallback: If server responded but failed JSON parsing, redirect anyway
-                window.location.href = "products.php";
+                // Fallback: If server responded with non-JSON or failed auth, redirect to login.php
+                window.location.href = "login.php";
             }
         });
     });

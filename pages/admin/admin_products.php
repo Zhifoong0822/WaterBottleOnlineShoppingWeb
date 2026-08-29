@@ -175,6 +175,21 @@ $sql = "
         'name'          => 'p.name',
         'category_name' => 'c.category_name',
         'price'         => 'p.price',
+        /*
+        A size with no recognizable "Noz" pattern falls
+        back to 0, so it sorts first on ASC / last on
+        DESC - a reasonable default for the rare
+        malformed case.
+        */
+        'size'          => "
+            CAST(
+                SUBSTRING_INDEX(
+                    SUBSTRING_INDEX(LOWER(pv.size), '(', -1),
+                    'oz',
+                    1
+                ) AS UNSIGNED
+            )
+        ",
         'stock'         => 'pv.stock'
     ];
     if (!array_key_exists($sort, $allowedSort)) {
@@ -527,7 +542,20 @@ include '../../_head.php';
 
                                 </a>
                             </th>
-                            <th>Size</th>
+                            <th>
+                                <a href="?<?= http_build_query([
+                                    'search'=>$search,
+                                    'category'=>$category,
+                                    'status'=>$status,
+                                    'view'=>$view,
+                                    'sort'=>'size',
+                                    'order'=>nextOrder('size',$sort,$order),
+                                    'page'=>1
+                                ]) ?>" class="sort-link">
+
+                                Size <?= sortIcon('size',$sort,$order) ?>
+                                </a>
+                            </th>
                             <th>
                                 <a href="?<?= http_build_query([
                                     'search'=>$search,

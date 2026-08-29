@@ -50,8 +50,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Upload profile photo
-        if (isset($_FILES['photo']) && $_FILES['photo']['error'] === 0) {
+        // Save cropped profile photo
+        if (!empty($_POST['cropped_photo'])) {
+            $cropped_photo = $_POST['cropped_photo'];
+
+            if (preg_match('/^data:image\/jpeg;base64,/', $cropped_photo)) {
+                $cropped_photo = substr($cropped_photo, strpos($cropped_photo, ',') + 1);
+                $cropped_photo = base64_decode($cropped_photo, true);
+
+                if ($cropped_photo !== false) {
+                    $folder = __DIR__ . '/update/profile';
+
+                    if (!is_dir($folder)) {
+                        mkdir($folder, 0777, true);
+                    }
+
+                    $filename = $user_id . '_' . time() . '.jpg';
+                    $target_path = $folder . '/' . $filename;
+
+                    if (file_put_contents($target_path, $cropped_photo) !== false) {
+                        $updated_profilepic = 'update/profile/' . $filename;
+                    }
+                }
+            }
+        }
+
+        // Upload original profile photo if no cropped photo was saved
+        if (!$updated_profilepic && isset($_FILES['photo']) && $_FILES['photo']['error'] === 0) {
 
             $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
@@ -721,12 +746,34 @@ if ($is_admin) {
     }
 }
 
-
 // Store tab data
 $stores = [];
 
 if ($is_admin) {
     $stores = safe_rows($_db, "SELECT * FROM stores ORDER BY created_at DESC, store_id DESC");
+}
+
+// Wishlist tab data
+$wishlist_products = [];
+
+if ($is_member) {
+    $wishlist_products = safe_rows($_db, "
+        SELECT
+            w.wishlist_id,
+            p.product_id,
+            p.name,
+            p.description,
+            p.price,
+            p.image_url,
+            pv.variant_id,
+            pv.size,
+            pv.colour
+        FROM wishlist w
+        JOIN products p ON p.product_id = w.product_id
+        JOIN product_variants pv ON pv.variant_id = w.variant_id AND pv.product_id = p.product_id
+        WHERE w.user_id = ?
+        ORDER BY w.created_at DESC
+    ", [$user_id]);
 }
 
 include '_head.php';
@@ -772,7 +819,6 @@ include '_head.php';
 
     </div>
 
-
     <!-- Profile Navigation -->
     <nav class="nav-container">
 
@@ -799,6 +845,58 @@ include '_head.php';
         </button>
 
     </nav>
+
+    <?php if ($is_member): ?>
+
+        <!-- Wishlist Tab -->
+        <div id="wishlist" class="tab-content" style="display: none;">
+
+            <h2>My Wishlist</h2>
+
+            <?php if (empty($wishlist_products)): ?>
+
+                <p class="empty-catalogue">No products in your wishlist yet.</p>
+
+            <?php else: ?>
+
+                <div class="product-grid">
+
+                    <?php foreach ($wishlist_products as $item): ?>
+
+                        <article class="product-card" id="wishlist-item-<?= (int) $item->wishlist_id ?>">
+
+                            <a href="product_detail.php?id=<?= (int) $item->product_id ?>&variant_id=<?= (int) $item->variant_id ?>" class="product-card-link">
+                                <img src="<?= encode($item->image_url) ?>" alt="<?= encode($item->name) ?>">
+                                <h3><?= encode($item->name) ?></h3>
+                            </a>
+
+                            <p><?= encode($item->description) ?></p>
+
+                            <?php if (!empty($item->size)): ?>
+                                <p class="product-variant">Size: <?= encode($item->size) ?></p>
+                            <?php endif; ?>
+
+                            <?php if (!empty($item->colour)): ?>
+                                <p class="product-variant">Colour: <?= encode($item->colour) ?></p>
+                            <?php endif; ?>
+
+                            <p class="product-price">RM<?= number_format((float) $item->price, 2) ?></p>
+
+                            <a href="product_detail.php?id=<?= (int) $item->product_id ?>&variant_id=<?= (int) $item->variant_id ?>" class="view-details-btn">View Details</a>
+
+                            <button type="button" class="view-details-btn wishlist-remove-btn" data-product-id="<?= (int) $item->product_id ?>" data-variant-id="<?= (int) $item->variant_id ?>" data-wishlist-id="<?= (int) $item->wishlist_id ?>" style="margin-top: 10px; width: 100%; cursor: pointer;">Remove</button>
+
+                        </article>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+
+    <?php endif; ?>
 
     <?php if ($is_admin): ?>
 
@@ -831,127 +929,83 @@ include '_head.php';
 
                     </div>
 
-
                     <div class="form-group">
 
                         <label>Role</label>
-
                         <select name="role_name" class="input-field" required>
-
                             <option value="">Select a role...</option>
-
+                            
                             <option value="Staff" <?= ($edit_account && $edit_account->role === 'Staff') ? 'selected' : '' ?>>
                                 Staff
                             </option>
-
+                            
                             <option value="Supervisor" <?= ($edit_account && $edit_account->role === 'Supervisor') ? 'selected' : '' ?>>
                                 Supervisor
                             </option>
-
                         </select>
-
                     </div>
 
-
                     <div class="form-group">
-
                         <label>Page Access</label>
-
                         <?php foreach ($available_pages as $slug => $label): ?>
-
                             <label class="role-checkbox-row">
-
                                 <input type="checkbox" name="pages[]" value="<?= encode($slug) ?>" <?= in_array($slug, $edit_user_pages, true) ? 'checked' : '' ?>>
-
                                 <span><?= encode($label) ?></span>
-
                             </label>
-
                         <?php endforeach; ?>
-
                     </div>
 
-
                     <div class="form-group">
-
                         <label>Username</label>
-
                         <input type="text" name="username" class="input-field" maxlength="50" placeholder="e.g. staff_amy" value="<?= encode($edit_account ? $edit_account->username : '') ?>" required>
-
                     </div>
 
-
                     <div class="form-group">
-
                         <label>Email</label>
-
                         <input type="email" name="user_email" class="input-field" maxlength="100" placeholder="name@example.com" value="<?= encode($edit_account ? $edit_account->email : '') ?>" required>
-
                     </div>
 
-
                     <div class="form-group">
-
                         <label>Password</label>
-
                         <input type="password" name="user_password" class="input-field" maxlength="255" autocomplete="off" <?= !$edit_account ? 'required' : '' ?>>
-
                         <?php if ($edit_account): ?>
-
                             <small>
                                 Leave blank to keep the current password.
                             </small>
-
                         <?php endif; ?>
-
                     </div>
-
 
                     <div class="form-group">
-
                         <label>Confirm Password</label>
-
                         <input type="password" name="user_password_confirm" class="input-field" maxlength="255" autocomplete="off" <?= !$edit_account ? 'required' : '' ?>>
-
                     </div>
 
-
                     <?php if (isset($_SESSION['temp_role_error'])): ?>
-
                         <span class="err">
                             <?= encode(temp('role_error')) ?>
                         </span>
-
                     <?php endif; ?>
 
-
                     <?php if (isset($_SESSION['temp_role_success'])): ?>
-
                         <span class="success">
                             <?= encode(temp('role_success')) ?>
                         </span>
 
                     <?php endif; ?>
 
-
                     <button type="submit" class="edit-profile-btn role-save-btn">
                         <?= $edit_account ? 'Update Account' : 'Create Account' ?>
                     </button>
-
                 </div>
-
             </form>
-
 
             <!-- Existing Accounts -->
             <h3 class="overview-subheading">
                 Existing Accounts
             </h3>
 
-
             <!-- Staff / Supervisor Tabs -->
             <div class="account-role-tabs">
-
                 <button type="button" class="account-role-tab active" data-role-tab="staff" onclick="switchRoleAccountTab('staff')">
                     Staff
                 </button>
@@ -959,19 +1013,15 @@ include '_head.php';
                 <button type="button" class="account-role-tab" data-role-tab="supervisor" onclick="switchRoleAccountTab('supervisor')">
                     Supervisor
                 </button>
-
             </div>
-
 
             <!-- Staff Accounts -->
             <div id="staff-accounts" class="role-account-content">
 
                 <?php if (empty($staff_accounts)): ?>
-
                     <p class="overview-empty">
                         No Staff accounts yet.
                     </p>
-
                 <?php else: ?>
 
                     <table class="dash-table">
@@ -986,39 +1036,25 @@ include '_head.php';
                         </thead>
 
                         <tbody>
-
                             <?php foreach ($staff_accounts as $account): ?>
-
                                 <tr>
-
                                     <td><?= encode($account->username) ?></td>
-
                                     <td><?= encode($account->email) ?></td>
-
                                     <td>
-
                                         <?php if (empty($account->pages)): ?>
-
                                             <span class="no-access">
                                                 No pages granted
                                             </span>
-
                                         <?php else: ?>
-
                                             <?php foreach ($account->pages as $page): ?>
-
                                                 <span class="page-badge">
                                                     <?= encode($available_pages[$page] ?? $page) ?>
                                                 </span>
-
                                             <?php endforeach; ?>
-
                                         <?php endif; ?>
-
                                     </td>
 
                                     <td class="role-actions-cell">
-
                                         <a href="profile.php?tab=roles&edit_user=<?= (int) $account->user_id ?>" class="role-btn role-btn-edit">
                                             Edit
                                         </a>
@@ -1031,37 +1067,23 @@ include '_head.php';
                                             <button type="submit" class="role-btn role-btn-delete">
                                                 Delete
                                             </button>
-
                                         </form>
-
                                     </td>
-
                                 </tr>
-
                             <?php endforeach; ?>
-
                         </tbody>
-
                     </table>
-
                 <?php endif; ?>
-
             </div>
-
 
             <!-- Supervisor Accounts -->
             <div id="supervisor-accounts" class="role-account-content" hidden>
-
                 <?php if (empty($supervisor_accounts)): ?>
-
                     <p class="overview-empty">
                         No Supervisor accounts yet.
                     </p>
-
                 <?php else: ?>
-
                     <table class="dash-table">
-
                         <thead>
                             <tr>
                                 <th>Username</th>
@@ -1076,41 +1098,29 @@ include '_head.php';
                             <?php foreach ($supervisor_accounts as $account): ?>
 
                                 <tr>
-
                                     <td><?= encode($account->username) ?></td>
-
                                     <td><?= encode($account->email) ?></td>
-
                                     <td>
-
                                         <?php if (empty($account->pages)): ?>
-
                                             <span class="no-access">
                                                 No pages granted
                                             </span>
-
                                         <?php else: ?>
 
                                             <?php foreach ($account->pages as $page): ?>
-
                                                 <span class="page-badge">
                                                     <?= encode($available_pages[$page] ?? $page) ?>
                                                 </span>
-
                                             <?php endforeach; ?>
-
                                         <?php endif; ?>
-
                                     </td>
 
                                     <td class="role-actions-cell">
-
                                         <a href="profile.php?tab=roles&edit_user=<?= (int) $account->user_id ?>" class="role-btn role-btn-edit">
                                             Edit
                                         </a>
 
                                         <form method="POST" action="" class="account-delete-form" onsubmit="return confirm('Delete this Supervisor account?');">
-
                                             <input type="hidden" name="form_type" value="delete_staff_account">
                                             <input type="hidden" name="staff_user_id" value="<?= (int) $account->user_id ?>">
 
@@ -1119,24 +1129,14 @@ include '_head.php';
                                             </button>
 
                                         </form>
-
                                     </td>
-
                                 </tr>
-
                             <?php endforeach; ?>
-
                         </tbody>
-
                     </table>
-
                 <?php endif; ?>
-
             </div>
-
         </div>
-
-
 
         <!-- Store Tab -->
         <div id="store" class="tab-content" style="display: none;">
@@ -1371,8 +1371,6 @@ include '_head.php';
 
     <?php endif; ?>
 
-
-
     <!-- Settings Tab -->
     <div id="settings" class="tab-content" style="display: none;">
 
@@ -1380,126 +1378,98 @@ include '_head.php';
 
         <!-- Profile Form -->
         <form method="POST" action="" enctype="multipart/form-data">
-
             <input type="hidden" name="form_type" value="profile">
-
             <div class="card-container">
-
                 <div class="card-header">
-
                     <h4>Profile</h4>
-
                     <div class="card-header-actions">
-
                         <input type="file" id="profilephoto-input" name="photo" accept="image/*" disabled>
-
-                        <button type="button" id="edit-btn" class="edit-profile-btn" onclick="toggleEdit()">
-                            Edit
+                        <input type="hidden" id="cropped-photo" name="cropped_photo">
+                        <button type="button" id="edit-btn" class="edit-profile-btn" onclick="toggleEdit()">Edit
                         </button>
-
                     </div>
-
                 </div>
 
-
                 <div class="form-group">
-
                     <label>Name</label>
-
                     <input type="text" id="input-name" name="user-name" class="input-field" value="<?= encode($_SESSION['users']->username) ?>" maxlength="20" disabled>
-
                 </div>
 
-
                 <div class="form-group">
-
                     <label>Email</label>
-
                     <input type="email" id="input-email" name="user-email" class="input-field" value="<?= encode($_SESSION['users']->email) ?>" disabled>
-
+                    
                     <?php if (isset($_SESSION['temp_email_error'])): ?>
-
                         <span class="err">
                             <?= encode(temp('email_error')) ?>
                         </span>
-
                     <?php endif; ?>
 
                 </div>
-
             </div>
-
         </form>
-
 
         <!-- Password Form -->
         <form method="POST" action="">
-
             <input type="hidden" name="form_type" value="password">
-
             <div class="card-container">
-
                 <div class="card-header">
-
                     <h4>Password</h4>
-
-                    <button type="button" id="edit-password-btn" class="edit-profile-btn" onclick="togglePasswordEdit()">
-                        Edit
+                    <button type="button" id="edit-password-btn" class="edit-profile-btn" onclick="togglePasswordEdit()">Edit
                     </button>
-
                 </div>
 
-
                 <div class="form-group">
-
                     <label>Current Password</label>
-
                     <input type="password" id="input-current-password" name="current_password" class="input-field" disabled autocomplete="off">
-
                 </div>
 
-
                 <div class="form-group">
-
                     <label>New Password</label>
-
                     <input type="password" id="input-new-password" name="new_password" class="input-field" minlength="8" disabled autocomplete="off">
-
                 </div>
-
 
                 <div class="form-group">
-
                     <label>Confirm New Password</label>
-
                     <input type="password" id="input-confirm-password" name="confirm_password" class="input-field" minlength="8" disabled autocomplete="off">
-
                 </div>
-
 
                 <?php if (isset($_SESSION['temp_password_error'])): ?>
-
                     <span class="err">
                         <?= encode(temp('password_error')) ?>
                     </span>
-
                 <?php endif; ?>
 
-
                 <?php if (isset($_SESSION['temp_password_success'])): ?>
-
                     <span class="success">
                         <?= encode(temp('password_success')) ?>
                     </span>
-
                 <?php endif; ?>
 
             </div>
-
         </form>
-
     </div>
 
+<div id="crop-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:25px; border-radius:12px; width:500px; max-width:90%;">
+        <h3 style="margin-top:0;">Edit Profile Picture</h3>
+        <div style="width:100%; height:350px; overflow:hidden; position:relative; background:#eee;">
+            <canvas id="crop-canvas" width="350" height="350" style="width:350px; height:350px; max-width:100%; display:block; margin:auto; cursor:grab;"></canvas>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+            <button type="button" id="rotate-left-btn">↶ Rotate Left</button>
+            <button type="button" id="rotate-right-btn">↷ Rotate Right</button>
+        </div>
+        <div style="margin-top:15px;">
+            <label>Zoom</label>
+            <input type="range" id="crop-zoom" min="1" max="3" step="0.05" value="1" style="width:100%;">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button type="button" id="crop-cancel-btn">Cancel</button>
+            <button type="button" id="crop-save-btn" class="edit-profile-btn">Use Photo</button>
+        </div>
+    </div>
+</div>
 
 <script>
 
@@ -1612,8 +1582,6 @@ function switchRoleAccountTab(role) {
     });
 }
 
-
-
 // Store management
 function toggleAddStoreForm() {
     const form = document.getElementById('add-store-form');
@@ -1646,6 +1614,39 @@ function toggleStoreEdit(storeId) {
     }
 }
 
+// Remove wishlist product
+document.querySelectorAll('.wishlist-remove-btn').forEach(function(button) {
+    button.addEventListener('click', function () {
+        const formData = new FormData();
+        formData.append('product_id', button.dataset.productId);
+        formData.append('variant_id', button.dataset.variantId);
+
+        fetch('wishlist_handler.php', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (!data.success) {
+                    alert(data.message);
+                    return;
+                }
+
+                if (!data.wishlisted) {
+                    const wishlistItem = document.getElementById('wishlist-item-' + button.dataset.wishlistId);
+
+                    if (wishlistItem) {
+                        wishlistItem.remove();
+                    }
+
+                    if (document.querySelectorAll('.wishlist-remove-btn').length === 0) {
+                        window.location.href = 'profile.php?tab=wishlist';
+                    }
+                }
+            })
+            .catch(function () {
+                alert('Unable to update wishlist.');
+            });
+    });
+});
+
 // Open selected main tab
 <?php
 if ($is_admin) {
@@ -1666,6 +1667,143 @@ const initialRoleAccountTab = <?= json_encode(isset($edit_account) && $edit_acco
 if (document.getElementById('staff-accounts')) {
     switchRoleAccountTab(initialRoleAccountTab);
 }
+
+// Profile image crop and rotate
+const profilePhotoInput = document.getElementById('profilephoto-input');
+const cropModal = document.getElementById('crop-modal');
+const cropCanvas = document.getElementById('crop-canvas');
+const cropContext = cropCanvas.getContext('2d');
+const cropZoom = document.getElementById('crop-zoom');
+const croppedPhotoInput = document.getElementById('cropped-photo');
+
+let cropImage = new Image();
+let cropRotation = 0;
+let cropScale = 1;
+let cropX = 0;
+let cropY = 0;
+let cropDragging = false;
+let cropStartX = 0;
+let cropStartY = 0;
+
+profilePhotoInput.addEventListener('change', function () {
+    const file = profilePhotoInput.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+        cropImage = new Image();
+
+        cropImage.onload = function () {
+            cropRotation = 0;
+            cropScale = 1;
+            cropZoom.value = 1;
+            cropX = 0;
+            cropY = 0;
+
+            cropModal.style.display = 'flex';
+
+            drawCropImage();
+        };
+
+        cropImage.src = event.target.result;
+    };
+
+    reader.readAsDataURL(file);
+});
+
+function drawCropImage() {
+    const width = cropCanvas.width;
+    const height = cropCanvas.height;
+
+    cropContext.clearRect(0, 0, width, height);
+
+    cropContext.save();
+
+    cropContext.translate(
+        width / 2 + cropX,
+        height / 2 + cropY
+    );
+
+    cropContext.rotate(cropRotation * Math.PI / 180);
+
+    const imageRatio = cropImage.width / cropImage.height;
+
+    let drawWidth;
+    let drawHeight;
+
+    if (imageRatio > 1) {
+        drawHeight = height * cropScale;
+        drawWidth = drawHeight * imageRatio;
+    } else {
+        drawWidth = width * cropScale;
+        drawHeight = drawWidth / imageRatio;
+    }
+
+    cropContext.drawImage(
+        cropImage,
+        -drawWidth / 2,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight
+    );
+
+    cropContext.restore();
+}
+
+document.getElementById('rotate-left-btn').addEventListener('click', function () {
+    cropRotation -= 90;
+    drawCropImage();
+});
+
+document.getElementById('rotate-right-btn').addEventListener('click', function () {
+    cropRotation += 90;
+    drawCropImage();
+});
+
+cropZoom.addEventListener('input', function () {
+    cropScale = parseFloat(this.value);
+    drawCropImage();
+});
+
+cropCanvas.addEventListener('mousedown', function (event) {
+    cropDragging = true;
+    cropStartX = event.offsetX - cropX;
+    cropStartY = event.offsetY - cropY;
+});
+
+cropCanvas.addEventListener('mousemove', function (event) {
+    if (!cropDragging) {
+        return;
+    }
+
+    cropX = event.offsetX - cropStartX;
+    cropY = event.offsetY - cropStartY;
+
+    drawCropImage();
+});
+
+cropCanvas.addEventListener('mouseup', function () {
+    cropDragging = false;
+});
+
+cropCanvas.addEventListener('mouseleave', function () {
+    cropDragging = false;
+});
+
+document.getElementById('crop-cancel-btn').addEventListener('click', function () {
+    cropModal.style.display = 'none';
+    profilePhotoInput.value = '';
+    croppedPhotoInput.value = '';
+});
+
+document.getElementById('crop-save-btn').addEventListener('click', function () {
+    croppedPhotoInput.value = cropCanvas.toDataURL('image/jpeg', 0.9);
+    cropModal.style.display = 'none';
+});
 
 </script>
 

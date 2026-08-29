@@ -1,5 +1,3 @@
-/* File Path: css/orders.css */
-
 .order-history {
     width: 100%;
     display: flex;
@@ -167,7 +165,7 @@ main > .my-orders-title {
 
 .amount {
     color: #222222;
-    font-size: 21px;
+    font-size: 18px;
     font-weight: bold;
 }
 
@@ -218,7 +216,7 @@ main > .my-orders-title {
 
 .empty-message,
 .no-orders {
-    padding: 25px;
+    padding: 35px;
 
     background-color: #ffffff;
     color: #777777;
@@ -303,6 +301,11 @@ main > .my-orders-title {
     }
 }
 
+
+/* ========================================================================== 
+   Order Detail Page
+   ========================================================================== */
+
 .order-detail-container {
     width: 100%;
     max-width: 750px;
@@ -342,11 +345,6 @@ main > .my-orders-title {
 .order-detail-table th {
     width: 35%;
     background-color: #fafafa;
-}
-
-.amount {
-    font-size: 18px;
-    font-weight: bold;
 }
 
 .button-area {
@@ -433,6 +431,11 @@ main > .my-orders-title {
 .back-button:hover {
     background-color: #555555;
 }
+
+
+/* ========================================================================== 
+   Admin Orders Page
+   ========================================================================== */
 
 .admin-orders-page {
     width: 100%;
@@ -543,8 +546,7 @@ main > .my-orders-title {
     background-color: #f8f9fa;
 }
 
-.order-id,
-.amount {
+.order-id {
     font-weight: bold;
 }
 
@@ -559,12 +561,6 @@ main > .my-orders-title {
 
 .view-button:hover {
     background-color: #1e3a5f;
-}
-
-.no-orders {
-    padding: 35px;
-    color: #777777;
-    text-align: center;
 }
 
 .back-link {
@@ -595,6 +591,11 @@ main > .my-orders-title {
     }
 }
 
+
+/* ========================================================================== 
+   Admin Order Detail Page
+   ========================================================================== */
+
 .admin-order-detail-page {
     width: 100%;
     max-width: 850px;
@@ -616,41 +617,6 @@ main > .my-orders-title {
 .alert-error {
     background-color: #f8d7da;
     color: #721c24;
-}
-
-.detail-card {
-    overflow: hidden;
-    background-color: #ffffff;
-    border: 1px solid #dddddd;
-    border-radius: 14px;
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-    padding: 22px 25px;
-    background-color: #0f2747;
-    color: #ffffff;
-}
-
-.card-header h2 {
-    margin: 0;
-}
-
-.order-detail-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.order-detail-table th,
-.order-detail-table td {
-    padding: 17px 25px;
-    border-bottom: 1px solid #eeeeee;
-    text-align: left;
-}
-
-.order-detail-table th {
-    width: 35%;
-    background-color: #fafafa;
 }
 
 .form-section {
@@ -812,11 +778,6 @@ main > .my-orders-title {
     min-width: 88px;
 }
 
-.order-left {
-    flex: 1;
-    min-width: 0;
-}
-
 .order-items-list {
     width: 100%;
     display: flex;
@@ -866,11 +827,12 @@ main > .my-orders-title {
     border-radius: 2px;
 }
 
-/* ==========================================================================
+
+/* ========================================================================== 
    Order Feedback Page
    ========================================================================== */
 
-   .feedback-page {
+.feedback-page {
     width: 100%;
     max-width: 750px;
     margin: 0 auto;
@@ -1030,41 +992,10 @@ main > .my-orders-title {
     cursor: not-allowed;
 }
 
-/* Compact in-page view of feedback that has already been submitted. */
-.view-rating-button {
-    margin-top: 18px;
-    padding: 9px 15px;
-    border: 1px solid #0284c7;
-    border-radius: 7px;
-    background: #f0f9ff;
-    color: #0369a1;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-}
 
-.view-rating-button:hover { background: #0284c7; color: #fff; }
-
-.rating-popover {
-    position: fixed;
-    z-index: 250;
-    width: min(340px, calc(100vw - 32px));
-    padding: 20px;
-    border: 1px solid #bae6fd;
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 16px 38px rgba(15, 23, 42, .20);
-    text-align: left;
-}
-
-.rating-popover[hidden] { display: none; }
-.rating-popover-close { position: absolute; top: 8px; right: 11px; border: 0; background: transparent; color: #64748b; font-size: 24px; line-height: 1; cursor: pointer; }
-.rating-popover-eyebrow { margin: 0 28px 8px 0; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.rating-popover h2 { margin: 0; color: #0f172a; font-size: 21px; }
-#rating-popover-stars { color: #f59e0b; letter-spacing: 1px; }
-.rating-popover-feedback { margin: 14px 0 0; color: #334155; line-height: 1.5; white-space: pre-wrap; }
-.rating-popover-date { margin: 12px 0 0; color: #64748b; font-size: 12px; }
+/* ========================================================================== 
+   Order Tracking
+   ========================================================================== */
 
 .order-tracking {
     display: grid;
@@ -1157,4 +1088,43 @@ main > .my-orders-title {
 
 .tracking-pending {
     color: #999999 !important;
+}
+
+
+/* ========================================================================== 
+   View Feedback
+   ========================================================================== */
+
+/* Read-only stars */
+.view-star-rating {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.view-star {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.view-star.filled {
+    color: #f59e0b;
+}
+
+.view-star.empty {
+    color: #cccccc;
+}
+
+.rating-value {
+    margin-left: 10px;
+
+    color: #666666;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Feedback text */
+.no-feedback {
+    color: #777777;
+    font-style: italic;
 }

@@ -5,7 +5,9 @@
 // ============================================================================
 
 date_default_timezone_set('Asia/Kuala_Lumpur');
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Compatibility for sessions created before the merge. The profile module
 // stores a user object, while the shop modules use individual session keys.
@@ -425,10 +427,12 @@ $_public_pages = [
     'login.php',
     'register.php',
     'forgot_password.php',
+    'verify_otp.php',
     'reset_password.php',
     'index.php',
     'products.php',
     'product_detail.php',
+    'handle_cart.php',
 ];
 
 $_current_page = basename($_SERVER['PHP_SELF']);
