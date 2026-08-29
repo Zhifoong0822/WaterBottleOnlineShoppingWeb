@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $updated_name = trim($_POST['user-name'] ?? '');
         $updated_email = trim($_POST['user-email'] ?? '');
-        $updated_profile_pic = null;
+        $updated_profilepic = null;
 
         if ($updated_name === '') {
             temp('email_error', 'Name cannot be empty.');
@@ -66,14 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
             if (move_uploaded_file($_FILES['photo']['tmp_name'], $target_path)) {
-                $updated_profile_pic = $filename;
+                $updated_profilepic = $filename;
             }
         }
 
         // Update profile
-        if ($updated_profile_pic) {
-            $stmt = $_db->prepare("UPDATE users SET username = ?, email = ?, profile_pic = ? WHERE user_id = ?");
-            $stmt->execute([$updated_name, $updated_email, $updated_profile_pic, $user_id]);
+        if ($updated_profilepic) {
+            $stmt = $_db->prepare("UPDATE users SET username = ?, email = ?, profilepic = ? WHERE user_id = ?");
+            $stmt->execute([$updated_name, $updated_email, $updated_profilepic, $user_id]);
         } else {
             $stmt = $_db->prepare("UPDATE users SET username = ?, email = ? WHERE user_id = ?");
             $stmt->execute([$updated_name, $updated_email, $user_id]);
@@ -83,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['users']->username = $updated_name;
         $_SESSION['users']->email = $updated_email;
 
-        if ($updated_profile_pic) {
-            $_SESSION['users']->profile_pic = $updated_profile_pic;
+        if ($updated_profilepic) {
+            $_SESSION['users']->profilepic = $updated_profilepic;
         }
 
         header("Location: profile.php?tab=settings");
@@ -651,7 +651,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $_db->prepare("SELECT * FROM users WHERE user_id = ? LIMIT 1");
 $stmt->execute([$user_id]);
 $current_user = $stmt->fetch(PDO::FETCH_OBJ);
-$saved_avatar = $current_user->profile_pic ?? '';
+$saved_avatar = $current_user->profilepic ?? '';
 
 // Get one value safely
 function safe_scalar($db, $sql, $params = []) {
@@ -744,9 +744,9 @@ include '_head.php';
 
             <div class="avatar-badge">
 
-                <?php if (!empty($_SESSION['users']->profile_pic)): ?>
+                <?php if (!empty($_SESSION['users']->profilepic)): ?>
 
-                    <img src="<?= encode(PROFILE_IMAGE_DIR . $_SESSION['users']->profile_pic) ?>" alt="Profile Picture" class="profile-image">
+                    <img src="<?= encode(PROFILE_IMAGE_DIR . $_SESSION['users']->profilepic) ?>" alt="Profile Picture" class="profile-image">
 
                 <?php else: ?>
 

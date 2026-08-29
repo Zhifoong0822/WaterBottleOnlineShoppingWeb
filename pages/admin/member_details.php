@@ -12,7 +12,7 @@ $user_id = intval(req('id', 1));
 $return_page = req('from', 'member_listing.php');
 
 $member = $_db->query("
-        SELECT user_id, username, email, role, profile_pic, reward_points, failed_attempts, created_at
+        SELECT user_id, username, email, role, profilepic, reward_points, failed_attempts, created_at
         FROM users
         WHERE 1=1
         AND role = 'member'
@@ -84,7 +84,7 @@ if (is_post()) {
         $rewardPoints = post('reward_points', -1);
 
         $profileUpdated = false;
-        $profilePic = $_FILES['profile_pic'] ?? null;
+        $profilePic = $_FILES['profilepic'] ?? null;
 
         // Validate fields
         if ($username === '') {
@@ -105,7 +105,7 @@ if (is_post()) {
             updateFailed('Reward points must be a valid non-negative number.');
         }
 
-        $updated_profile_pic = $member['profile_pic'];
+        $updated_profilepic = $member['profilepic'];
         if ($profilePic && $profilePic['error'] !== UPLOAD_ERR_NO_FILE) {
 
             if ($profilePic['error'] !== UPLOAD_ERR_OK) {
@@ -143,7 +143,7 @@ if (is_post()) {
                 updateFailed('Failed to save profile image.');
             }
 
-            $updated_profile_pic = $filename;
+            $updated_profilepic = $filename;
 
         }
 
@@ -154,7 +154,7 @@ if (is_post()) {
                 username = ?,
                 email = ?,
                 reward_points = ?,
-                profile_pic = ?
+                profilepic = ?
             WHERE user_id = ?
             AND role = 'member'
         ");
@@ -163,7 +163,7 @@ if (is_post()) {
             $username,
             $email,
             $rewardPoints,
-            $updated_profile_pic,
+            $updated_profilepic,
             $user_id,
         ]);
 
@@ -230,7 +230,7 @@ include '../../_head.php';
                 <!-- Img Preview -->
                 <img
                     id="profileImg"
-                    src="<?= encode(PROFILE_IMAGE_DIR . ($member['profile_pic'] ?? "defaultProfile.png") ) ?>"
+                    src="<?= encode(PROFILE_IMAGE_DIR . ($member['profilepic'] ?? "defaultProfile.png") ) ?>"
                     alt="<?= encode(($member['username'] ?? '') . ' Profile') ?>"
                     class="view-product-image"
                     style="width: 250px; height: 250px;"
@@ -260,7 +260,7 @@ include '../../_head.php';
             <div class="view-details" style="margin-left: 20px;">
                 <input
                     id="profileFileInput"
-                    name="profile_pic"
+                    name="profilepic"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     hidden

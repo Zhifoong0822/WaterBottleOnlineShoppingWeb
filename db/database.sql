@@ -91,7 +91,7 @@ CREATE TABLE `users` (
   `email` VARCHAR(100) NOT NULL UNIQUE,
   `password` VARCHAR(255) NOT NULL,
   `role` VARCHAR(50) NOT NULL DEFAULT 'member',
-  `profile_pic` VARCHAR(255) DEFAULT NULL,
+  `profilepic` VARCHAR(255) DEFAULT NULL,
   `reward_points` INT UNSIGNED NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `failed_attempts` INT NOT NULL DEFAULT 0,
@@ -299,7 +299,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 -- =========================================================
 -- SAMPLE DATA INSERTIONS
 -- =========================================================
-INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profile_pic`, `reward_points`) VALUES
+INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profilepic`, `reward_points`) VALUES
 (1, 'daniel', 'daniel@example.com', '$2y$10$3ovrxmv7E7.IvYUnOUJ5teH/nkI6Rg.3eKhVXhMPsIerWwD0tHt6q', 'admin', '1.jpeg', 0),
 (2, 'admin', 'admin@example.com', '$2y$10$vwPjuG9/msNZkRsvsjqzBO7ItAcrGbIa75oPYfRNPz337CXA23VL2', 'admin', '2.jpeg', 0),
 (3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', '3.jpeg', 500),
