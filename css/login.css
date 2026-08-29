@@ -90,6 +90,9 @@
 
 .login-err {
     font-size: 0.9rem;
+    color: red;
+    display: flex;
+    justify-content: center;
 }
 
 /* Hide the auto-generated page heading + breadcrumb link from _head.php.

@@ -721,6 +721,12 @@ footer p {
     border-bottom: 1px solid #bbf7d0;
 }
 
+#info.error-alert {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-bottom: 1px solid #fecaca;
+}
+
 /* Responsive Overrides */
 @media (max-width: 768px) {
     .header-container {
