@@ -4,6 +4,7 @@
 require_once '_base.php';
 $_title = 'Live Chat';
 
+$users = $_SESSION['users'];
 if (!isset($users)) {
     redirect('/login.php');
     exit;
