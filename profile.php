@@ -59,17 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cropped_photo = base64_decode($cropped_photo, true);
 
                 if ($cropped_photo !== false) {
-                    $folder = __DIR__ . '/update/profile';
-
-                    if (!is_dir($folder)) {
-                        mkdir($folder, 0777, true);
-                    }
-
                     $filename = $user_id . '_' . time() . '.jpg';
-                    $target_path = $folder . '/' . $filename;
+                    $target_path = PROJECT_ROOT . PROFILE_IMAGE_DIR . $filename;
 
                     if (file_put_contents($target_path, $cropped_photo) !== false) {
-                        $updated_profilepic = 'update/profile/' . $filename;
+                        $updated_profilepic = $filename;
                     }
                 }
             }
