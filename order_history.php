@@ -100,8 +100,6 @@ if (is_post() && post("action") === "cancel_order") {
             redirect("order_history.php?status=pending");
         }
 
-        // Mark the order cancelled first. The status condition makes this safe
-        // if another request has already processed the cancellation.
         $stmt_cancel = $_db->prepare("
             UPDATE orders
             SET status = 'cancelled', cancelled_at = NOW()  
@@ -133,7 +131,7 @@ if (is_post() && post("action") === "cancel_order") {
             SET stock = stock + ?
             WHERE product_id = ? AND size = ?
         ");
- // Restore stock for each item in the order
+        // Restore stock for each item in the order
         foreach ($cancelled_items as $item) {
             $stmt_restore_stock->execute([$item->quantity, $item->product_id, $item->size]);
 
@@ -509,7 +507,7 @@ require "_head.php";
             <?php if ($order["feedback_submitted"]): ?>
                 <a 
                     class="feedback-button" 
-                    href="view_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
+                    href="order_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
                 >
                     View Feedback
                 </a>

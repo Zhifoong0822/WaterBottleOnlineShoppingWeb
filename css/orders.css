@@ -849,7 +849,7 @@ main > .my-orders-title {
 
 .feedback-card-header {
     padding: 22px 25px;
-    background-color: #222222;
+    background-color: #0f2747;
     color: #ffffff;
 }
 
@@ -977,23 +977,6 @@ main > .my-orders-title {
     background-color: #dfe3e6;
 }
 
-.rating-submitted {
-    display: inline-block;
-    margin-top: 18px;
-    padding: 9px 15px;
-
-    border: 1px solid #cccccc;
-    border-radius: 6px;
-
-    background-color: #eeeeee;
-    color: #777777;
-
-    font-size: 14px;
-    font-weight: bold;
-    cursor: not-allowed;
-}
-
-
 /* ========================================================================== 
    Order Tracking
    ========================================================================== */
@@ -1089,43 +1072,4 @@ main > .my-orders-title {
 
 .tracking-pending {
     color: #999999 !important;
-}
-
-
-/* ========================================================================== 
-   View Feedback
-   ========================================================================== */
-
-/* Read-only stars */
-.view-star-rating {
-    display: inline-flex;
-    gap: 2px;
-}
-
-.view-star {
-    font-size: 32px;
-    line-height: 1;
-}
-
-.view-star.filled {
-    color: #f59e0b;
-}
-
-.view-star.empty {
-    color: #cccccc;
-}
-
-.rating-value {
-    margin-left: 10px;
-
-    color: #666666;
-
-    font-size: 14px;
-    font-weight: bold;
-}
-
-/* Feedback text */
-.no-feedback {
-    color: #777777;
-    font-style: italic;
 }

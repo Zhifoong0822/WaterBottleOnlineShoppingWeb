@@ -22,7 +22,6 @@ $error_message = temp('error');
         'order_history.php',
         'order_detail.php',
         'order_feedback.php',
-        'view_feedback.php',
         'admin_orders.php',
         'admin_order_detail.php'
     ])): ?>

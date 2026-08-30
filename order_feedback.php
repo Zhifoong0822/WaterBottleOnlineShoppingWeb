@@ -13,13 +13,14 @@ if ($_SESSION['users']->role !== 'member') {
     redirect('admin_orders.php');
 }
 
-$user_id = (int) $_SESSION['users']->user_id; //Set user_id in the current session
+$user_id = (int) $_SESSION['users']->user_id;
 
 if (!isset($_GET["id"]) || !ctype_digit($_GET["id"])) {
     die("Invalid order ID.");
 }
 
-$order_id = (int) $_GET["id"]; //Get current order_id
+//Get current order_id from URL
+$order_id = (int) $_GET["id"];
 
 $errors = [];
 
@@ -40,6 +41,7 @@ $stmt->execute([
     "user_id" => $user_id
 ]);
 
+//Retrieve the row and store into $order array
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$order) {
@@ -48,7 +50,7 @@ if (!$order) {
     );
 }
 
-/*Retrieve an existing rating, if the customer previously submitted feedback for this order*/
+/*Retrieve existing rating, if the cust previously submitted feedback*/
 $sql = "SELECT rating, feedback
         FROM order_feedback
         WHERE order_id = :order_id
@@ -61,6 +63,7 @@ $stmt->execute([
     "user_id" => $user_id
 ]);
 
+//Retrieve and store existing feedback
 $existing_feedback = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $rating = $existing_feedback["rating"] ?? "";
@@ -72,10 +75,7 @@ if (is_post()) {
     $rating = post("rating");
     $feedback = post("feedback");
 
-    if (!ctype_digit($rating) ||
-        (int) $rating < 1 ||
-        (int) $rating > 5
-    ) {
+    if (!ctype_digit($rating) || (int) $rating < 1 || (int) $rating > 5) {
         $errors["rating"] = "Please select a rating from 1 to 5 stars.";
     }
 
@@ -96,6 +96,7 @@ if (is_post()) {
                     :rating,
                     :feedback
                 )
+                /*Update the existing feedback*/
                 ON DUPLICATE KEY UPDATE
                     rating = VALUES(rating),
                     feedback = VALUES(feedback)";
@@ -114,7 +115,6 @@ if (is_post()) {
 }
 
 require "_head.php";
-
 ?>
 
 <section class="feedback-page">
@@ -128,9 +128,12 @@ require "_head.php";
         </div>
 
         <div class="feedback-card-body">
-
+            
             <p class="feedback-description">
-                Rate your completed order and share your experience.
+                <?= $existing_feedback
+                ? "You may update your feedback if you wish."
+                : "Rate your completed order and share your experience."
+                ?>
             </p>
 
             <form method="POST" id="feedbackForm">
@@ -140,7 +143,6 @@ require "_head.php";
                     <legend>Star Rating</legend>
 
                     <div class="star-rating">
-
                         <input
                             type="radio"
                             id="star5"
@@ -197,7 +199,6 @@ require "_head.php";
                 </fieldset>
 
                 <div class="feedback-form-group">
-
                     <label for="feedback">
                         Feedback
                         <span class="optional-text">
@@ -221,12 +222,11 @@ require "_head.php";
                 </div>
 
                 <div class="feedback-actions">
-
                     <button
                         type="submit"
                         class="submit-feedback-button"
                     >
-                        Submit Feedback
+                        <?= $existing_feedback ? "Update Feedback" : "Submit Feedback" ?>
                     </button>
 
                     <a
@@ -243,13 +243,12 @@ require "_head.php";
         </div>
 
     </div>
-
 </section>
 
 <script>
 document.getElementById("feedbackForm").addEventListener("submit", function (event) {
     const confirmed = window.confirm(
-        "Are you sure you want to submit this feedback?"
+        "Are you sure you want to <?= $existing_feedback ? 'update' : 'submit' ?> this feedback?"
     );
 
     if (!confirmed) {
