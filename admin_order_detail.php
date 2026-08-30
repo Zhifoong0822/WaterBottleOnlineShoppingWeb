@@ -19,7 +19,7 @@ try {
     $sql = "SELECT
                 order_id,
                 user_id,
-                order_date, /* pending_at */
+                order_date,
                 shipped_at,
                 completed_at,
                 cancelled_at,
@@ -29,6 +29,7 @@ try {
                 points_discount,
                 points_earned,
                 status,
+                shipping_address,
                 payment_method,
                 payment_reference,
                 payment_status
@@ -186,6 +187,7 @@ try {
                 points_discount,
                 points_earned,
                 status,
+                shipping_address,
                 payment_method,
                 payment_reference,
                 payment_status
@@ -427,6 +429,13 @@ require "_head.php";
             <tr>
                 <th>Reward Points Earned</th>
                 <td>+<?= number_format((int) $order["points_earned"]) ?> points</td>
+            </tr>
+
+            <tr>
+                <th>Delivery Address</th>
+                <td>
+                    <?= nl2br(encode($order["shipping_address"])) ?>
+                </td>
             </tr>
 
             <tr>
