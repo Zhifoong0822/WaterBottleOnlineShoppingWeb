@@ -1,16 +1,19 @@
 $(function () {
+    //control the visibility of address fields based on selected address type
     function toggleAddressFields() {
         const isNewAddress = $('input[name="address_type"]:checked').val() === 'new';
         $('#saved-address-block').toggle(!isNewAddress);
         $('#new-address-block').toggle(isNewAddress);
     }
 
+    //control the visibility of payment reference input field based on selected payment method
     function togglePaymentReference() {
         const isCashOnDelivery = $('#payment_method').val() === 'cash_on_delivery';
         $('#payment-reference-block').toggle(!isCashOnDelivery);
         $('#payment_reference').prop('required', !isCashOnDelivery);
     }
 
+    //update the UI based on the points input value
     function updatePointsSummary() {
         const $input = $('#points_to_use');
         if (!$input.length) {

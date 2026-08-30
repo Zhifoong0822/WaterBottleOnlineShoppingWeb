@@ -83,6 +83,8 @@ if (is_post() && post('action') === 'update_address') {
     $shipping_address = '';
     $recipient_name = $order['recipient_name'];
     $phone_number = $order['phone_number'];
+    $save_manual_address = false;
+    $address_label = 'Order address';
 
     //Customer not allowed to update address
     if (!$can_update_address) {
@@ -108,6 +110,8 @@ if (is_post() && post('action') === 'update_address') {
         //Customer manually enter a new address
         } elseif ($address_source === 'manual') {
             $shipping_address = trim(post('shipping_address', ''));
+            $save_manual_address = post('save_manual_address') === '1';
+            $address_label = trim(post('address_label', '')) ?: 'Order address';
 
             if ($shipping_address === '') {
                 temp('info', 'Please enter a delivery address.');
@@ -122,20 +126,44 @@ if (is_post() && post('action') === 'update_address') {
         }
 
         if ($shipping_address !== '') {
-            //Update delivery address query
-            $update_stmt = $_db->prepare(
-                "UPDATE orders
-                 SET recipient_name = ?, phone_number = ?, shipping_address = ?, address_updated = 1
-                 WHERE order_id = ? AND user_id = ? AND status = 'pending' AND address_updated = 0"
-            );
-            $update_stmt->execute([$recipient_name, $phone_number, $shipping_address, $order_id, $user_id]);
+            try {
+                $_db->beginTransaction();
+                //update the order with the new address, and mark address_updated as true
+                $update_stmt = $_db->prepare(
+                    "UPDATE orders
+                     SET recipient_name = ?, phone_number = ?, shipping_address = ?, address_updated = 1
+                     WHERE order_id = ? AND user_id = ? AND status = 'pending' AND address_updated = 0"
+                );
+                $update_stmt->execute([$recipient_name, $phone_number, $shipping_address, $order_id, $user_id]);
 
-            temp(
-                'info',
-                $update_stmt->rowCount() === 1
-                    ? 'Your delivery address has been updated.'
-                    : 'The delivery address could not be updated because the order has already been processed.'
-            );
+                if ($update_stmt->rowCount() !== 1) {
+                    throw new PDOException('The order was already processed.');
+                }
+                // If the customer chose to save the manually entered address, insert it into user_addresses
+                if ($save_manual_address) {
+                    $save_address_stmt = $_db->prepare(
+                        'INSERT INTO user_addresses (user_id, address_label, recipient_name, phone_number, address_text) VALUES (?, ?, ?, ?, ?)'
+                    );
+                    $save_address_stmt->execute([
+                        $user_id,
+                        substr($address_label, 0, 100),
+                        $recipient_name,
+                        $phone_number,
+                        $shipping_address,
+                    ]);
+                }
+
+                $_db->commit();
+                temp('info', $save_manual_address
+                    ? 'Your delivery address has been updated and saved to your profile.'
+                    : 'Your delivery address has been updated.');
+            } catch (PDOException $e) {
+                if ($_db->inTransaction()) {
+                    $_db->rollBack();
+                }
+                temp('info', 'The delivery address could not be updated. Please try again.');
+                $return_url .= '&edit_address=1';
+            }
         }
     }
 
@@ -432,6 +460,14 @@ require "_head.php";
                     Enter a new address
                 </label>
                 <textarea id="shipping_address" name="shipping_address" rows="4" maxlength="1000" <?= $saved_addresses ? 'disabled' : 'required' ?>><?= encode($order['shipping_address']) ?></textarea>
+                <div id="save-manual-address-options" <?= $saved_addresses ? 'hidden' : '' ?>>
+                    <label for="address_label">Address label</label>
+                    <input id="address_label" name="address_label" type="text" maxlength="100" value="Order address" <?= $saved_addresses ? 'disabled' : '' ?>>
+                    <label class="address-source-option">
+                        <input id="save_manual_address" name="save_manual_address" type="checkbox" value="1" <?= $saved_addresses ? 'disabled' : '' ?>>
+                        Save this address to my profile for future orders
+                    </label>
+                </div>
 
                 <div class="address-update-actions">
                     <button type="submit" class="receipt-button">Save Delivery Address</button>
@@ -464,6 +500,9 @@ document.querySelectorAll('input[name="address_source"]').forEach(function (opti
         const useSaved = this.value === 'saved' && this.checked;
         const savedSelect = document.getElementById('saved-address-select');
         const manualAddress = document.getElementById('shipping_address');
+        const saveOptions = document.getElementById('save-manual-address-options');
+        const addressLabel = document.getElementById('address_label');
+        const saveManualAddress = document.getElementById('save_manual_address');
 
         if (savedSelect) {
             savedSelect.disabled = !useSaved;
@@ -471,6 +510,11 @@ document.querySelectorAll('input[name="address_source"]').forEach(function (opti
         }
         manualAddress.disabled = useSaved; //if useSaved=true, manualAddress radio will be disabled
         manualAddress.required = !useSaved;
+        if (saveOptions) {
+            saveOptions.hidden = useSaved;
+            addressLabel.disabled = useSaved;
+            saveManualAddress.disabled = useSaved;
+        }
     });
 });
 </script>

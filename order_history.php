@@ -104,14 +104,47 @@ if (is_post() && post("action") === "cancel_order") {
             redirect("order_history.php?status=pending");
         }
 
-        //Update order status
+        // Mark the order cancelled first. The status condition makes this safe
+        // if another request has already processed the cancellation.
         $stmt_cancel = $_db->prepare("
             UPDATE orders
             SET status = 'cancelled', cancelled_at = NOW()  
             WHERE order_id = :order_id
+                AND user_id = :user_id
                 AND status = 'pending'
         ");
-        $stmt_cancel->execute(["order_id" => $cancel_order_id]);
+        $stmt_cancel->execute([
+            "order_id" => $cancel_order_id,
+            "user_id" => $user_id
+        ]);
+
+        if ($stmt_cancel->rowCount() !== 1) {
+            throw new PDOException('The order was already processed.');
+        }
+
+        // get the items in the order
+        $stmt_items = $_db->prepare("
+            SELECT product_id, size, quantity
+            FROM order_items
+            WHERE order_id = ?
+            FOR UPDATE
+        ");
+        $stmt_items->execute([$cancel_order_id]);
+        $cancelled_items = $stmt_items->fetchAll();
+
+        $stmt_restore_stock = $_db->prepare("
+            UPDATE product_variants
+            SET stock = stock + ?
+            WHERE product_id = ? AND size = ?
+        ");
+ // Restore stock for each item in the order
+        foreach ($cancelled_items as $item) {
+            $stmt_restore_stock->execute([$item->quantity, $item->product_id, $item->size]);
+
+            if ($stmt_restore_stock->rowCount() !== 1) {
+                throw new PDOException('Unable to restore stock for an order item.');
+            }
+        }
 
         //Restore reward points
         $stmt_points = $_db->prepare("

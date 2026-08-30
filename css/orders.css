@@ -398,7 +398,8 @@ main > .my-orders-title {
 }
 
 .address-update-form select,
-.address-update-form textarea {
+.address-update-form textarea,
+.address-update-form input[type="text"] {
     box-sizing: border-box;
     width: 100%;
     margin-top: 8px;

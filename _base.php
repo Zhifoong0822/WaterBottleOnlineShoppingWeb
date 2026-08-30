@@ -161,16 +161,19 @@ const POINTS_PER_RINGGIT = 100;
 const POINTS_EARNED_PER_RM10 = 10;
 const MAX_POINTS_REDEMPTION_RATE = 0.10;
 
+// 100 points = RM1.00
 function points_to_ringgit($points) {
     return $points / POINTS_PER_RINGGIT;
 }
 
+// Maximum redeemable points(10% of subtotal)
 function maximum_redeemable_points($subtotal) {
     return (int) floor($subtotal * MAX_POINTS_REDEMPTION_RATE * POINTS_PER_RINGGIT);
 }
 
+// even user spent RM149.99, they will only earn 140points, not 149points.
 function earned_reward_points($amount_paid) {
-    return (int) floor($amount_paid / 10) * POINTS_EARNED_PER_RM10;
+    return (int) floor($amount_paid / 10) * POINTS_EARNED_PER_RM10; // (149.99 / 10) = 14.999 => floor() = 14 => 14 * 10 = 140 points
 }
 
 
@@ -260,13 +263,14 @@ function send_order_receipt($order_id, $user_id) {
     $items = $item_stmt->fetchAll();
 
     $mail = get_mail();
+    //get recipient email from order record
     $recipient_email = $order->email;
 
     // Safety check for fake demo emails (.example / .test):
-    // Redirect to sender email address during local testing so you can inspect the email without bounce errors.
     if (str_ends_with(strtolower($recipient_email), '@example.com') || str_ends_with(strtolower($recipient_email), '@test.com')) {
         $mail_config = require __DIR__ . '/mail_config.php';
         if (!empty($mail_config['from_email'])) {
+            // Redirect to sender email address during local testing when the recipient email is a fake demo email address.
             $recipient_email = $mail_config['from_email'];
         }
     }

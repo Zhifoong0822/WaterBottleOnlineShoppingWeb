@@ -2,10 +2,9 @@
 
 $(document).ready(function() {
 
-    // 1. ADD TO CART ACTION (Redirects to products.php after adding)
-    // 1. ADD TO CART ACTION (Guaranteed redirect to products.php)
+    // 1. ADD TO CART ACTION
     $(document).on("click", ".add-to-cart", function(e) {
-        // PREVENT default form submission or link click from reloading page early!
+        // PREVENT default form submission or link click from reloading page early
         e.preventDefault();
 
         var $btn = $(this);
@@ -34,7 +33,7 @@ $(document).ready(function() {
             }
         }
         
-        // Fire AJAX Request
+        //AJAX Request
         $.ajax({
             url: "handle_cart.php",
             type: "POST",
@@ -83,7 +82,7 @@ $(document).ready(function() {
             alert("Cannot increase quantity. Only " + maxStock + " units are available in inventory.");
             return;
         }
-
+        //send AJAX request to update quantity in db
         if (new_quantity > 0) {
             $.post("handle_cart.php", {
                 action: "update_quantity",

@@ -101,19 +101,44 @@ if (is_post()) {
                 $update_stmt->execute([
                     "order_id" => $order_id
                 ]);
-            
+             // If the order is being cancelled, we need to restore the stock for each item in the order.
             } elseif ($new_status === "cancelled" && $current_status === "pending") {
-            
+                $_db->beginTransaction();
+
                 $update_sql = "UPDATE orders
                                SET status = 'cancelled', cancelled_at = NOW()
                                WHERE order_id = :order_id
                                  AND status = 'pending'";
-            
+
                 $update_stmt = $_db->prepare($update_sql);
-            
                 $update_stmt->execute([
                     "order_id" => $order_id
                 ]);
+ // if the order was already processed (shipped, completed, or cancelled), rollback and show an error
+                if ($update_stmt->rowCount() !== 1) {
+                    $_db->rollBack();
+                    $error = 'The order was already processed.';
+                } else {
+                    $items_stmt = $_db->prepare(
+                        'SELECT product_id, size, quantity FROM order_items WHERE order_id = ? FOR UPDATE'
+                    );
+                    $items_stmt->execute([$order_id]);
+
+                    //update stock = stock + quantity for each item in the order
+                    $restore_stock_stmt = $_db->prepare(
+                        'UPDATE product_variants SET stock = stock + ? WHERE product_id = ? AND size = ?'
+                    );
+ //update each item in the order to restore stock
+                    foreach ($items_stmt->fetchAll() as $item) {
+                        $restore_stock_stmt->execute([$item->quantity, $item->product_id, $item->size]);
+
+                        if ($restore_stock_stmt->rowCount() !== 1) {
+                            throw new PDOException('Unable to restore stock for an order item.');
+                        }
+                    }
+
+                    $_db->commit();
+                }
             
             } elseif ($new_status === "completed" && $current_status === "shipped") {
             
@@ -133,11 +158,14 @@ if (is_post()) {
                 $error = "Invalid order status transition.";
             }
 
-            if (isset($update_stmt) && $update_stmt->rowCount() > 0) {
+            if ($error === '' && isset($update_stmt) && $update_stmt->rowCount() > 0) {
                 redirect("admin_order_detail.php?id=" .urlencode($order_id));
             }
 
         } catch (PDOException $e) {
+            if ($_db->inTransaction()) {
+                $_db->rollBack();
+            }
             $error = "Unable to update order status.";
         }
     }
