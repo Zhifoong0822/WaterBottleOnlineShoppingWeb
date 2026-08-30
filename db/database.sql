@@ -377,9 +377,9 @@ INSERT INTO `product_images` (`product_id`, `image_url`, `sort_order`) VALUES
 
 INSERT INTO `product_variants` (`product_id`, `size`, `colour`, `stock`) VALUES
 (1, 'Medium (18oz / 530ml)', 'Coral Pink', 27),
-(2, 'Mega (32oz / 950ml)', 'Coral Pink', 12),
+(2, 'Mega (32oz / 950ml)', 'Coral Pink', 5),
 (4, 'Medium (18oz / 530ml)', 'Sage Green', 17),
-(5, 'Medium (18oz / 530ml)', 'Sage Green', 14),
+(5, 'Medium (18oz / 530ml)', 'Sage Green', 0),
 (7, 'Micro (12oz / 350ml)', 'Sunny Yellow', 25),
 (10, 'Medium (18oz / 530ml)', 'Charcoal', 40),
 (11, 'Mega (32oz / 950ml)', 'Blue', 40);

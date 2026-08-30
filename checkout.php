@@ -13,9 +13,9 @@ $cart_items = [];
 $total_amount = 0;
 $errors = [];
 $payment_methods = [
-    'online_banking' => 'Online Banking (Demo)',
-    'ewallet' => 'E-Wallet (Demo)',
-    'credit_debit_card' => 'Credit / Debit Card (Demo)',
+    'online_banking' => 'Online Banking',
+    'ewallet' => 'E-Wallet',
+    'credit_debit_card' => 'Credit / Debit Card',
     'cash_on_delivery' => 'Cash on Delivery',
 ];
 
@@ -26,7 +26,7 @@ $stmt_addr = $_db->prepare("SELECT * FROM user_addresses WHERE user_id = ?");
 $stmt_addr->execute([$user_id]);
 $saved_addresses = $stmt_addr->fetchAll();
 
-// Grab only items that were selected via checkbox arrays
+// receives the checkbox values from the cart page
 $selected_items = post('selected_items', []);
 
 if (!is_array($selected_items) || empty($selected_items)) {
@@ -43,7 +43,7 @@ foreach ($selected_items as $id) {
 
 $selected_items = array_map('intval', $selected_items);
 
-// 4. Retrieve details for checked items only (including the size configuration string column)
+//dynamically create placeholders with ?,?,? based on count of selected items. 
 $placeholders = implode(',', array_fill(0, count($selected_items), '?'));
 
 $query = "
@@ -56,7 +56,10 @@ $query = "
 ";
 
 $stmt_items = $_db->prepare($query);
-$stmt_items->execute(array_merge([$user_id], $selected_items));
+//if user_id = 15
+//$selected_items = [12, 15, 18]
+//array_merge() creates [15, 12, 15, 18]
+$stmt_items->execute(array_merge([$user_id], $selected_items)); 
 $cart_items = $stmt_items->fetchAll();
 
 if (count($cart_items) !== count($selected_items)) {
@@ -64,9 +67,9 @@ if (count($cart_items) !== count($selected_items)) {
     redirect('cart_view.php');
 }
 
-// Product prices are final prices set by the administrator. Size and colour
-// are fixed product details and do not change the amount charged.
+//calculate the total amount for the selected items
 foreach ($cart_items as $item) {
+    //subtotal = unit price × quantity
     $item->unit_price = (float) $item->price;
     $total_amount += $item->unit_price * $item->quantity;
 }
@@ -88,6 +91,8 @@ foreach ($cart_items as $item) {
 $stmt_points = $_db->prepare("SELECT reward_points FROM users WHERE user_id = ?");
 $stmt_points->execute([$user_id]);
 $points_balance = (int) $stmt_points->fetchColumn();
+// Calculate the maximum points that can be used for this order
+//even user have 1000 points, but if the order total is RM50, user can only use 500 points (10% of order total)
 $maximum_points_for_order = min(
     $points_balance,
     maximum_redeemable_points($total_amount)
@@ -96,7 +101,9 @@ $maximum_points_for_order = min(
 //get user input for points to use and validate it
 $points_input = post('points_to_use', '0');
 $display_points_to_use = ctype_digit($points_input) ? (int) $points_input : 0;
+//check user input points to use does not exceed the maximum allowed for this order
 $display_points_to_use = min($display_points_to_use, $maximum_points_for_order);
+//calculate how many ringgit discount 
 $display_points_discount = points_to_ringgit($display_points_to_use);
 $display_amount_due = $total_amount - $display_points_discount;
 

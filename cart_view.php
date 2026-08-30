@@ -27,7 +27,7 @@ $cart_data = $stmt_cart->fetch();
 if ($cart_data) {
     $cart_id = $cart_data->cart_id;
 
-    // Each product has one configured size/colour variant.
+    // Each product has one configured colour variant.
     $stmt_items = $_db->prepare("
         SELECT ci.cart_item_id, ci.product_id, ci.quantity, ci.size, 
                p.name, p.price, p.image_url, 
@@ -38,7 +38,9 @@ if ($cart_data) {
         LEFT JOIN product_variants pv ON ci.product_id = pv.product_id AND ci.size = pv.size
         WHERE ci.cart_id = ? AND (p.name LIKE ? OR p.description LIKE ?)
     ");
-    $stmt_items->execute([$cart_id, "%$search%", "%$search%"]);
+    //retrieve items only belongs to this cart, and filter by search keyword if provided 
+    //using %wildcards to ensure partial matches in product name or description
+    $stmt_items->execute([$cart_id, "%$search%", "%$search%"]); 
     $cart_items = $stmt_items->fetchAll(); 
 }
 ?>
@@ -124,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const grandTotalSpan = document.getElementById("grand-total");
     const form = document.getElementById("cart-selection-form");
 
-    // Recalculates total based only on checked values
+    // Recalculates total based only on checked checkboxes and updates the grand total display
     function calculateTotal() {
         let total = 0;
         checkboxes.forEach(cb => {

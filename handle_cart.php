@@ -15,7 +15,7 @@ $cart_id = null;
 // 2. Fetch or create the active user cart wrapper
 $stmt_cart = $_db->prepare("SELECT cart_id FROM carts WHERE user_id = ? LIMIT 1");
 $stmt_cart->execute([$user_id]);
-$cart_data = $stmt_cart->fetch(); //fetch the cart id to cart_data variable
+$cart_data = $stmt_cart->fetch(); 
 
 //if user has a cart, assign the cart_id to the variable, else create a new cart for the user and assign the new cart_id to the variable
 if ($cart_data) {
@@ -31,7 +31,8 @@ $action = req('action');
 
 switch ($action) {
     
-    case "add_to_cart":
+    case "add_to_cart": 
+        //receive info from AJAX request 
         $product_id = intval(req('product_id'));
         $variant_id = intval(req('variant_id'));
         $quantity = intval(req('quantity')) ?: 1;
@@ -67,6 +68,7 @@ switch ($action) {
         $stmt_check->execute([$cart_id, $product_id, $size]);
         $existing_item = $stmt_check->fetch();
 
+        //calculate the combined total quantity if the product already exists in the cart
         $existing_quantity = $existing_item ? intval($existing_item->quantity) : 0;
         $combined_total = $existing_quantity + $quantity;
 
@@ -94,6 +96,7 @@ switch ($action) {
         $cart_item_id = intval(req('cart_item_id'));
         $quantity = intval(req('quantity'));
 
+        //if quantity is 0 or less, remove the item from the cart
         if ($quantity <= 0) {
             $stmt_del = $_db->prepare(
                 "DELETE FROM cart_items WHERE cart_item_id = ? AND cart_id = ?"
@@ -103,8 +106,7 @@ switch ($action) {
             exit;
         }
 
-        // Retrieve the cart item's selected size stock record and verify that
-        // the item belongs to the current user's cart.
+        // Find the cart item's stock
         $stmt_check = $_db->prepare("
             SELECT ci.cart_item_id, pv.stock
             FROM cart_items ci
