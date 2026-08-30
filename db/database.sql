@@ -336,7 +336,7 @@ INSERT INTO `users` (`user_id`, `username`, `email`, `password`, `role`, `profil
 (2, 'admin', 'admin@example.com', '$2y$10$vwPjuG9/msNZkRsvsjqzBO7ItAcrGbIa75oPYfRNPz337CXA23VL2', 'admin', '2.jpeg', 0),
 (3, 'John', 'john@example.com', '$2y$10$JtoR6U8QJ4faEJarm2IJgOjacO/rV6faPFI/FvOlZvpQZlarYNMLO', 'member', '3.jpeg', 500),
 (4, 'Jane', 'jane@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', '4.jpeg', 250),
-(5, 'Ali', 'ali@example.com', '$2y$10$23mamuogsv2sta9f1T0kIeHVraQcAvJfs5zLZidkRQkrMCxMr6Hwa', 'member', '5.jpeg', 0);
+(5, 'Ali', 'ali@example.com', '$2y$10$jq85KwxEwRJ18ZVcJ9DE7uDi0eOGTSLqYtMdvNg0GKaix1sHEj5yu', 'member', '5.jpeg', 0);
 
 INSERT INTO `user_addresses` (`user_id`, `address_label`, `recipient_name`, `phone_number`, `address_text`) VALUES
 (3, 'Home (Default)', 'John Tan', '012-3456789', '123, Jalan Sultan Ismail, Bukit Bintang, 50250 Kuala Lumpur'),
