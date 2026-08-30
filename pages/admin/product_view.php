@@ -204,6 +204,15 @@ include '../../_head.php';
                     </p>
 
                 </div>
+
+                <div class="detail-row">
+                    <label>Video URL</label>
+                    <span>
+                        <?= $product["video_url"]
+                        ? encode($product["video_url"])
+                        : "No video available" ?>
+                    </span>
+                </div>
             </div>
         </div>
         <div class="view-footer">

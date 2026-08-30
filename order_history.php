@@ -4,14 +4,13 @@ require_once "_base.php";
 
 $_title = "My Orders";
 
-//Go to Login Page if there's no logged-in user ID in session
 if (!isset($_SESSION['users']->user_id)) {
     redirect('login.php');
 }
 
 $user_id = (int) $_SESSION['users']->user_id;  
 
-//Use get() to update n store into variables
+//Update variables by getting from URL
 $status_filter = get("status", "all");
 $page = get("page", "1");
 
@@ -22,7 +21,6 @@ if (!ctype_digit($page) || (int) $page < 1) {
 }
 
 $orders_per_page = 8;
-
 $allowed_statuses = [
     "all",
     "pending",
@@ -38,11 +36,9 @@ if (!in_array($status_filter, $allowed_statuses, true)) {
 
 //Customer clicks Order Received button
 if (is_post() && post("action") === "confirm_order_received") {
-
     $received_order_id = post("order_id");
 
     if (!ctype_digit($received_order_id)) {
-        temp("info", "Invalid order.");
         redirect("order_history.php?status=shipped");
     }
 
@@ -66,12 +62,12 @@ if (is_post() && post("action") === "confirm_order_received") {
         redirect("order_history.php?status=completed");
     }
 
+    //Update status failed
     redirect("order_history.php?status=shipped");
 }
 
 //Customer clicks Cancel Order button
 if (is_post() && post("action") === "cancel_order") {
-
     $cancel_order_id = post("order_id");
 
     if (!ctype_digit($cancel_order_id)) {
@@ -90,15 +86,15 @@ if (is_post() && post("action") === "cancel_order") {
             WHERE order_id = :order_id
               AND user_id = :user_id
               AND status = 'pending'
-            FOR UPDATE
-        ");
+            FOR UPDATE");
+
         $stmt_order->execute([
             "order_id" => $cancel_order_id,
             "user_id" => $user_id
         ]);
         $cancelled_order = $stmt_order->fetch();
 
-        //Check if order exists
+        //If order not exists
         if (!$cancelled_order) {
             $_db->rollBack();  //Undo transaction
             redirect("order_history.php?status=pending");
@@ -181,7 +177,7 @@ $sql = "SELECT
             o.status,
             o.total_amount,
 
-            /*Check if there's feedback for that order*/
+            /*Set feedback_submitted = true if feedback exists*/
             EXISTS (
                 SELECT 1
                 FROM order_feedback AS f
@@ -192,10 +188,10 @@ $sql = "SELECT
             oi.order_item_id,
             oi.product_id,
             oi.quantity,
+            oi.size AS size,
             oi.price AS item_price,
             p.name AS product_name,
-            p.image_url,
-            oi.size AS size
+            p.image_url
 
         FROM orders AS o
 
@@ -208,6 +204,7 @@ $sql = "SELECT
         /*Ensure customer only sees their own orders*/
         WHERE o.user_id = :user_id";
 
+//Add status condition to $sql to filter & display orders that match the status condition
 if ($status_filter !== "all") {
     $sql .= " AND o.status = :status";
 }
@@ -224,13 +221,14 @@ $sql .= " ORDER BY
                 "user_id" => $user_id
             ];
             
+            //Only if a specific status tab is selected
             if ($status_filter !== "all") {
                 $params["status"] = $status_filter;
             }
             
             $stmt->execute($params);
 
-//$rows stores each detail of a row(order) as array
+//Retrieve all matching rows & store into $rows array
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $orders = [];
@@ -238,8 +236,8 @@ $orders = [];
 foreach ($rows as $row) {
     $order_id = $row["order_id"];  //Store current order ID
 
+    //Store order info if the current order_id not exists yet
     if (!isset($orders[$order_id])) {
-        //Store order info of the current order ID
         $orders[$order_id] = [
             "order_id" => $row["order_id"],
             "order_date" => $row["order_date"],
@@ -250,7 +248,7 @@ foreach ($rows as $row) {
         ];
     }
 
-    //Store each product of the order
+    //Group and Store each product of the order
     if ($row["product_id"] !== null) {
         $orders[$order_id]["items"][] = [
             "product_name" => $row["product_name"],
@@ -272,13 +270,12 @@ if ($page > $total_pages) {
 //Pagination
 $orders = array_slice(
     $orders,
-    ($page - 1) * $orders_per_page,
-    $orders_per_page,
+    ($page - 1) * $orders_per_page, //starting position
+    $orders_per_page, //howmany orders to take
     true
 );
 
 require "_head.php";
-
 ?>
 
 <!-- Change URL based on the clicked status tab -->
@@ -324,16 +321,15 @@ require "_head.php";
 
 <section class="order-history">
 
-    <!--Check if $orders array has any order*-->
+    <!--If $orders array is not empty*-->
     <?php if ($orders): ?>
-
         <?php foreach ($orders as $order): ?>
 
             <article class="order-card">
 
             <div class="order-left">
 
-        <!--Check if the order has products-->
+        <!--If the order's items[] is not empty-->
         <?php if ($order["items"]): ?>
 
             <div class="order-items-list">
@@ -348,7 +344,7 @@ require "_head.php";
             $quantity = (int) $item["quantity"];
             ?>
 
-            <!--First 2 items are visible, the rest is hidden-->
+            <!--First 2 items (index 0 & 1) are visible, the rest is hidden-->
             <div
                 class="order-item-preview<?= $item_index >= 2 ? ' additional-order-item' : '' ?>"
                 <?= $item_index >= 2 ? 'hidden' : '' ?>
@@ -368,7 +364,6 @@ require "_head.php";
                     <?= encode($productName) ?>
                 </h2>
 
-                <!--Display size if $item["size"] exists-->
                 <?php if (!empty($item["size"])): ?>
                     <p class="product-variation">
                      Size: <?= encode($item["size"]) ?>
@@ -380,7 +375,6 @@ require "_head.php";
                 </p>
 
             </div>
-
         </div>
         <?php endforeach; ?>
 
@@ -389,14 +383,13 @@ require "_head.php";
             <button
                 type="button"
                 class="view-more-products"
-                aria-expanded="false"
+                aria-expanded="false" 
             >
                 View More
             </button>
         <?php endif; ?>
 
         <div class="order-meta-section">
-
             <p class="order-meta">
                 <?= date("d M Y, h:i A", strtotime($order["order_date"])) ?>
             </p>
@@ -412,10 +405,9 @@ require "_head.php";
         </div>
 
     </div>
-    <!--if order has no product-->
+    <!--If order has no product-->
     <?php else: ?>
-
-    <div class="order-info">
+        <div class="order-info">
 
         <h2>No product information</h2>
 
@@ -423,8 +415,7 @@ require "_head.php";
             Order #<?= encode($order["order_id"]) ?>
         </p>
 
-    </div>
-
+        </div>
     <?php endif; ?>
 
     </div>
@@ -459,8 +450,7 @@ require "_head.php";
             <form
                 method="POST"
                 class="received-form"
-                onsubmit="return confirm(
-                    'Confirm that you have received this order?');"
+                onsubmit="return confirm('Confirm that you have received this order?');"
             >
                 <input
                     type="hidden"
@@ -480,7 +470,6 @@ require "_head.php";
                 >
                     Order Received
                 </button>
-
             </form>
 
         <?php endif; ?>
@@ -490,8 +479,7 @@ require "_head.php";
         <form
             method="POST"
             class="cancel-form"
-            onsubmit="return confirm(
-            'Are you sure you want to cancel this order?');"
+            onsubmit="return confirm('Are you sure you want to cancel this order?');"
         >
 
         <input
@@ -512,30 +500,29 @@ require "_head.php";
         >
             Cancel Order
         </button>
-
         </form>
 
     <?php endif; ?>
 
-    <?php if ($order["status"] === "completed"): ?>
-        <!--Display View Feedback if feedback_submitted isn't null-->
-        <?php if ($order["feedback_submitted"]): ?>
-            <a 
-                class="feedback-button" 
-                href="view_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
-            >
-                View Feedback
-            </a>
+        <?php if ($order["status"] === "completed"): ?>
+            <!--Display View Feedback if feedback_submitted isn't null-->
+            <?php if ($order["feedback_submitted"]): ?>
+                <a 
+                    class="feedback-button" 
+                    href="view_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
+                >
+                    View Feedback
+                </a>
 
-        <?php else: ?>
-            <a 
-                class="feedback-button" 
-                href="order_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
-            >
-                Add Feedback
-            </a>
+            <?php else: ?>
+                 <a 
+                    class="feedback-button" 
+                    href="order_feedback.php?id=<?= urlencode($order["order_id"]) ?>"
+                >
+                    Add Feedback
+                </a>
 
-        <?php endif; ?>
+            <?php endif; ?>
 
         <?php endif; ?>
 
@@ -545,10 +532,9 @@ require "_head.php";
 
         </article>
 
-        <?php endforeach; ?>
+    <?php endforeach; ?>
 
     <?php else: ?>
-
         <p>You do not have any orders yet.</p>
 
     <?php endif; ?>
@@ -557,7 +543,7 @@ require "_head.php";
 
 <?php if ($total_pages > 1): ?>
     <nav class="order-pagination" aria-label="Order history pages">
-        <!--Navigate to previous page if current page more than 1-->
+        <!--Display Previous button-->
         <?php if ($page > 1): ?>
             <a
                 class="pagination-link pagination-direction"
@@ -568,6 +554,7 @@ require "_head.php";
             </a>
         <?php endif; ?>
 
+        <!--Display PageNumber button-->
         <?php for ($page_number = 1; $page_number <= $total_pages; $page_number++): ?>
             <a
                 class="pagination-link <?= $page_number === $page ? "active" : "" ?>"
@@ -578,7 +565,7 @@ require "_head.php";
             </a>
         <?php endfor; ?>
 
-        <!--Navigate to next page if current page more than 1-->
+        <!--Display Next button-->
         <?php if ($page < $total_pages): ?>
             <a
                 class="pagination-link pagination-direction"
@@ -593,23 +580,25 @@ require "_head.php";
 <?php endif; ?>
 
 <script>
-    //View More
+    //View More/View Less
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.view-more-products').forEach((button) => {
             //Runs when customer clicks View More
             button.addEventListener('click', () => {
-                //Find current order
+                //Find orderItemsList of current order
                 const orderItemsList = button.closest('.order-items-list');
                 //Find hidden products
                 const additionalItems = orderItemsList.querySelectorAll('.additional-order-item');
-                //Check if it's expanded
+                //aria-expanded initially is false
                 const isExpanded = button.getAttribute('aria-expanded') === 'true';
 
                 additionalItems.forEach((item) => {
                     item.hidden = isExpanded;
                 });
 
+                //Reverse the current state of isExpanded
                 button.setAttribute('aria-expanded', String(!isExpanded));
+                //isExpanded is the state before the click
                 button.textContent = isExpanded ? 'View More' : 'View Less';
             });
         });
