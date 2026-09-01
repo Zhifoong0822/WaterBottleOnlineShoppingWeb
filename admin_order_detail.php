@@ -57,23 +57,17 @@ $current_status = strtolower($order["status"]);
 //valid status transitions
 $status_transitions = [
     "pending" => [
-        "pending",
         "shipped",
         "cancelled"
     ],
 
     "shipped" => [
-        "shipped",
         "completed"
     ],
 
-    "completed" => [
-        "completed"
-    ],
+    "completed" => [],
 
-    "cancelled" => [
-        "cancelled"
-    ]
+    "cancelled" => []
 ];
 
 //process status update
@@ -468,85 +462,51 @@ require "_head.php";
 
         <div class="form-section">
 
-            <h3>Update Order Status</h3>
+    <h3>Update Order Status</h3>
 
-            <form
-                method="POST"
-                action="admin_order_detail.php?id=<?= urlencode($order["order_id"]) ?>"
-                onsubmit="return confirmStatusUpdate();"
-       >
+    <form 
+        method="POST" 
+        action="admin_order_detail.php?id=<?= urlencode($order["order_id"]) ?>" 
+        onsubmit="return confirmStatusUpdate();"
+    >
 
-                <label for="status">
-                    Select New Status
-                </label>
+        <label for="status">
+            Select New Status
+        </label>
 
-                <select
-                    name="status"
-                    id="status"
-                    required
-                    <?= in_array($status, ["completed", "cancelled"], true)
-                        ? "disabled"
-                        : "" ?>
-                >
+        <?php
+        // Check whether the order has reached a final status
+        $is_final_status = in_array(
+            $status,
+            ["completed", "cancelled"],
+            true
+        );
 
-        <option
-            value="pending"
-            <?= $status === "pending" ? "selected" : "" ?>
-            <?= in_array(
-                "pending",
-                $status_transitions[$status] ?? [],
-                true
-            ) ? "" : "disabled" ?>
+        // Get the valid next statuses for the current status
+        $allowed_next_statuses = $status_transitions[$status] ?? [];
+        ?>
+
+        <select 
+            name="status" 
+            id="status" 
+            required
+            <?= $is_final_status ? "disabled" : "" ?>
         >
-            Pending
-        </option>
 
-        <option
-            value="shipped"
-            <?= $status === "shipped" ? "selected" : "" ?>
-            <?= in_array(
-                "shipped",
-                $status_transitions[$status] ?? [],
-                true
-            ) ? "" : "disabled" ?>
-        >
-            Shipped
-        </option>
+            <?php foreach ($allowed_next_statuses as $next_status): ?>
 
-        <option
-            value="completed"
-            <?= $status === "completed" ? "selected" : "" ?>
-            <?= in_array(
-                "completed",
-                $status_transitions[$status] ?? [],
-                true
-            ) ? "" : "disabled" ?>
-        >
-            Completed
-        </option>
+                <option value="<?= encode($next_status) ?>">
+                    <?= ucfirst(encode($next_status)) ?>
+                </option>
 
-        <option
-            value="cancelled"
-            <?= $status === "cancelled" ? "selected" : "" ?>
-            <?= in_array(
-                "cancelled",
-                $status_transitions[$status] ?? [],
-                true
-            ) ? "" : "disabled" ?>
-        >
-                Cancelled
-            </option>
+            <?php endforeach; ?>
 
         </select>
 
         <div class="button-group">
 
-            <?php
-            $is_final_status = in_array($status, ["completed", "cancelled"], true);
-            ?>
-
-            <button
-                type="submit"
+            <button 
+                type="submit" 
                 <?= $is_final_status ? "disabled" : "" ?>
             >
                 <?= $is_final_status
@@ -560,9 +520,9 @@ require "_head.php";
 
         </div>
 
-            </form>
+    </form>
 
-        </div>
+    </div>
 
         <div class="customer-detail-section">
             <h3>Customer Detail</h3>
