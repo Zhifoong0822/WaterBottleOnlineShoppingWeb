@@ -66,7 +66,8 @@ foreach ($product_images as $image) {
     $gallery_image_urls[] = $image->image_url;
 }
 
-function getYoutubeEmbedUrl($url){
+function getYoutubeEmbedUrl($url)
+{
     if (!$url) {
         return null;
     }
@@ -78,6 +79,7 @@ function getYoutubeEmbedUrl($url){
     }
 
     $host = strtolower($parts['host']);
+    $path = $parts['path'] ?? '';
 
     // Normal YouTube URL
     if ($host === 'www.youtube.com' || $host === 'youtube.com') {
@@ -91,30 +93,35 @@ function getYoutubeEmbedUrl($url){
             }
         }
 
-        // Already an embed URL
-        if (
-            !empty($parts['path']) &&
-            str_starts_with($parts['path'], '/embed/')
-        ) {
-            return 'https://www.youtube.com' . $parts['path'];
+        if (str_starts_with($path, '/shorts/')) {
+
+            $video_id = trim(
+                substr($path, strlen('/shorts/'))
+            );
+
+            if ($video_id !== '') {
+                return 'https://www.youtube.com/embed/' . rawurlencode($video_id);
+            }
+        }
+
+        if (str_starts_with($path, '/embed/')) {
+
+            return 'https://www.youtube.com' . $path;
         }
     }
 
-    // YouTube Shorts URL
-    if ($host === 'www.youtube.com' || $host === 'youtube.com') {
-        if (
-            !empty($parts['path']) &&
-            str_starts_with($parts['path'], '/shorts/')
-        ) {
-            $video_id = trim(substr($parts['path'], strlen('/shorts/')));
+    // Short YouTube URL
+    if ($host === 'youtu.be') {
+
+        $video_id = trim($path, '/');
 
         if ($video_id !== '') {
-            return 'https://www.youtube.com/embed/' . rawurlencode($video_id); 
-        } 
-    } 
-} 
-    return null; 
-} 
+            return 'https://www.youtube.com/embed/' . rawurlencode($video_id);
+        }
+    }
+
+    return null;
+}
  
 $youtube_embed_url = getYoutubeEmbedUrl($product->video_url ?? null); 
  

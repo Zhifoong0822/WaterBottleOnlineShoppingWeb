@@ -781,8 +781,8 @@ footer p {
 
 .product-video-container {
     width: 100%;
-    max-width: 900px;
     aspect-ratio: 16 / 9;
+    max-width: 900px;
     margin: 0 auto;
     overflow: hidden;
     border-radius: 8px;

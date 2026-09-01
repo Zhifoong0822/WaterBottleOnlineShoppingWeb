@@ -161,6 +161,7 @@ main > .my-orders-title {
 .amount-label {
     color: #666666;
     font-size: 14px;
+    font-weight: bold;
 }
 
 .amount {
